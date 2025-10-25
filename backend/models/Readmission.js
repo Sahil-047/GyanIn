@@ -6,12 +6,6 @@ const readmissionSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  studentId: {
-    type: String,
-    required: true,
-    trim: true,
-    unique: true
-  },
   course: {
     type: String,
     required: true,

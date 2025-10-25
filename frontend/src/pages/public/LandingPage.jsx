@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import TeacherCarousel from '../../components/public/TeacherCarousel';
-import { cmsAPI } from '../../utils/api';
+import { cmsAPI, coursesAPI } from '../../utils/api';
 
 const LandingPage = () => {
   const [courses, setCourses] = useState([]);
@@ -13,15 +13,16 @@ const LandingPage = () => {
   useEffect(() => {
     const fetchCMSData = async () => {
       try {
+        // Fetch courses from courses API instead of CMS
         const [coursesResponse, offersResponse, testimonialsResponse] = await Promise.allSettled([
-          cmsAPI.getCMSSection('courses'),
+          coursesAPI.getCourses({ limit: 6 }),
           cmsAPI.getCMSSection('offers'),
           cmsAPI.getCMSSection('testimonials')
         ]);
 
-        // Set courses
+        // Set courses from courses API
         if (coursesResponse.status === 'fulfilled' && coursesResponse.value.success) {
-          setCourses(coursesResponse.value.data.data.courses || []);
+          setCourses(coursesResponse.value.data || []);
         } else {
           // Fallback to mock data
           setCourses([
@@ -147,95 +148,52 @@ const LandingPage = () => {
           ) : (
             <div className="relative overflow-hidden">
               <div className="flex animate-scroll">
-                {/* First set of offers */}
-                <div className="flex items-center flex-shrink-0">
-                  {offers.map((offer, index) => (
-                    <div
-                      key={index}
-                      className="flex-shrink-0 mx-4 my-4 bg-gray-100 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 min-w-[280px] max-w-[320px]"
-                    >
-                      <div className="p-6">
-                        <div className="flex items-center mb-4">
-                          <div className={`w-16 h-16 bg-gradient-to-r ${offer.color || 'from-blue-500 to-blue-600'} rounded-xl flex items-center justify-center shadow-lg`}>
-                            <span className="text-white font-bold text-lg">{offer.logo || offer.title?.charAt(0) || 'O'}</span>
-                          </div>
-                          <div className="ml-4 flex-1">
-                            <h4 className="font-bold text-gray-900 text-lg">{offer.name || offer.title}</h4>
-                            <div className="flex items-center mt-1">
-                              <svg className="w-4 h-4 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                              <span className="text-yellow-600 font-semibold text-sm">
-                                {offer.isActive ? 'Active Offer' : 'Premium Partner'}
-                              </span>
+                {/* Duplicate offers multiple times for continuous scrolling */}
+                {Array.from({ length: Math.max(5, Math.ceil(10 / offers.length)) }).map((_, repeatIndex) => (
+                  <div key={`set-${repeatIndex}`} className="flex items-center flex-shrink-0">
+                    {offers.map((offer, index) => (
+                      <div
+                        key={`${repeatIndex}-${index}`}
+                        className="flex-shrink-0 mx-4 my-4 bg-gray-100 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 min-w-[280px] max-w-[320px]"
+                      >
+                        <div className="p-6">
+                          <div className="flex items-center mb-4">
+                            <div className={`w-16 h-16 bg-gradient-to-r ${offer.color || 'from-blue-500 to-blue-600'} rounded-xl flex items-center justify-center shadow-lg`}>
+                              <span className="text-white font-bold text-lg">{offer.logo || offer.title?.charAt(0) || 'O'}</span>
+                            </div>
+                            <div className="ml-4 flex-1">
+                              <h4 className="font-bold text-gray-900 text-lg">{offer.name || offer.title}</h4>
+                              <div className="flex items-center mt-1">
+                                <svg className="w-4 h-4 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                <span className="text-yellow-600 font-semibold text-sm">
+                                  {offer.isActive ? 'Active Offer' : 'Premium Partner'}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="bg-gray-200 rounded-lg my-2 px-3">
-                          <p className="text-gray-700 font-medium text-sm">{offer.offer || offer.description}</p>
-                        </div>
-                        {offer.discount && (
-                          <div className="bg-red-100 text-red-800 rounded-lg my-2 px-3 py-1">
-                            <p className="font-bold text-sm">{offer.discount}</p>
+                          <div className="bg-gray-200 rounded-lg my-2 px-3">
+                            <p className="text-gray-700 font-medium text-sm">{offer.offer || offer.description}</p>
                           </div>
-                        )}
-                        {offer.validUntil && (
-                          <div className="text-xs text-gray-500 mb-2">
-                            Valid until: {new Date(offer.validUntil).toLocaleDateString()}
-                          </div>
-                        )}
-                        <button className="w-full mt-4 bg-gradient-to-r from-gray-800 to-gray-900 text-white py-2 px-4 rounded-lg font-semibold hover:from-gray-700 hover:to-gray-800 transition-all duration-200">
-                          Claim Offer
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Duplicate set for seamless loop */}
-                <div className="flex items-center flex-shrink-0 ml-8">
-                  {offers.map((offer, index) => (
-                    <div
-                      key={`duplicate-${index}`}
-                      className="flex-shrink-0 mx-4 bg-gray-100 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 min-w-[280px] max-w-[320px]"
-                    >
-                      <div className="p-6">
-                        <div className="flex items-center mb-4">
-                          <div className={`w-16 h-16 bg-gradient-to-r ${offer.color || 'from-blue-500 to-blue-600'} rounded-xl flex items-center justify-center shadow-lg`}>
-                            <span className="text-white font-bold text-lg">{offer.logo || offer.title?.charAt(0) || 'O'}</span>
-                          </div>
-                          <div className="ml-4 flex-1">
-                            <h4 className="font-bold text-gray-900 text-lg">{offer.name || offer.title}</h4>
-                            <div className="flex items-center mt-1">
-                              <svg className="w-4 h-4 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                              <span className="text-yellow-600 font-semibold text-sm">
-                                {offer.isActive ? 'Active Offer' : 'Premium Partner'}
-                              </span>
+                          {offer.discount && (
+                            <div className="bg-red-100 text-red-800 rounded-lg my-2 px-3 py-1">
+                              <p className="font-bold text-sm">{offer.discount}</p>
                             </div>
-                          </div>
+                          )}
+                          {offer.validUntil && (
+                            <div className="text-xs text-gray-500 mb-2">
+                              Valid until: {new Date(offer.validUntil).toLocaleDateString()}
+                            </div>
+                          )}
+                          <button className="w-full mt-4 bg-gradient-to-r from-gray-800 to-gray-900 text-white py-2 px-4 rounded-lg font-semibold hover:from-gray-700 hover:to-gray-800 transition-all duration-200">
+                            Claim Offer
+                          </button>
                         </div>
-                        <div className="bg-gray-200 rounded-lg p-3">
-                          <p className="text-gray-700 font-medium text-sm">{offer.offer || offer.description}</p>
-                        </div>
-                        {offer.discount && (
-                          <div className="bg-red-100 text-red-800 rounded-lg my-2 px-3 py-1">
-                            <p className="font-bold text-sm">{offer.discount}</p>
-                          </div>
-                        )}
-                        {offer.validUntil && (
-                          <div className="text-xs text-gray-500 mb-2">
-                            Valid until: {new Date(offer.validUntil).toLocaleDateString()}
-                          </div>
-                        )}
-                        <button className="w-full mt-4 bg-gradient-to-r from-gray-800 to-gray-900 text-white py-2 px-4 rounded-lg font-semibold hover:from-gray-700 hover:to-gray-800 transition-all duration-200">
-                          Claim Offer
-                        </button>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -265,7 +223,7 @@ const LandingPage = () => {
             ) : (
               courses.map((course, index) => (
                 <div 
-                  key={course.id || index}
+                  key={course._id || course.id || index}
                   className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                 >
                   <div className="h-[200px] bg-slate-200 relative">
@@ -297,21 +255,27 @@ const LandingPage = () => {
                       {course.description || 'Learn from industry experts with practical projects.'}
                     </p>
 
-                    <div className="flex justify-between mt-4">
-                      <div className="flex items-center text-gray-500">
-                        <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12,2C6.5,2,2,6.5,2,12s4.5,10,10,10s10-4.5,10-10S17.5,2,12,2z M16.2,16.2L11,13V7h1.5v5.2l4.5,2.7L16.2,16.2z" />
-                        </svg>
-                        <span className="text-sm">{course.duration || '25h 30min'}</span>
-                      </div>
+                    {(course.duration || course.tags) && (
+                      <div className="flex justify-between mt-4">
+                        {course.duration && (
+                          <div className="flex items-center text-gray-500">
+                            <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12,2C6.5,2,2,6.5,2,12s4.5,10,10,10s10-4.5,10-10S17.5,2,12,2z M16.2,16.2L11,13V7h1.5v5.2l4.5,2.7L16.2,16.2z" />
+                            </svg>
+                            <span className="text-sm">{course.duration}</span>
+                          </div>
+                        )}
 
-                      <div className="flex items-center text-gray-500">
-                        <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M21,5c-1.11-0.35-2.33-0.5-3.5-0.5c-1.95,0-4.05,0.4-5.5,1.5c-1.45-1.1-3.55-1.5-5.5-1.5S2.45,4.9,1,6v14.65 c0,0.25,0.25,0.5,0.5,0.5c0.1,0,0.15-0.05,0.25-0.05C3.1,20.45,5.05,20,6.5,20c1.95,0,4.05,0.4,5.5,1.5c1.35-0.85,3.8-1.5,5.5-1.5 c1.65,0,3.35,0.3,4.75,1.05c0.1,0.05,0.15,0.05,0.25,0.05c0.25,0,0.5-0.25,0.5-0.5V6C22.4,5.55,21.75,5.25,21,5z M21,18.5 c-1.1-0.35-2.3-0.5-3.5-0.5c-1.7,0-4.15,0.65-5.5,1.5V8c1.35-0.85,3.8-1.5,5.5-1.5c1.2,0,2.4,0.15,3.5,0.5V18.5z" />
-                        </svg>
-                        <span className="text-sm">{course.lessons || '12'} Lessons</span>
+                        {course.tags && course.tags.length > 0 && (
+                          <div className="flex items-center text-gray-500">
+                            <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M21,5c-1.11-0.35-2.33-0.5-3.5-0.5c-1.95,0-4.05,0.4-5.5,1.5c-1.45-1.1-3.55-1.5-5.5-1.5S2.45,4.9,1,6v14.65 c0,0.25,0.25,0.5,0.5,0.5c0.1,0,0.15-0.05,0.25-0.05C3.1,20.45,5.05,20,6.5,20c1.95,0,4.05,0.4,5.5,1.5c1.35-0.85,3.8-1.5,5.5-1.5 c1.65,0,3.35,0.3,4.75,1.05c0.1,0.05,0.15,0.05,0.25,0.05c0.25,0,0.5-0.25,0.5-0.5V6C22.4,5.55,21.75,5.25,21,5z M21,18.5 c-1.1-0.35-2.3-0.5-3.5-0.5c-1.7,0-4.15,0.65-5.5,1.5V8c1.35-0.85,3.8-1.5,5.5-1.5c1.2,0,2.4,0.15,3.5,0.5V18.5z" />
+                            </svg>
+                            <span className="text-sm">{course.tags.length} Tags</span>
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    )}
 
                     <button className="w-full mt-6 py-3 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-blue-50 transition-colors duration-200">
                       View Course
@@ -378,11 +342,11 @@ const LandingPage = () => {
               }
             ].map((feature, index) => (
               <div key={index} className="text-center">
-                <div className="w-15 h-15 rounded-full bg-blue-50 text-[#0061FF] flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 rounded-full bg-blue-50 text-[#0061FF] flex items-center justify-center mx-auto mb-6 p-4">
                   {feature.icon}
                 </div>
                 <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
+                <p className="text-gray-600 text-sm">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -391,7 +355,7 @@ const LandingPage = () => {
 
       {/* Testimonials Section */}
       {testimonials.length > 0 && (
-        <section className="w-full bg-gray-50 py-20">
+        <section className="w-full bg-white py-20">
           <div className="max-w-[1440px] mx-auto px-4 md:px-8">
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
               What Our Students Say
@@ -402,7 +366,7 @@ const LandingPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {testimonials.map((testimonial, index) => (
-                <div key={testimonial.id || index} className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-lg transition-all duration-300">
+                <div key={testimonial.id || index} className="bg-gray-50 rounded-2xl p-8 shadow-sm hover:shadow-lg transition-all duration-300">
                   <div className="flex items-center mb-6">
                     <div className="w-16 h-16 rounded-full overflow-hidden mr-4">
                       {testimonial.avatar ? (

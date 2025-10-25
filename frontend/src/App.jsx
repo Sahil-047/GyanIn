@@ -10,6 +10,7 @@ import Reports from './pages/admin/Reports'
 import LandingPage from './pages/public/LandingPage'
 import Courses from './pages/public/Courses'
 import ContactUs from './pages/public/ContactUs'
+import ReadmissionsPublic from './pages/public/Readmissions'
 
 function App() {
   return (
@@ -48,6 +49,19 @@ function App() {
             <Navbar />
             <main className="flex-grow">
               <ContactUs />
+            </main>
+            <Footer />
+          </div>
+        } 
+      />
+      
+      <Route 
+        path="/readmissions" 
+        element={
+          <div className="min-h-screen flex flex-col">
+            <Navbar />
+            <main className="flex-grow">
+              <ReadmissionsPublic />
             </main>
             <Footer />
           </div>

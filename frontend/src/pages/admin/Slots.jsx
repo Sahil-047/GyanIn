@@ -127,7 +127,7 @@ const Slots = () => {
     if (!formData.name.trim()) errors.name = 'Slot name is required'
     if (!formData.course.trim()) errors.course = 'Course is required'
     if (!formData.subject.trim()) errors.subject = 'Subject is required'
-    if (!formData.class.trim()) errors.class = 'Class level is required'
+    if (!formData.class.trim()) errors.class = 'Class is required'
     if (!formData.startTime.trim()) errors.startTime = 'Start time is required'
     if (!formData.endTime.trim()) errors.endTime = 'End time is required'
     if (formData.days.length === 0) errors.days = 'At least one day must be selected'
@@ -668,7 +668,7 @@ const Slots = () => {
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Slot Overview</h3>
             <div className="space-y-4">
-              {courses.map(course => {
+              {Array.from(new Set(slots.map(slot => slot.course))).map(course => {
                 const courseSlots = slots.filter(slot => slot.course === course)
                 const onlineSlots = courseSlots.filter(slot => slot.type === 'online')
                 const offlineSlots = courseSlots.filter(slot => slot.type === 'offline')
@@ -757,13 +757,13 @@ const Slots = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Class Level *</label>
+                    <label className="block text-sm font-medium text-gray-700">Class *</label>
                     <input
                       type="text"
                       name="class"
                       value={formData.class}
                       onChange={handleInputChange}
-                      placeholder="Enter class level (e.g., Beginner, Intermediate, Advanced)"
+                      placeholder="Enter class (e.g., Beginner, Intermediate, Advanced)"
                       className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.class ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
                     />
                     {formErrors.class && <p className="mt-1 text-sm text-red-600">{formErrors.class}</p>}
@@ -962,13 +962,13 @@ const Slots = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Class Level *</label>
+                    <label className="block text-sm font-medium text-gray-700">Class *</label>
                     <input
                       type="text"
                       name="class"
                       value={formData.class}
                       onChange={handleInputChange}
-                      placeholder="Enter class level (e.g., Beginner, Intermediate, Advanced)"
+                      placeholder="Enter class (e.g., Beginner, Intermediate, Advanced)"
                       className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.class ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
                     />
                     {formErrors.class && <p className="mt-1 text-sm text-red-600">{formErrors.class}</p>}
@@ -1140,7 +1140,7 @@ const Slots = () => {
                     <p className="mt-1 text-sm text-gray-900">{selectedSlot.subject}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Class Level</label>
+                    <label className="block text-sm font-medium text-gray-700">Class</label>
                     <p className="mt-1 text-sm text-gray-900">{selectedSlot.class}</p>
                   </div>
                   <div>

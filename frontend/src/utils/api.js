@@ -2,7 +2,7 @@
 const API_BASE = 'http://localhost:5000/api/admin'
 
 // Generic API call function
-const apiCall = async (endpoint, options = {}) => {
+export const apiCall = async (endpoint, options = {}) => {
   const url = `${API_BASE}${endpoint}`
   const config = {
     headers: {
@@ -186,12 +186,117 @@ export const cmsAPI = {
   addOffer: (offerData) => apiCall('/cms/offers', {
     method: 'POST',
     body: JSON.stringify(offerData)
+  }),
+
+  // Delete offer from CMS
+  deleteOffer: (offerId) => apiCall(`/cms/offers/${offerId}`, {
+    method: 'DELETE'
   })
 }
+
+// Courses API (Public API - different base URL)
+const PUBLIC_API_BASE = 'http://localhost:5000/api'
+
+const publicApiCall = async (endpoint, options = {}) => {
+  const url = `${PUBLIC_API_BASE}${endpoint}`
+  const config = {
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers
+    },
+    ...options
+  }
+
+  try {
+    const response = await fetch(url, config)
+    const data = await response.json()
+    
+    if (!response.ok) {
+      console.error('Public API Error Details:', {
+        url,
+        method: config.method || 'GET',
+        status: response.status,
+        requestBody: config.body,
+        responseData: data
+      })
+      
+      const error = new Error(data.message || 'API call failed')
+      error.status = response.status
+      error.data = data
+      if (data.errors) {
+        error.errors = data.errors
+      }
+      throw error
+    }
+    
+    return data
+  } catch (error) {
+    console.error('Public API call error:', error)
+    throw error
+  }
+}
+
+export const coursesAPI = {
+  // Get all courses
+  getCourses: (params = {}) => {
+    const queryParams = new URLSearchParams(params)
+    return publicApiCall(`/courses?${queryParams}`)
+  },
+
+  // Get single course
+  getCourse: (id) => publicApiCall(`/courses/${id}`),
+
+  // Get all categories
+  getCategories: () => publicApiCall('/courses/categories'),
+
+  // Create new course
+  createCourse: (courseData) => publicApiCall('/courses', {
+    method: 'POST',
+    body: JSON.stringify(courseData)
+  }),
+
+  // Update course
+  updateCourse: (id, courseData) => publicApiCall(`/courses/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(courseData)
+  }),
+
+  // Delete course
+  deleteCourse: (id) => publicApiCall(`/courses/${id}`, {
+    method: 'DELETE'
+  })
+}
+
+// Public Readmissions API (for students to submit applications)
+export const publicReadmissionsAPI = {
+  // Submit a readmission application
+  submitReadmission: (data) => publicApiCall('/public/readmissions', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  })
+}
+
+// Public Slots API (for students to view available slots)
+export const publicSlotsAPI = {
+  // Get all active slots
+  getActiveSlots: (params = {}) => {
+    const queryParams = new URLSearchParams(params)
+    return publicApiCall(`/public/slots?${queryParams}`)
+  },
+
+  // Get single slot
+  getSlot: (id) => publicApiCall(`/public/slots/${id}`)
+}
+
+// Export publicApiCall for direct use in components
+export { publicApiCall }
 
 export default {
   readmissionsAPI,
   slotsAPI,
   dashboardAPI,
-  cmsAPI
+  cmsAPI,
+  coursesAPI,
+  publicReadmissionsAPI,
+  publicSlotsAPI
 }

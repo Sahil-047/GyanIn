@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { cmsAPI } from '../../utils/api'
+import { cmsAPI, coursesAPI } from '../../utils/api'
 
 const CMS = () => {
   const [activeTab, setActiveTab] = useState('carousel')
@@ -20,23 +20,87 @@ const CMS = () => {
   const fetchCMSData = async () => {
     setLoading(true)
     try {
-      const sections = ['carousel', 'courses', 'testimonials', 'offers']
-      const promises = sections.map(section => cmsAPI.getCMSSection(section))
-      const results = await Promise.allSettled(promises)
+      // Fetch CMS sections (excluding courses which will be fetched separately)
+      const sections = ['carousel', 'testimonials', 'offers']
+      const cmsPromises = sections.map(section => 
+        cmsAPI.getCMSSection(section).catch(err => {
+          console.log(`Section ${section} fetch failed:`, err)
+          return { success: true, data: { data: null } }
+        })
+      )
       
-      const newData = {}
-      results.forEach((result, index) => {
-        const section = sections[index]
+      // Fetch courses from the courses collection
+      const coursesPromise = coursesAPI.getCourses({ limit: 100 })
+      
+      const allResults = await Promise.allSettled([...cmsPromises, coursesPromise])
+      
+      const newData = {
+        carousel: { carouselItems: [] },
+        courses: { courses: [] },
+        testimonials: { testimonials: [] },
+        offers: { offers: [] }
+      }
+      
+      // Process CMS sections (carousel, testimonials, offers)
+      sections.forEach((section, index) => {
+        const result = allResults[index]
+        console.log(`Processing ${section}:`, result)
         if (result.status === 'fulfilled' && result.value.success) {
-          newData[section] = result.value.data.data
-        } else {
-          newData[section] = section === 'carousel' ? { carouselItems: [] } :
-                           section === 'courses' ? { courses: [] } :
-                           section === 'testimonials' ? { testimonials: [] } :
-                           { offers: [] }
+          const cmsDocument = result.value.data
+          console.log(`${section} document:`, cmsDocument)
+          
+          // Special handling for offers to map old and new data formats
+          if (section === 'offers') {
+            console.log('Processing offers document:', cmsDocument);
+            const offers = cmsDocument.data?.offers || [];
+            console.log('Raw offers array:', offers);
+            
+            newData[section] = {
+              offers: offers.map(offer => {
+                const mappedOffer = {
+                  id: offer.id,
+                  name: offer.name || offer.title,
+                  offer: offer.offer || offer.description,
+                  logo: offer.logo,
+                  color: offer.color,
+                  discount: offer.discount,
+                  validUntil: offer.validUntil,
+                  isActive: typeof offer.isActive === 'boolean' ? offer.isActive : true
+                };
+                console.log('Mapped offer:', mappedOffer);
+                return mappedOffer;
+              })
+            };
+            console.log('Final mapped offers:', newData[section].offers);
+          } else {
+            newData[section] = cmsDocument.data || {}
+          }
+          
+          console.log(`${section} data set to:`, newData[section])
         }
       })
       
+      // Process courses from the courses collection
+      const coursesResult = allResults[sections.length]
+      if (coursesResult.status === 'fulfilled' && coursesResult.value.success) {
+        // Convert courses from courses collection to CMS format
+        newData.courses = { courses: coursesResult.value.data.map(course => ({
+          id: course._id,
+          title: course.title,
+          description: course.description,
+          instructor: course.instructor,
+          price: course.price,
+          duration: course.duration,
+          level: course.level,
+          category: course.category,
+          image: course.image,
+          rating: course.rating,
+          students: course.students,
+          tags: course.tags
+        })) }
+      }
+      
+      console.log('Final CMS data to be set:', newData)
       setCmsData(newData)
     } catch (error) {
       console.error('Error fetching CMS data:', error)
@@ -77,6 +141,11 @@ const CMS = () => {
       case 'courses':
         if (!formData.title?.trim()) errors.title = 'Course title is required'
         if (!formData.description?.trim()) errors.description = 'Description is required'
+        if (!formData.instructor?.trim()) errors.instructor = 'Instructor is required'
+        if (!formData.price || formData.price <= 0) errors.price = 'Valid price is required'
+        if (!formData.duration?.trim()) errors.duration = 'Duration is required'
+        if (!formData.level) errors.level = 'Level is required'
+        if (!formData.category?.trim()) errors.category = 'Category is required'
         break
       case 'testimonials':
         if (!formData.name?.trim()) errors.name = 'Name is required'
@@ -84,8 +153,8 @@ const CMS = () => {
         if (!formData.content?.trim()) errors.content = 'Content is required'
         break
       case 'offers':
-        if (!formData.title?.trim()) errors.title = 'Offer title is required'
-        if (!formData.description?.trim()) errors.description = 'Description is required'
+        if (!formData.name?.trim()) errors.title = 'Company/Partner name is required'
+        if (!formData.offer?.trim()) errors.description = 'Offer description is required'
         break
     }
     
@@ -95,7 +164,9 @@ const CMS = () => {
 
   // Handle add new item
   const handleAdd = () => {
-    setFormData({})
+    // Set default values for new items
+    const defaultData = activeTab === 'offers' ? { isActive: true } : {}
+    setFormData(defaultData)
     setFormErrors({})
     setShowAddModal(true)
   }
@@ -116,25 +187,78 @@ const CMS = () => {
     
     setLoading(true)
     try {
-      let apiMethod
-      switch (activeTab) {
-        case 'carousel':
-          apiMethod = cmsAPI.addCarouselItem
-          break
-        case 'courses':
-          apiMethod = cmsAPI.addCourse
-          break
-        case 'testimonials':
-          apiMethod = cmsAPI.addTestimonial
-          break
-        case 'offers':
-          apiMethod = cmsAPI.addOffer
-          break
+      let result
+      let submitData = { ...formData }
+      
+                    if (activeTab === 'courses') {
+         // Process tags for courses if they exist as a string
+         if (submitData.tags) {
+           if (typeof submitData.tags === 'string') {
+             submitData.tags = submitData.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+           }
+         } else {
+           delete submitData.tags
+         }
+         
+         // Convert price to number if it's a string
+         if (submitData.price && typeof submitData.price === 'string') {
+           submitData.price = parseFloat(submitData.price)
+         }
+         
+         // Convert rating to number if it's a string
+         if (submitData.rating !== undefined && typeof submitData.rating === 'string') {
+           submitData.rating = parseFloat(submitData.rating)
+         } else if (submitData.rating === '') {
+           delete submitData.rating
+         }
+         
+         // Convert students to number if it's a string
+         if (submitData.students !== undefined && typeof submitData.students === 'string') {
+           submitData.students = parseInt(submitData.students)
+         } else if (submitData.students === '') {
+           delete submitData.students
+         }
+         
+         // Set default image if not provided
+         if (!submitData.image || submitData.image.trim() === '') {
+           submitData.image = 'https://via.placeholder.com/400x300?text=Course'
+         }
+         
+         // For courses, use the courses API directly
+         if (selectedItem) {
+           // Update existing course - remove id from the update data
+           const { id, ...updateData } = submitData
+           console.log('Updating course with data:', updateData)
+           result = await coursesAPI.updateCourse(selectedItem.id, updateData)
+         } else {
+           // Create new course
+           result = await coursesAPI.createCourse(submitData)
+         }
+       } else {
+        // For other tabs, use CMS API
+        let apiMethod
+        switch (activeTab) {
+          case 'carousel':
+            apiMethod = cmsAPI.addCarouselItem
+            break
+          case 'testimonials':
+            apiMethod = cmsAPI.addTestimonial
+            break
+          case 'offers':
+            console.log('Adding offer with data:', submitData)
+            apiMethod = cmsAPI.addOffer
+            break
+          default:
+            apiMethod = null
+        }
+        
+        if (apiMethod) {
+          result = await apiMethod(submitData)
+          console.log('API result:', result)
+        }
       }
       
-      const data = await apiMethod(formData)
-      
-      if (data.success) {
+      if (result && result.success) {
         setShowAddModal(false)
         setShowEditModal(false)
         fetchCMSData()
@@ -151,21 +275,30 @@ const CMS = () => {
     
     setLoading(true)
     try {
-      // For now, we'll just remove from local state
-      // In a real app, you'd call a delete API
-      setCmsData(prev => ({
-        ...prev,
-        [activeTab]: {
-          ...prev[activeTab],
-          [activeTab === 'carousel' ? 'carouselItems' : 
-           activeTab === 'courses' ? 'courses' :
-           activeTab === 'testimonials' ? 'testimonials' : 'offers']: 
-          prev[activeTab][activeTab === 'carousel' ? 'carouselItems' : 
-                         activeTab === 'courses' ? 'courses' :
-                         activeTab === 'testimonials' ? 'testimonials' : 'offers']
-            .filter(item => item.id !== itemId)
-        }
-      }))
+      let result;
+      
+      if (activeTab === 'courses') {
+        // Delete course from the courses API
+        result = await coursesAPI.deleteCourse(itemId);
+      } else if (activeTab === 'offers') {
+        // Delete offer from CMS API
+        console.log('Deleting offer:', {
+          id: itemId,
+          type: typeof itemId,
+          activeTab,
+          currentOffers: cmsData.offers.offers
+        });
+        result = await cmsAPI.deleteOffer(itemId);
+        console.log('Delete result:', result);
+      }
+
+      if (result && result.success) {
+        // Refresh data from server instead of updating local state
+        console.log('Delete successful, refreshing data...');
+        await fetchCMSData();
+      } else {
+        console.error('Delete failed:', result);
+      }
     } catch (error) {
       console.error('Error deleting item:', error)
     }
@@ -297,6 +430,116 @@ const CMS = () => {
               {formErrors.description && <p className="mt-1 text-sm text-red-600">{formErrors.description}</p>}
             </div>
             
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Instructor *</label>
+                <input
+                  type="text"
+                  name="instructor"
+                  value={formData.instructor || ''}
+                  onChange={handleInputChange}
+                  className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.instructor ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                  placeholder="Enter instructor name"
+                />
+                {formErrors.instructor && <p className="mt-1 text-sm text-red-600">{formErrors.instructor}</p>}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Price *</label>
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price || ''}
+                  onChange={handleInputChange}
+                  className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.price ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                  placeholder="Enter price"
+                />
+                {formErrors.price && <p className="mt-1 text-sm text-red-600">{formErrors.price}</p>}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Duration *</label>
+                <input
+                  type="text"
+                  name="duration"
+                  value={formData.duration || ''}
+                  onChange={handleInputChange}
+                  className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.duration ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                  placeholder="e.g., 25h 30min"
+                />
+                {formErrors.duration && <p className="mt-1 text-sm text-red-600">{formErrors.duration}</p>}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Level *</label>
+                <select
+                  name="level"
+                  value={formData.level || ''}
+                  onChange={handleInputChange}
+                  className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.level ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                >
+                  <option value="">Select level</option>
+                  <option value="Beginner">Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
+                </select>
+                {formErrors.level && <p className="mt-1 text-sm text-red-600">{formErrors.level}</p>}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Category *</label>
+                <input
+                  type="text"
+                  name="category"
+                  value={formData.category || ''}
+                  onChange={handleInputChange}
+                  className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.category ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                  placeholder="e.g., web-development"
+                />
+                {formErrors.category && <p className="mt-1 text-sm text-red-600">{formErrors.category}</p>}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Rating</label>
+                <input
+                  type="number"
+                  name="rating"
+                  value={formData.rating || ''}
+                  onChange={handleInputChange}
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter rating"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Students</label>
+                <input
+                  type="number"
+                  name="students"
+                  value={formData.students || ''}
+                  onChange={handleInputChange}
+                  min="0"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter student count"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Tags</label>
+              <input
+                type="text"
+                name="tags"
+                value={formData.tags || ''}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter tags separated by comma (e.g., React, JavaScript, Node.js)"
+              />
+            </div>
+            
             <div>
               <label className="block text-sm font-medium text-gray-700">Course Image URL</label>
               <input
@@ -373,29 +616,66 @@ const CMS = () => {
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Offer Title *</label>
+              <label className="block text-sm font-medium text-gray-700">Company/Partner Name *</label>
               <input
                 type="text"
-                name="title"
-                value={formData.title || ''}
+                name="name"
+                value={formData.name || ''}
                 onChange={handleInputChange}
                 className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.title ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                placeholder="Enter offer title"
+                placeholder="e.g., TechCorp, EduTech Solutions"
               />
               {formErrors.title && <p className="mt-1 text-sm text-red-600">{formErrors.title}</p>}
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700">Description *</label>
+              <label className="block text-sm font-medium text-gray-700">Offer Description *</label>
               <textarea
-                name="description"
-                value={formData.description || ''}
+                name="offer"
+                value={formData.offer || ''}
                 onChange={handleInputChange}
-                rows={3}
+                rows={2}
                 className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.description ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                placeholder="Enter offer description"
+                placeholder="e.g., 20% Off All Courses, Free Trial Available"
               />
               {formErrors.description && <p className="mt-1 text-sm text-red-600">{formErrors.description}</p>}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Logo (2-3 letters)</label>
+                <input
+                  type="text"
+                  name="logo"
+                  value={formData.logo || ''}
+                  onChange={handleInputChange}
+                  maxLength={3}
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., TC, ET, LP"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Color Theme</label>
+                <select
+                  name="color"
+                  value={formData.color || ''}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select color</option>
+                  <option value="from-blue-500 to-blue-600">Blue</option>
+                  <option value="from-green-500 to-green-600">Green</option>
+                  <option value="from-purple-500 to-purple-600">Purple</option>
+                  <option value="from-orange-500 to-orange-600">Orange</option>
+                  <option value="from-red-500 to-red-600">Red</option>
+                  <option value="from-teal-500 to-teal-600">Teal</option>
+                  <option value="from-indigo-500 to-indigo-600">Indigo</option>
+                  <option value="from-pink-500 to-pink-600">Pink</option>
+                  <option value="from-cyan-500 to-cyan-600">Cyan</option>
+                  <option value="from-emerald-500 to-emerald-600">Emerald</option>
+                </select>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -423,24 +703,12 @@ const CMS = () => {
               </div>
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Offer Image URL</label>
-              <input
-                type="url"
-                name="image"
-                value={formData.image || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter offer image URL"
-              />
-            </div>
-            
             <div className="flex items-center">
               <input
                 type="checkbox"
                 name="isActive"
-                checked={formData.isActive || false}
-                onChange={handleInputChange}
+                checked={formData.isActive !== undefined ? formData.isActive : true}
+                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label className="ml-2 block text-sm text-gray-900">Active Offer</label>
@@ -534,17 +802,24 @@ const CMS = () => {
                       
                       {activeTab === 'offers' && (
                         <div>
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-md font-medium text-gray-900">{item.title}</h4>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center">
+                              <div className={`w-10 h-10 bg-gradient-to-r ${item.color || 'from-blue-500 to-blue-600'} rounded-lg flex items-center justify-center mr-3`}>
+                                <span className="text-white font-bold text-sm">
+                                  {item.logo || (item.name || item.title)?.charAt(0) || 'O'}
+                                </span>
+                              </div>
+                              <h4 className="text-md font-medium text-gray-900">{item.name || item.title}</h4>
+                            </div>
                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                               item.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                             }`}>
                               {item.isActive ? 'Active' : 'Inactive'}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-500 mt-1">{item.description}</p>
-                          {item.discount && <p className="text-sm text-blue-600 font-medium">{item.discount}</p>}
-                          {item.validUntil && <p className="text-xs text-gray-400">Valid until: {item.validUntil}</p>}
+                          <p className="text-sm text-gray-600 mt-1">{item.offer || item.description}</p>
+                          {item.discount && <p className="text-sm text-blue-600 font-medium mt-1">{item.discount}</p>}
+                          {item.validUntil && <p className="text-xs text-gray-400 mt-1">Valid until: {new Date(item.validUntil).toLocaleDateString()}</p>}
                         </div>
                       )}
                     </div>

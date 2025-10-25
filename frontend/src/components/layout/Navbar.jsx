@@ -19,7 +19,7 @@ const Navbar = () => {
         <div className="flex justify-between h-20 items-center">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link to="/" className="text-2xl font-bold text-[#0061FF]">
+            <Link to="/" className="text-4xl font-bold text-[#0061FF]">
               GyanIN
             </Link>
           </div>
@@ -28,30 +28,40 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-8">
             <Link
               to="/"
-              className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+              className={`inline-flex items-center px-3 py-2 text-md font-medium ${
                 isActive('/') 
-                  ? 'border-[#0061FF] text-gray-900' 
-                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  ? 'text-[#0061FF]' 
+                  : 'text-gray-500 hover:text-[#0061FF]'
               }`}
             >
               Home
             </Link>
             <Link
               to="/courses"
-              className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+              className={`inline-flex items-center px-3 py-2 text-md font-medium ${
                 isActive('/courses') 
-                  ? 'border-[#0061FF] text-gray-900' 
-                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  ? 'text-[#0061FF]' 
+                  : 'text-gray-500 hover:text-[#0061FF]'
               }`}
             >
               Courses
             </Link>
             <Link
+              to="/readmissions"
+              className={`inline-flex items-center px-3 py-2 text-md font-medium ${
+                isActive('/readmissions') 
+                  ? 'text-[#0061FF]' 
+                  : 'text-gray-500 hover:text-[#0061FF]'
+              }`}
+            >
+              Readmissions
+            </Link>
+            <Link
               to="/contact"
-              className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+              className={`inline-flex items-center px-3 py-2 text-md font-medium ${
                 isActive('/contact') 
-                  ? 'border-[#0061FF] text-gray-900' 
-                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  ? 'text-[#0061FF]' 
+                  : 'text-gray-500 hover:text-[#0061FF]'
               }`}
             >
               Contact Us
@@ -126,7 +136,7 @@ const Navbar = () => {
             className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
               isActive('/') 
                 ? 'border-[#0061FF] text-[#0061FF] bg-blue-50' 
-                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                : 'border-transparent text-gray-500 hover:text-[#0061FF]'
             }`}
           >
             Home
@@ -136,17 +146,27 @@ const Navbar = () => {
             className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
               isActive('/courses') 
                 ? 'border-[#0061FF] text-[#0061FF] bg-blue-50' 
-                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                : 'border-transparent text-gray-500 hover:text-[#0061FF]'
             }`}
           >
             Courses
+          </Link>
+          <Link
+            to="/readmissions"
+            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+              isActive('/readmissions') 
+                ? 'border-[#0061FF] text-[#0061FF] bg-blue-50' 
+                : 'border-transparent text-gray-500 hover:text-[#0061FF]'
+            }`}
+          >
+            Readmissions
           </Link>
           <Link
             to="/contact"
             className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
               isActive('/contact') 
                 ? 'border-[#0061FF] text-[#0061FF] bg-blue-50' 
-                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                : 'border-transparent text-gray-500 hover:text-[#0061FF]'
             }`}
           >
             Contact Us
@@ -156,7 +176,7 @@ const Navbar = () => {
             className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
               isActive('/login') 
                 ? 'border-[#0061FF] text-[#0061FF] bg-blue-50' 
-                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                : 'border-transparent text-gray-500 hover:text-[#0061FF]'
             }`}
           >
             Log In
@@ -166,7 +186,7 @@ const Navbar = () => {
             className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
               isActive('/admin/dashboard') 
                 ? 'border-[#0061FF] text-[#0061FF] bg-blue-50' 
-                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                : 'border-transparent text-gray-500 hover:text-[#0061FF]'
             }`}
           >
             Admin Dashboard

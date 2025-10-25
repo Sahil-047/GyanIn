@@ -7,7 +7,6 @@ const router = express.Router();
 // Validation rules
 const readmissionValidation = [
     body('studentName').trim().isLength({ min: 2 }).withMessage('Student name must be at least 2 characters'),
-    body('studentId').trim().isLength({ min: 3 }).withMessage('Student ID must be at least 3 characters'),
     body('course').trim().isLength({ min: 2 }).withMessage('Course must be at least 2 characters'),
     body('contact').trim().isLength({ min: 10 }).withMessage('Contact must be at least 10 characters'),
     body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
@@ -40,7 +39,6 @@ router.get('/', async (req, res) => {
         if (search) {
             filter.$or = [
                 { studentName: { $regex: search, $options: 'i' } },
-                { studentId: { $regex: search, $options: 'i' } },
                 { course: { $regex: search, $options: 'i' } }
             ];
         }

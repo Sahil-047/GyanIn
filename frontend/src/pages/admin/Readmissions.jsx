@@ -23,7 +23,6 @@ const Readmissions = () => {
   // Form state for new readmission
   const [formData, setFormData] = useState({
     studentName: '',
-    studentId: '',
     course: '',
     contact: '',
     email: '',
@@ -124,7 +123,6 @@ const Readmissions = () => {
     const errors = {}
     
     if (!formData.studentName.trim()) errors.studentName = 'Student name is required'
-    if (!formData.studentId.trim()) errors.studentId = 'Student ID is required'
     if (!formData.course.trim()) errors.course = 'Course is required'
     if (!formData.contact.trim()) errors.contact = 'Contact is required'
     if (!formData.email.trim()) errors.email = 'Email is required'
@@ -162,7 +160,6 @@ const Readmissions = () => {
         setShowAddModal(false)
         setFormData({
           studentName: '',
-          studentId: '',
           course: '',
           contact: '',
           email: '',
@@ -487,7 +484,6 @@ const Readmissions = () => {
                             <div className="flex items-center">
                               <div>
                                 <div className="text-sm font-medium text-gray-900">{readmission.studentName}</div>
-                                <div className="text-sm text-gray-500">{readmission.studentId}</div>
                                 <div className="text-sm text-gray-500">{readmission.contact}</div>
                               </div>
                             </div>
@@ -635,19 +631,6 @@ const Readmissions = () => {
                       placeholder="Enter student name"
                     />
                     {formErrors.studentName && <p className="mt-1 text-sm text-red-600">{formErrors.studentName}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Student ID *</label>
-                    <input
-                      type="text"
-                      name="studentId"
-                      value={formData.studentId}
-                      onChange={handleInputChange}
-                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.studentId ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                      placeholder="Enter student ID"
-                    />
-                    {formErrors.studentId && <p className="mt-1 text-sm text-red-600">{formErrors.studentId}</p>}
                   </div>
 
                   <div>
@@ -825,10 +808,6 @@ const Readmissions = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Student Name</label>
                     <p className="mt-1 text-sm text-gray-900">{selectedReadmission.studentName}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Student ID</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedReadmission.studentId}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Course</label>

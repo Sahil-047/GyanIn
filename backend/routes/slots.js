@@ -9,7 +9,7 @@ const slotValidation = [
   body('name').trim().isLength({ min: 2 }).withMessage('Slot name must be at least 2 characters'),
   body('course').trim().isLength({ min: 2 }).withMessage('Course must be at least 2 characters'),
   body('subject').trim().isLength({ min: 2 }).withMessage('Subject must be at least 2 characters'),
-  body('class').trim().isLength({ min: 2 }).withMessage('Class level must be at least 2 characters'),
+  body('class').trim().notEmpty().withMessage('Class level is required'),
   body('type').isIn(['online', 'offline']).withMessage('Type must be online or offline'),
   body('startTime').trim().isLength({ min: 1 }).withMessage('Start time is required'),
   body('endTime').trim().isLength({ min: 1 }).withMessage('End time is required'),

@@ -57,6 +57,16 @@ const Navbar = () => {
               Readmissions
             </Link>
             <Link
+              to="/admission"
+              className={`inline-flex items-center px-3 py-2 text-md font-medium ${
+                isActive('/admission') 
+                  ? 'text-[#0061FF]' 
+                  : 'text-gray-500 hover:text-[#0061FF]'
+              }`}
+            >
+              Admission
+            </Link>
+            <Link
               to="/contact"
               className={`inline-flex items-center px-3 py-2 text-md font-medium ${
                 isActive('/contact') 
@@ -160,6 +170,16 @@ const Navbar = () => {
             }`}
           >
             Readmissions
+          </Link>
+          <Link
+            to="/admission"
+            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+              isActive('/admission') 
+                ? 'border-[#0061FF] text-[#0061FF] bg-blue-50' 
+                : 'border-transparent text-gray-500 hover:text-[#0061FF]'
+            }`}
+          >
+            Admission
           </Link>
           <Link
             to="/contact"

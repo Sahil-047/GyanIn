@@ -72,6 +72,27 @@ const CMS = () => {
               })
             };
             console.log('Final mapped offers:', newData[section].offers);
+          } else if (section === 'carousel') {
+            // Handle carousel data structure
+            console.log('Processing carousel - cmsDocument.data:', cmsDocument.data);
+            console.log('Processing carousel - cmsDocument.data.carouselItems:', cmsDocument.data?.carouselItems);
+            
+            const carouselItems = cmsDocument.data?.carouselItems || [];
+            console.log('Found carousel items:', carouselItems);
+            
+            newData[section] = {
+              carouselItems: carouselItems
+            };
+          } else if (section === 'testimonials') {
+            // Handle testimonials data structure
+            console.log('Processing testimonials - cmsDocument.data:', cmsDocument.data);
+            
+            const testimonials = cmsDocument.data?.testimonials || [];
+            console.log('Found testimonials:', testimonials);
+            
+            newData[section] = {
+              testimonials: testimonials
+            };
           } else {
             newData[section] = cmsDocument.data || {}
           }
@@ -135,8 +156,8 @@ const CMS = () => {
     
     switch (activeTab) {
       case 'carousel':
-        if (!formData.title?.trim()) errors.title = 'Title is required'
-        if (!formData.subtitle?.trim()) errors.subtitle = 'Subtitle is required'
+        if (!formData.teacherName?.trim()) errors.teacherName = 'Teacher name is required'
+        if (!formData.description?.trim()) errors.description = 'Description is required'
         break
       case 'courses':
         if (!formData.title?.trim()) errors.title = 'Course title is required'
@@ -173,7 +194,30 @@ const CMS = () => {
 
   // Handle edit item
   const handleEdit = (item) => {
-    setFormData(item)
+    // Handle backward compatibility for carousel items
+    let formDataToSet = { ...item };
+    
+    if (activeTab === 'carousel') {
+      // If old structure, convert to new structure for editing
+      if (item.title || item.teacher) {
+        formDataToSet = {
+          id: item.id,
+          teacherName: item.teacher?.name || item.title || '',
+          description: item.teacher?.description || item.description || '',
+          teacherImage: item.teacher?.image || item.image || ''
+        };
+      } else {
+        // New structure
+        formDataToSet = {
+          id: item.id,
+          teacherName: item.teacherName || '',
+          description: item.description || '',
+          teacherImage: item.teacherImage || ''
+        };
+      }
+    }
+    
+    setFormData(formDataToSet)
     setFormErrors({})
     setSelectedItem(item)
     setShowEditModal(true)
@@ -237,6 +281,14 @@ const CMS = () => {
        } else {
         // For other tabs, use CMS API
         let apiMethod
+        
+        // For editing carousel items - don't allow editing old structure
+        if (activeTab === 'carousel' && selectedItem && (selectedItem.title || selectedItem.subtitle)) {
+          alert('Please delete this old carousel item and create a new one with the simplified structure.');
+          setLoading(false)
+          return
+        }
+        
         switch (activeTab) {
           case 'carousel':
             apiMethod = cmsAPI.addCarouselItem
@@ -290,6 +342,14 @@ const CMS = () => {
         });
         result = await cmsAPI.deleteOffer(itemId);
         console.log('Delete result:', result);
+      } else if (activeTab === 'testimonials') {
+        // Delete testimonial from CMS API
+        console.log('Deleting testimonial:', itemId);
+        result = await cmsAPI.deleteTestimonial(itemId);
+      } else if (activeTab === 'carousel') {
+        // Delete carousel item from CMS API
+        console.log('Deleting carousel item:', itemId);
+        result = await cmsAPI.deleteCarouselItem(itemId);
       }
 
       if (result && result.success) {
@@ -312,79 +372,29 @@ const CMS = () => {
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Title *</label>
+              <label className="block text-sm font-medium text-gray-700">Teacher Name *</label>
               <input
                 type="text"
-                name="title"
-                value={formData.title || ''}
+                name="teacherName"
+                value={formData.teacherName || ''}
                 onChange={handleInputChange}
-                className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.title ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                placeholder="Enter carousel title"
+                className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.teacherName ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                placeholder="Enter teacher name"
               />
-              {formErrors.title && <p className="mt-1 text-sm text-red-600">{formErrors.title}</p>}
+              {formErrors.teacherName && <p className="mt-1 text-sm text-red-600">{formErrors.teacherName}</p>}
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700">Subtitle *</label>
-              <input
-                type="text"
-                name="subtitle"
-                value={formData.subtitle || ''}
-                onChange={handleInputChange}
-                className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.subtitle ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                placeholder="Enter carousel subtitle"
-              />
-              {formErrors.subtitle && <p className="mt-1 text-sm text-red-600">{formErrors.subtitle}</p>}
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Description</label>
+              <label className="block text-sm font-medium text-gray-700">Description *</label>
               <textarea
                 name="description"
                 value={formData.description || ''}
                 onChange={handleInputChange}
-                rows={3}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter description"
+                rows={4}
+                className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.description ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                placeholder="Enter teacher description"
               />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Image URL</label>
-              <input
-                type="url"
-                name="image"
-                value={formData.image || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter image URL"
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Teacher Name</label>
-                <input
-                  type="text"
-                  name="teacherName"
-                  value={formData.teacherName || ''}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter teacher name"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Teacher Role</label>
-                <input
-                  type="text"
-                  name="teacherRole"
-                  value={formData.teacherRole || ''}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter teacher role"
-                />
-              </div>
+              {formErrors.description && <p className="mt-1 text-sm text-red-600">{formErrors.description}</p>}
             </div>
             
             <div>
@@ -765,18 +775,28 @@ const CMS = () => {
                     <div className="flex-1">
                       {activeTab === 'carousel' && (
                         <div>
-                          <h4 className="text-md font-medium text-gray-900">{item.title}</h4>
-                          <p className="text-sm text-gray-600">{item.subtitle}</p>
-                          {item.description && <p className="text-sm text-gray-500 mt-1">{item.description}</p>}
-                          {item.teacher?.name && (
-                            <div className="mt-2 flex items-center">
-                              <div className="h-8 w-8 bg-gray-300 rounded-full mr-2"></div>
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">{item.teacher.name}</p>
-                                <p className="text-xs text-gray-500">{item.teacher.role}</p>
-                              </div>
-                            </div>
-                          )}
+                          {/* Support both old and new carousel structure */}
+                          {(() => {
+                            const teacherName = item.teacher?.name || item.title;
+                            const teacherImage = item.teacher?.image || item.image || item.teacherImage;
+                            const description = item.teacher?.description || item.description;
+                            
+                            return (
+                              <>
+                                {teacherName && (
+                                  <div className="mt-2 flex items-center">
+                                    <div className="h-10 w-10 bg-gray-300 rounded-full mr-3 flex items-center justify-center overflow-hidden">
+                                      <img src={teacherImage} alt={teacherName} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-900">{teacherName}</p>
+                                    </div>
+                                  </div>
+                                )}
+                                {description && <p className="text-sm text-gray-600 mt-2">{description}</p>}
+                              </>
+                            );
+                          })()}
                         </div>
                       )}
                       
@@ -825,18 +845,28 @@ const CMS = () => {
                     </div>
                     
                     <div className="flex space-x-2 ml-4">
-                      <button
-                        onClick={() => handleEdit(item)}
-                        className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      >
-                        Edit
-                      </button>
+                      {/* Hide edit button for old carousel structure */}
+                      {!(activeTab === 'carousel' && (item.title || item.subtitle)) && (
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {/* Show delete button for all items */}
                       <button
                         onClick={() => handleDelete(item.id)}
                         className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                       >
                         Delete
                       </button>
+                      {/* Show info badge for old carousel items */}
+                      {activeTab === 'carousel' && (item.title || item.subtitle) && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          Old Format
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

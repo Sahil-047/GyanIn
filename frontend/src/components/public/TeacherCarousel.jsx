@@ -112,6 +112,12 @@ const TeacherCarousel = () => {
 
     const activeItem = carouselItems[currentIndex];
 
+    // Extract data supporting both old and new structure
+    const teacherName = activeItem.teacher?.name || activeItem.subtitle || activeItem.title || 'Expert Teacher';
+    const teacherDescription = activeItem.teacher?.description || activeItem.description || 'Learn from industry experts with years of experience.';
+    const teacherImage = activeItem.teacher?.image || activeItem.image || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80';
+    const teacherRole = activeItem.teacher?.role || 'Professional Instructor';
+
     return (
         <div className="w-full flex-grow mb-8">
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -119,24 +125,21 @@ const TeacherCarousel = () => {
                     {/* Text Content */}
                     <div className="w-full md:w-1/2 text-center md:text-left mb-8 md:mb-0 md:pr-8">
                         <h2 className="text-[#0061FF] text-2xl md:text-3xl font-bold mb-4">
-                            {activeItem.title || 'Meet Our Expert'}
+                            Meet Our Expert
                         </h2>
 
                         <h3 className="text-xl md:text-2xl font-bold mb-2">
-                            {activeItem.subtitle || activeItem.teacher?.name || 'Expert Teacher'}
+                            {teacherName}
                         </h3>
 
                         <p className="text-gray-600 font-medium mb-4">
-                            {activeItem.teacher?.role || 'Professional Instructor'}
+                            {teacherRole}
                         </p>
 
                         <p className="text-gray-600 mb-6">
-                            {activeItem.description ? 
-                                (activeItem.description.length > 120 ? 
-                                    `${activeItem.description.substring(0, 120)}...` : 
-                                    activeItem.description
-                                ) : 
-                                'Learn from industry experts with years of experience.'
+                            {teacherDescription.length > 120 ? 
+                                `${teacherDescription.substring(0, 120)}...` : 
+                                teacherDescription
                             }
                         </p>
 
@@ -158,8 +161,8 @@ const TeacherCarousel = () => {
                             className="relative w-48 h-48 md:w-64 md:h-64 rounded-full border-4 border-blue-200 shadow-lg overflow-hidden cursor-pointer transform transition-transform duration-300 hover:scale-105"
                         >
                             <img
-                                src={activeItem.teacher?.image || activeItem.image || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'}
-                                alt={activeItem.teacher?.name || activeItem.subtitle || 'Teacher'}
+                                src={teacherImage}
+                                alt={teacherName}
                                 className="w-full h-full object-cover"
                             />
                         </div>

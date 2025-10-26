@@ -191,6 +191,16 @@ export const cmsAPI = {
   // Delete offer from CMS
   deleteOffer: (offerId) => apiCall(`/cms/offers/${offerId}`, {
     method: 'DELETE'
+  }),
+
+  // Delete testimonial from CMS
+  deleteTestimonial: (testimonialId) => apiCall(`/cms/testimonials/${testimonialId}`, {
+    method: 'DELETE'
+  }),
+
+  // Delete carousel item from CMS
+  deleteCarouselItem: (carouselId) => apiCall(`/cms/carousel/${carouselId}`, {
+    method: 'DELETE'
   })
 }
 

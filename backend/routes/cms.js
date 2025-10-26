@@ -317,6 +317,7 @@ router.post('/courses', async (req, res) => {
 // POST /api/admin/cms/testimonials - Add testimonial to CMS
 router.post('/testimonials', async (req, res) => {
     try {
+        console.log('Received testimonial creation request:', req.body);
         const { name, role, content, avatar } = req.body;
 
         if (!name || !role || !content) {
@@ -326,14 +327,21 @@ router.post('/testimonials', async (req, res) => {
             });
         }
 
-        // Find or create testimonials section
-        let testimonialsSection = await CMS.findOne({ section: 'testimonials' });
+        // Find or get testimonials section
+        let testimonialsSection = await CMS.findOne({ section: 'testimonials' }).lean();
+
+        console.log('Testimonials section from DB:', JSON.stringify(testimonialsSection, null, 2));
 
         if (!testimonialsSection) {
-            testimonialsSection = new CMS({
+            testimonialsSection = {
                 section: 'testimonials',
                 data: { testimonials: [] }
-            });
+            };
+        }
+
+        // Ensure data structure exists
+        if (!testimonialsSection.data || !testimonialsSection.data.testimonials) {
+            testimonialsSection.data = { testimonials: [] };
         }
 
         const newTestimonial = {
@@ -344,8 +352,33 @@ router.post('/testimonials', async (req, res) => {
             avatar: avatar || 'default-avatar.jpg'
         };
 
-        testimonialsSection.data.testimonials.push(newTestimonial);
-        await testimonialsSection.save();
+        console.log('New testimonial:', JSON.stringify(newTestimonial, null, 2));
+
+        // Get existing items and add new one
+        const existingItems = testimonialsSection.data.testimonials || [];
+        existingItems.push(newTestimonial);
+
+        console.log('Total testimonials after push:', existingItems.length);
+
+        // Use findOneAndUpdate for atomic operation
+        const savedSection = await CMS.findOneAndUpdate(
+            { section: 'testimonials' },
+            {
+                $set: {
+                    section: 'testimonials',
+                    'data.testimonials': existingItems,
+                    isActive: true,
+                    updatedAt: new Date()
+                }
+            },
+            {
+                new: true,
+                upsert: true,
+                runValidators: true
+            }
+        );
+
+        console.log('Saved testimonials section:', JSON.stringify(savedSection, null, 2));
 
         res.status(201).json({
             success: true,
@@ -366,40 +399,69 @@ router.post('/testimonials', async (req, res) => {
 // POST /api/admin/cms/carousel - Add carousel item to CMS
 router.post('/carousel', async (req, res) => {
     try {
-        const { title, subtitle, description, image, teacherName, teacherRole, teacherImage } = req.body;
+        console.log('Received carousel creation request:', req.body);
+        const { teacherName, description, teacherImage } = req.body;
 
-        if (!title || !subtitle) {
+        if (!teacherName || !description) {
             return res.status(400).json({
                 success: false,
-                message: 'Title and subtitle are required'
+                message: 'Teacher name and description are required'
             });
         }
 
-        // Find or create carousel section
-        let carouselSection = await CMS.findOne({ section: 'carousel' });
+        // Find or get carousel section
+        let carouselSection = await CMS.findOne({ section: 'carousel' }).lean();
+
+        console.log('Carousel section from DB:', JSON.stringify(carouselSection, null, 2));
 
         if (!carouselSection) {
-            carouselSection = new CMS({
+            carouselSection = {
                 section: 'carousel',
                 data: { carouselItems: [] }
-            });
+            };
+        }
+
+        // Ensure data structure exists
+        if (!carouselSection.data || !carouselSection.data.carouselItems) {
+            carouselSection.data = { carouselItems: [] };
         }
 
         const newCarouselItem = {
             id: Date.now(), // Simple ID generation
-            title,
-            subtitle,
-            description: description || '',
-            image: image || 'default-carousel.jpg',
             teacher: {
-                name: teacherName || '',
-                role: teacherRole || '',
-                image: teacherImage || 'default-teacher.jpg'
+                name: teacherName,
+                description: description,
+                image: teacherImage || 'https://via.placeholder.com/300x300?text=Teacher'
             }
         };
 
-        carouselSection.data.carouselItems.push(newCarouselItem);
-        await carouselSection.save();
+        console.log('New carousel item:', JSON.stringify(newCarouselItem, null, 2));
+
+        // Get existing items and add new one
+        const existingItems = carouselSection.data.carouselItems || [];
+        existingItems.push(newCarouselItem);
+
+        console.log('Total carousel items after push:', existingItems.length);
+
+        // Use findOneAndUpdate for atomic operation
+        const savedSection = await CMS.findOneAndUpdate(
+            { section: 'carousel' },
+            {
+                $set: {
+                    section: 'carousel',
+                    'data.carouselItems': existingItems,
+                    isActive: true,
+                    updatedAt: new Date()
+                }
+            },
+            {
+                new: true,
+                upsert: true,
+                runValidators: true
+            }
+        );
+
+        console.log('Saved carousel section:', JSON.stringify(savedSection, null, 2));
 
         res.status(201).json({
             success: true,
@@ -412,6 +474,106 @@ router.post('/carousel', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to add carousel item to CMS',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+// DELETE /api/admin/cms/carousel/:id - Delete carousel item
+router.delete('/carousel/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const carouselSection = await CMS.findOne({ section: 'carousel' });
+        if (!carouselSection || !carouselSection.data || !carouselSection.data.carouselItems) {
+            return res.status(404).json({
+                success: false,
+                message: 'Carousel section not found'
+            });
+        }
+
+        const itemIndex = carouselSection.data.carouselItems.findIndex(item => item.id.toString() === id.toString());
+        
+        if (itemIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: 'Carousel item not found'
+            });
+        }
+
+        carouselSection.data.carouselItems.splice(itemIndex, 1);
+
+        const updatedSection = await CMS.findOneAndUpdate(
+            { section: 'carousel' },
+            { 
+                $set: { 
+                    'data.carouselItems': carouselSection.data.carouselItems,
+                    updatedAt: new Date()
+                }
+            },
+            { new: true }
+        );
+
+        res.json({
+            success: true,
+            message: 'Carousel item deleted successfully'
+        });
+
+    } catch (error) {
+        console.error('Delete carousel item error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete carousel item',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+// DELETE /api/admin/cms/testimonials/:id - Delete testimonial
+router.delete('/testimonials/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const testimonialsSection = await CMS.findOne({ section: 'testimonials' });
+        if (!testimonialsSection || !testimonialsSection.data || !testimonialsSection.data.testimonials) {
+            return res.status(404).json({
+                success: false,
+                message: 'Testimonials section not found'
+            });
+        }
+
+        const itemIndex = testimonialsSection.data.testimonials.findIndex(item => item.id.toString() === id.toString());
+        
+        if (itemIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: 'Testimonial not found'
+            });
+        }
+
+        testimonialsSection.data.testimonials.splice(itemIndex, 1);
+
+        const updatedSection = await CMS.findOneAndUpdate(
+            { section: 'testimonials' },
+            { 
+                $set: { 
+                    'data.testimonials': testimonialsSection.data.testimonials,
+                    updatedAt: new Date()
+                }
+            },
+            { new: true }
+        );
+
+        res.json({
+            success: true,
+            message: 'Testimonial deleted successfully'
+        });
+
+    } catch (error) {
+        console.error('Delete testimonial error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete testimonial',
             error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
         });
     }

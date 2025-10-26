@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { readmissionsAPI, slotsAPI } from '../../utils/api'
+import { Snackbar, Alert } from '@mui/material'
 
 const Readmissions = () => {
   const [selectedTab, setSelectedTab] = useState('all')
@@ -18,6 +19,13 @@ const Readmissions = () => {
     pending: 0,
     approved: 0,
     rejected: 0
+  })
+
+  // Snackbar state
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' // 'success' | 'error' | 'warning' | 'info'
   })
 
   // Form state for new readmission
@@ -144,11 +152,24 @@ const Readmissions = () => {
     return Object.keys(errors).length === 0
   }
 
+  // Show snackbar notification
+  const showSnackbar = (message, severity = 'success') => {
+    setSnackbar({ open: true, message, severity })
+  }
+
+  // Close snackbar
+  const closeSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }))
+  }
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    if (!validateForm()) return
+    if (!validateForm()) {
+      showSnackbar('Please fill all required fields correctly', 'warning')
+      return
+    }
     
     setLoading(true)
     try {
@@ -169,6 +190,7 @@ const Readmissions = () => {
         })
         fetchReadmissions()
         fetchStats()
+        showSnackbar('Readmission created successfully!', 'success')
       }
     } catch (error) {
       console.error('Error creating readmission:', error)
@@ -186,6 +208,10 @@ const Readmissions = () => {
           serverErrors[err.path] = err.msg
         })
         setFormErrors(serverErrors)
+        showSnackbar('Please correct the errors in the form', 'error')
+      } else {
+        const errorMessage = error.data?.message || error.message || 'Failed to create readmission'
+        showSnackbar(errorMessage, 'error')
       }
     }
     setLoading(false)
@@ -201,9 +227,16 @@ const Readmissions = () => {
         fetchReadmissions()
         fetchStats()
         setShowViewModal(false)
+        
+        // Show success notification
+        const statusText = status === 'approved' ? 'approved' : 'rejected'
+        showSnackbar(`Readmission ${statusText} successfully!`, 'success')
       }
     } catch (error) {
       console.error('Error updating status:', error)
+      // Show error notification
+      const errorMessage = error.data?.message || error.message || 'Failed to update status'
+      showSnackbar(errorMessage, 'error')
     }
     setLoading(false)
   }
@@ -219,9 +252,11 @@ const Readmissions = () => {
       if (data.success) {
         fetchReadmissions()
         fetchStats()
+        showSnackbar('Readmission deleted successfully!', 'success')
       }
     } catch (error) {
       console.error('Error deleting readmission:', error)
+      showSnackbar('Failed to delete readmission', 'error')
     }
     setLoading(false)
   }
@@ -493,6 +528,16 @@ const Readmissions = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">{readmission.slotName}</div>
+                            {readmission.slotInfo && (
+                              <div className="text-xs text-gray-500">
+                                {readmission.slotInfo.enrolledStudents}/{readmission.slotInfo.capacity} enrolled
+                                {readmission.slotInfo.isFull && (
+                                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                    FULL
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <StatusBadge status={readmission.status} />
@@ -515,7 +560,13 @@ const Readmissions = () => {
                                 <>
                                   <button 
                                     onClick={() => handleStatusUpdate(readmission._id, 'approved')}
-                                    className="text-green-600 hover:text-green-900"
+                                    disabled={readmission.slotInfo?.isFull}
+                                    className={`${
+                                      readmission.slotInfo?.isFull 
+                                        ? 'text-gray-400 cursor-not-allowed' 
+                                        : 'text-green-600 hover:text-green-900'
+                                    }`}
+                                    title={readmission.slotInfo?.isFull ? 'Slot is FULL - Cannot approve' : 'Approve readmission'}
                                   >
                                     Approve
                                   </button>
@@ -824,6 +875,22 @@ const Readmissions = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Slot</label>
                     <p className="mt-1 text-sm text-gray-900">{selectedReadmission.slotName}</p>
+                    {selectedReadmission.slotInfo && (
+                      <div className="mt-2 text-sm">
+                        <span className="text-gray-600">
+                          Enrollment: {selectedReadmission.slotInfo.enrolledStudents}/{selectedReadmission.slotInfo.capacity}
+                        </span>
+                        {selectedReadmission.slotInfo.isFull ? (
+                          <span className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            FULL - Cannot Approve
+                          </span>
+                        ) : (
+                          <span className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            {selectedReadmission.slotInfo.availableSlots} slots available
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Status</label>
@@ -859,7 +926,13 @@ const Readmissions = () => {
                   <div className="flex justify-end space-x-3 pt-4 border-t">
                     <button
                       onClick={() => handleStatusUpdate(selectedReadmission._id, 'approved')}
-                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                      disabled={selectedReadmission.slotInfo?.isFull}
+                      className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                        selectedReadmission.slotInfo?.isFull
+                          ? 'bg-gray-400 text-white cursor-not-allowed'
+                          : 'text-white bg-green-600 hover:bg-green-700 focus:ring-green-500'
+                      }`}
+                      title={selectedReadmission.slotInfo?.isFull ? 'Slot is FULL - Cannot approve' : 'Approve this readmission'}
                     >
                       Approve
                     </button>
@@ -876,6 +949,22 @@ const Readmissions = () => {
           </div>
         </div>
       )}
+
+      {/* Snackbar Notification */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={closeSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={closeSnackbar} 
+          severity={snackbar.severity} 
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </div>
   )
 }

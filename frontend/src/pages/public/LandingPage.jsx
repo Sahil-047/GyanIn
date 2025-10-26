@@ -113,7 +113,7 @@ const LandingPage = () => {
               </p>
               <div>
                 <Link 
-                  to="/admin/dashboard"
+                  to="/courses"
                   className="inline-flex px-8 py-4 bg-[#0061FF] text-white rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors duration-200"
                 >
                   Explore Courses
@@ -419,7 +419,7 @@ const LandingPage = () => {
           </p>
           <div className="text-center">
             <Link 
-              to="/admin/dashboard"
+              to="/courses"
               className="inline-flex px-8 py-4 bg-white text-[#0061FF] rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors duration-200"
             >
               Explore Courses

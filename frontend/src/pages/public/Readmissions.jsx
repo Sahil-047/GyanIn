@@ -137,14 +137,16 @@ const Readmissions = () => {
     }
   };
 
-  // Group slots by course
-  const groupedSlots = slots.reduce((acc, slot) => {
-    if (!acc[slot.course]) {
-      acc[slot.course] = [];
-    }
-    acc[slot.course].push(slot);
-    return acc;
-  }, {});
+  // Group slots by course and filter out full slots
+  const groupedSlots = slots
+    .filter(slot => slot.enrolledStudents < slot.capacity) // Only show slots with available capacity
+    .reduce((acc, slot) => {
+      if (!acc[slot.course]) {
+        acc[slot.course] = [];
+      }
+      acc[slot.course].push(slot);
+      return acc;
+    }, {});
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">

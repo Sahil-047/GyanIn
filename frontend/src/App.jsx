@@ -8,7 +8,6 @@ import Dashboard from './pages/admin/Dashboard'
 import CMS from './pages/admin/CMS'
 import Readmissions from './pages/admin/Readmissions'
 import Slots from './pages/admin/Slots'
-import Reports from './pages/admin/Reports'
 import LandingPage from './pages/public/LandingPage'
 import Courses from './pages/public/Courses'
 import ContactUs from './pages/public/ContactUs'
@@ -94,7 +93,6 @@ function App() {
           <Route path="cms" element={<CMS />} />
           <Route path="readmissions" element={<Readmissions />} />
           <Route path="slots" element={<Slots />} />
-          <Route path="reports" element={<Reports />} />
           <Route index element={<Dashboard />} />
         </Route>
       </Route>

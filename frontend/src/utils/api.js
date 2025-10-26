@@ -170,12 +170,6 @@ export const cmsAPI = {
     body: JSON.stringify(courseData)
   }),
 
-  // Add testimonial to CMS
-  addTestimonial: (testimonialData) => apiCall('/cms/testimonials', {
-    method: 'POST',
-    body: JSON.stringify(testimonialData)
-  }),
-
   // Add carousel item to CMS
   addCarouselItem: (carouselData) => apiCall('/cms/carousel', {
     method: 'POST',
@@ -190,11 +184,6 @@ export const cmsAPI = {
 
   // Delete offer from CMS
   deleteOffer: (offerId) => apiCall(`/cms/offers/${offerId}`, {
-    method: 'DELETE'
-  }),
-
-  // Delete testimonial from CMS
-  deleteTestimonial: (testimonialId) => apiCall(`/cms/testimonials/${testimonialId}`, {
     method: 'DELETE'
   }),
 

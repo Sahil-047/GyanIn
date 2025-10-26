@@ -6,7 +6,6 @@ const CMS = () => {
   const [cmsData, setCmsData] = useState({
     carousel: { carouselItems: [] },
     courses: { courses: [] },
-    testimonials: { testimonials: [] },
     offers: { offers: [] }
   })
   const [loading, setLoading] = useState(false)
@@ -21,7 +20,7 @@ const CMS = () => {
     setLoading(true)
     try {
       // Fetch CMS sections (excluding courses which will be fetched separately)
-      const sections = ['carousel', 'testimonials', 'offers']
+      const sections = ['carousel', 'offers']
       const cmsPromises = sections.map(section => 
         cmsAPI.getCMSSection(section).catch(err => {
           console.log(`Section ${section} fetch failed:`, err)
@@ -37,11 +36,10 @@ const CMS = () => {
       const newData = {
         carousel: { carouselItems: [] },
         courses: { courses: [] },
-        testimonials: { testimonials: [] },
         offers: { offers: [] }
       }
       
-      // Process CMS sections (carousel, testimonials, offers)
+      // Process CMS sections (carousel, offers)
       sections.forEach((section, index) => {
         const result = allResults[index]
         console.log(`Processing ${section}:`, result)
@@ -82,16 +80,6 @@ const CMS = () => {
             
             newData[section] = {
               carouselItems: carouselItems
-            };
-          } else if (section === 'testimonials') {
-            // Handle testimonials data structure
-            console.log('Processing testimonials - cmsDocument.data:', cmsDocument.data);
-            
-            const testimonials = cmsDocument.data?.testimonials || [];
-            console.log('Found testimonials:', testimonials);
-            
-            newData[section] = {
-              testimonials: testimonials
             };
           } else {
             newData[section] = cmsDocument.data || {}
@@ -167,11 +155,6 @@ const CMS = () => {
         if (!formData.duration?.trim()) errors.duration = 'Duration is required'
         if (!formData.level) errors.level = 'Level is required'
         if (!formData.category?.trim()) errors.category = 'Category is required'
-        break
-      case 'testimonials':
-        if (!formData.name?.trim()) errors.name = 'Name is required'
-        if (!formData.role?.trim()) errors.role = 'Role is required'
-        if (!formData.content?.trim()) errors.content = 'Content is required'
         break
       case 'offers':
         if (!formData.name?.trim()) errors.title = 'Company/Partner name is required'
@@ -293,9 +276,6 @@ const CMS = () => {
           case 'carousel':
             apiMethod = cmsAPI.addCarouselItem
             break
-          case 'testimonials':
-            apiMethod = cmsAPI.addTestimonial
-            break
           case 'offers':
             console.log('Adding offer with data:', submitData)
             apiMethod = cmsAPI.addOffer
@@ -342,10 +322,6 @@ const CMS = () => {
         });
         result = await cmsAPI.deleteOffer(itemId);
         console.log('Delete result:', result);
-      } else if (activeTab === 'testimonials') {
-        // Delete testimonial from CMS API
-        console.log('Deleting testimonial:', itemId);
-        result = await cmsAPI.deleteTestimonial(itemId);
       } else if (activeTab === 'carousel') {
         // Delete carousel item from CMS API
         console.log('Deleting carousel item:', itemId);
@@ -564,64 +540,6 @@ const CMS = () => {
           </div>
         )
         
-      case 'testimonials':
-        return (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Name *</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name || ''}
-                  onChange={handleInputChange}
-                  className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.name ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                  placeholder="Enter name"
-                />
-                {formErrors.name && <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Role *</label>
-                <input
-                  type="text"
-                  name="role"
-                  value={formData.role || ''}
-                  onChange={handleInputChange}
-                  className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.role ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                  placeholder="Enter role"
-                />
-                {formErrors.role && <p className="mt-1 text-sm text-red-600">{formErrors.role}</p>}
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Testimonial Content *</label>
-              <textarea
-                name="content"
-                value={formData.content || ''}
-                onChange={handleInputChange}
-                rows={4}
-                className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.content ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                placeholder="Enter testimonial content"
-              />
-              {formErrors.content && <p className="mt-1 text-sm text-red-600">{formErrors.content}</p>}
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Avatar Image URL</label>
-              <input
-                type="url"
-                name="avatar"
-                value={formData.avatar || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter avatar image URL"
-              />
-            </div>
-          </div>
-        )
-        
       case 'offers':
         return (
           <div className="space-y-4">
@@ -735,7 +653,6 @@ const CMS = () => {
   const renderContent = () => {
     const items = activeTab === 'carousel' ? cmsData.carousel.carouselItems :
                  activeTab === 'courses' ? cmsData.courses.courses :
-                 activeTab === 'testimonials' ? cmsData.testimonials.testimonials :
                  cmsData.offers.offers
 
     if (loading) {
@@ -752,8 +669,7 @@ const CMS = () => {
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium leading-6 text-gray-900">
               {activeTab === 'carousel' ? 'Carousel Items' :
-               activeTab === 'courses' ? 'Courses' :
-               activeTab === 'testimonials' ? 'Testimonials' : 'Sales & Offers'}
+               activeTab === 'courses' ? 'Courses' : 'Sales & Offers'}
             </h3>
             <button
               onClick={handleAdd}
@@ -804,19 +720,6 @@ const CMS = () => {
                         <div>
                           <h4 className="text-md font-medium text-gray-900">{item.title}</h4>
                           <p className="text-sm text-gray-500 mt-1">{item.description}</p>
-                        </div>
-                      )}
-                      
-                      {activeTab === 'testimonials' && (
-                        <div>
-                          <div className="flex items-center mb-2">
-                            <div className="h-10 w-10 bg-gray-300 rounded-full mr-3"></div>
-                            <div>
-                              <h4 className="text-md font-medium text-gray-900">{item.name}</h4>
-                              <p className="text-sm text-gray-500">{item.role}</p>
-                            </div>
-                          </div>
-                          <p className="text-sm text-gray-600">"{item.content}"</p>
                         </div>
                       )}
                       
@@ -890,13 +793,12 @@ const CMS = () => {
           <select
             id="tabs"
             name="tabs"
-            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
             value={activeTab}
             onChange={(e) => setActiveTab(e.target.value)}
           >
             <option value="carousel">Carousel & Teachers</option>
             <option value="courses">Courses</option>
-            <option value="testimonials">Testimonials</option>
             <option value="offers">Sales & Offers</option>
           </select>
         </div>
@@ -922,16 +824,6 @@ const CMS = () => {
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
               >
                 Courses
-              </button>
-              <button
-                onClick={() => setActiveTab('testimonials')}
-                className={`${
-                  activeTab === 'testimonials'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-              >
-                Testimonials
               </button>
               <button
                 onClick={() => setActiveTab('offers')}
@@ -961,8 +853,7 @@ const CMS = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">
                   Add New {activeTab === 'carousel' ? 'Carousel Item' :
-                           activeTab === 'courses' ? 'Course' :
-                           activeTab === 'testimonials' ? 'Testimonial' : 'Offer'}
+                           activeTab === 'courses' ? 'Course' : 'Offer'}
                 </h3>
                 <button
                   onClick={() => setShowAddModal(false)}
@@ -1007,8 +898,7 @@ const CMS = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">
                   Edit {activeTab === 'carousel' ? 'Carousel Item' :
-                        activeTab === 'courses' ? 'Course' :
-                        activeTab === 'testimonials' ? 'Testimonial' : 'Offer'}
+                        activeTab === 'courses' ? 'Course' : 'Offer'}
                 </h3>
                 <button
                   onClick={() => setShowEditModal(false)}

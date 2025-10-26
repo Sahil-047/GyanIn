@@ -6,7 +6,6 @@ import { cmsAPI, coursesAPI } from '../../utils/api';
 const LandingPage = () => {
   const [courses, setCourses] = useState([]);
   const [offers, setOffers] = useState([]);
-  const [testimonials, setTestimonials] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch CMS data
@@ -14,10 +13,9 @@ const LandingPage = () => {
     const fetchCMSData = async () => {
       try {
         // Fetch courses from courses API instead of CMS
-        const [coursesResponse, offersResponse, testimonialsResponse] = await Promise.allSettled([
+        const [coursesResponse, offersResponse] = await Promise.allSettled([
           coursesAPI.getCourses({ limit: 6 }),
-          cmsAPI.getCMSSection('offers'),
-          cmsAPI.getCMSSection('testimonials')
+          cmsAPI.getCMSSection('offers')
         ]);
 
         // Set courses from courses API
@@ -63,29 +61,6 @@ const LandingPage = () => {
             { name: "AI Learning Lab", offer: "Project Portfolio", logo: "AL", color: "from-pink-500 to-pink-600" },
             { name: "CloudTech", offer: "AWS Credits Included", logo: "CT", color: "from-cyan-500 to-cyan-600" },
             { name: "DevOps Academy", offer: "Industry Certification", logo: "DA", color: "from-emerald-500 to-emerald-600" }
-          ]);
-        }
-
-        // Set testimonials
-        if (testimonialsResponse.status === 'fulfilled' && testimonialsResponse.value.success) {
-          setTestimonials(testimonialsResponse.value.data.data.testimonials || []);
-        } else {
-          // Fallback to mock data
-          setTestimonials([
-            {
-              id: 1,
-              name: 'John Doe',
-              role: 'Student',
-              content: 'GyanIN helped me advance my career in tech. The courses are practical and industry-relevant.',
-              avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'
-            },
-            {
-              id: 2,
-              name: 'Jane Smith',
-              role: 'Professional',
-              content: 'The instructors are amazing and the learning platform is user-friendly. Highly recommended!',
-              avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'
-            }
           ]);
         }
       } catch (error) {
@@ -353,59 +328,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      {testimonials.length > 0 && (
-        <section className="w-full bg-white py-20">
-          <div className="max-w-[1440px] mx-auto px-4 md:px-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-              What Our Students Say
-            </h2>
-            <p className="text-gray-600 text-center max-w-2xl mx-auto mb-16">
-              Hear from our successful learners who have transformed their careers with GyanIN.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {testimonials.map((testimonial, index) => (
-                <div key={testimonial.id || index} className="bg-gray-50 rounded-2xl p-8 shadow-sm hover:shadow-lg transition-all duration-300">
-                  <div className="flex items-center mb-6">
-                    <div className="w-16 h-16 rounded-full overflow-hidden mr-4">
-                      {testimonial.avatar ? (
-                        <img 
-                          src={testimonial.avatar} 
-                          alt={testimonial.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                          <span className="text-blue-600 font-bold text-lg">
-                            {testimonial.name?.charAt(0) || 'U'}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-gray-900">{testimonial.name}</h4>
-                      <p className="text-gray-600 text-sm">{testimonial.role}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex mb-4">
-                    {[...Array(5)].map((_, i) => (
-                      <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                  </div>
-                  
-                  <p className="text-gray-700 italic">
-                    "{testimonial.content}"
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* CTA Section */}
       <section className="w-full bg-[#0061FF] text-white py-20 relative overflow-hidden">

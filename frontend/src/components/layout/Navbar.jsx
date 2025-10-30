@@ -47,24 +47,24 @@ const Navbar = () => {
               Courses
             </Link>
             <Link
-              to="/readmissions"
+              to="/teachers"
               className={`inline-flex items-center px-3 py-2 text-md font-medium ${
-                isActive('/readmissions') 
+                isActive('/teachers') 
                   ? 'text-[#0061FF]' 
                   : 'text-gray-500 hover:text-[#0061FF]'
               }`}
             >
-              Readmissions
+              Teachers
             </Link>
             <Link
-              to="/admission"
+              to="/admissions"
               className={`inline-flex items-center px-3 py-2 text-md font-medium ${
-                isActive('/admission') 
+                isActive('/admissions') 
                   ? 'text-[#0061FF]' 
                   : 'text-gray-500 hover:text-[#0061FF]'
               }`}
             >
-              Admission
+              Admissions
             </Link>
             <Link
               to="/contact"
@@ -87,12 +87,6 @@ const Navbar = () => {
                 className="px-4 py-2 text-sm font-medium text-[#0061FF] border border-[#0061FF] rounded-md hover:bg-blue-50"
               >
                 Log In
-              </Link>
-              <Link
-                to="/admin/dashboard"
-                className="px-4 py-2 text-sm font-medium text-white bg-[#0061FF] rounded-md hover:bg-blue-700"
-              >
-                Admin Dashboard
               </Link>
             </div>
 
@@ -162,24 +156,24 @@ const Navbar = () => {
             Courses
           </Link>
           <Link
-            to="/readmissions"
+            to="/teachers"
             className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              isActive('/readmissions') 
+              isActive('/teachers') 
                 ? 'border-[#0061FF] text-[#0061FF] bg-blue-50' 
                 : 'border-transparent text-gray-500 hover:text-[#0061FF]'
             }`}
           >
-            Readmissions
+            Teachers
           </Link>
           <Link
-            to="/admission"
+            to="/admissions"
             className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              isActive('/admission') 
+              isActive('/admissions') 
                 ? 'border-[#0061FF] text-[#0061FF] bg-blue-50' 
                 : 'border-transparent text-gray-500 hover:text-[#0061FF]'
             }`}
           >
-            Admission
+            Admissions
           </Link>
           <Link
             to="/contact"
@@ -201,16 +195,7 @@ const Navbar = () => {
           >
             Log In
           </Link>
-          <Link
-            to="/admin/dashboard"
-            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              isActive('/admin/dashboard') 
-                ? 'border-[#0061FF] text-[#0061FF] bg-blue-50' 
-                : 'border-transparent text-gray-500 hover:text-[#0061FF]'
-            }`}
-          >
-            Admin Dashboard
-          </Link>
+          
         </div>
       </div>
     </nav>

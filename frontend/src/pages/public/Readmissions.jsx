@@ -4,49 +4,58 @@ import { publicApiCall, apiCall } from '../../utils/api';
 const Readmissions = () => {
   const [formData, setFormData] = useState({
     studentName: '',
-    email: '',
     contact: '',
     course: '',
-    slotName: '',
-    reason: '',
-    previousCourse: ''
+    slotName: ''
   });
 
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitStatus, setSubmitStatus] = useState({ success: false, message: '' });
   const [slotsLoading, setSlotsLoading] = useState(true);
+  const [showGFormModal, setShowGFormModal] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   // Fetch available slots
-  useEffect(() => {
-    const fetchSlots = async () => {
-      try {
-        setSlotsLoading(true);
-        // Build query parameters
-        const params = new URLSearchParams();
-        params.append('isActive', 'true');
-        params.append('limit', '100');
-        
-        const url = `/public/slots?${params.toString()}`;
-        console.log('Fetching slots from:', url);
-        const response = await publicApiCall(url);
-        
-        console.log('Slots response:', response);
-        
-        if (response.success) {
-          console.log('Setting slots:', response.data);
-          setSlots(response.data || []);
-        }
-      } catch (error) {
-        console.error('Error fetching slots:', error);
-        console.error('Error details:', error.message, error.status, error.data);
-      } finally {
-        setSlotsLoading(false);
+  const fetchSlots = async () => {
+    try {
+      setSlotsLoading(true);
+      const params = new URLSearchParams();
+      params.append('isActive', 'true');
+      params.append('limit', '100');
+      const url = `/public/slots?${params.toString()}`;
+      const response = await publicApiCall(url);
+      if (response.success) {
+        setSlots(response.data || []);
+        setLastUpdated(new Date());
       }
-    };
+    } catch (error) {
+      console.error('Error fetching slots:', error);
+    } finally {
+      setSlotsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchSlots();
   }, []);
+
+  // Poll for real-time updates every 30 seconds
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      fetchSlots();
+    }, 30000);
+    return () => clearInterval(intervalId);
+  }, []);
+  
+  // Auto-open Google Form in a new tab when modal is shown (iframes may be blocked by Google)
+  useEffect(() => {
+    if (showGFormModal) {
+      try {
+        window.open('https://forms.gle/ZCuE8XFDgXuQ625s7', '_blank', 'noopener,noreferrer');
+      } catch (_) {}
+    }
+  }, [showGFormModal]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -56,7 +65,7 @@ const Readmissions = () => {
   const handleSlotChange = (e) => {
     const slotId = e.target.value;
     const selectedSlot = slots.find(slot => slot._id === slotId);
-    
+
     if (selectedSlot) {
       setFormData(prev => ({
         ...prev,
@@ -69,18 +78,12 @@ const Readmissions = () => {
 
   const validateForm = () => {
     const errors = {};
-
     if (!formData.studentName.trim()) errors.studentName = 'Student name is required';
-    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Valid email is required';
-    }
     if (!formData.contact.trim() || formData.contact.length < 10) {
       errors.contact = 'Valid contact number is required';
     }
     if (!formData.course) errors.course = 'Please select a course';
     if (!formData.slotName) errors.slotName = 'Please select a slot';
-    if (!formData.reason.trim()) errors.reason = 'Reason for readmission is required';
-
     return Object.keys(errors).length === 0;
   };
 
@@ -98,12 +101,9 @@ const Readmissions = () => {
 
       const submitData = {
         studentName: formData.studentName.trim(),
-        email: formData.email.trim(),
         contact: formData.contact.trim(),
         course: formData.course,
-        slotName: formData.slotName,
-        reason: formData.reason.trim(),
-        previousCourse: formData.previousCourse.trim() || ''
+        slotName: formData.slotName
       };
 
       const response = await publicApiCall('/public/readmissions', {
@@ -112,19 +112,17 @@ const Readmissions = () => {
       });
 
       if (response.success) {
-        setSubmitStatus({ 
-          success: true, 
-          message: 'Your readmission request has been submitted successfully! We will contact you soon.' 
+        setSubmitStatus({
+          success: true,
+          message: 'Your readmission request has been submitted successfully! We will contact you soon.'
         });
+        setShowGFormModal(true);
         // Reset form
         setFormData({
           studentName: '',
-          email: '',
           contact: '',
           course: '',
-          slotName: '',
-          reason: '',
-          previousCourse: ''
+          slotName: ''
         });
       } else {
         setSubmitStatus({ success: false, message: response.message || 'Failed to submit request' });
@@ -149,6 +147,7 @@ const Readmissions = () => {
     }, {});
 
   return (
+    <>
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="bg-white shadow-xl rounded-lg overflow-hidden">
@@ -160,9 +159,8 @@ const Readmissions = () => {
 
           {/* Success/Error Message */}
           {submitStatus.message && (
-            <div className={`px-6 py-4 ${
-              submitStatus.success ? 'bg-green-50 border-l-4 border-green-500' : 'bg-red-50 border-l-4 border-red-500'
-            }`}>
+            <div className={`px-6 py-4 ${submitStatus.success ? 'bg-green-50 border-l-4 border-green-500' : 'bg-red-50 border-l-4 border-red-500'
+              }`}>
               <p className={`text-sm ${submitStatus.success ? 'text-green-800' : 'text-red-800'}`}>
                 {submitStatus.message}
               </p>
@@ -174,7 +172,7 @@ const Readmissions = () => {
             {/* Personal Information */}
             <div className="border-b border-gray-200 pb-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="studentName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -191,25 +189,6 @@ const Readmissions = () => {
                     required
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter your email"
-                    required
-                  />
-                </div>
-
                 <div>
                   <label htmlFor="contact" className="block text-sm font-medium text-gray-700 mb-2">
                     Contact Number *
@@ -231,7 +210,7 @@ const Readmissions = () => {
             {/* Course and Slot Selection */}
             <div className="border-b border-gray-200 pb-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Course & Slot Selection</h2>
-              
+
               {slotsLoading ? (
                 <p className="text-gray-500">Loading available slots...</p>
               ) : slots.length === 0 ? (
@@ -276,41 +255,7 @@ const Readmissions = () => {
               )}
             </div>
 
-            {/* Readmission Details */}
-            <div className="pb-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Readmission Details</h2>
-              
-              <div>
-                <label htmlFor="previousCourse" className="block text-sm font-medium text-gray-700 mb-2">
-                  Previous Course (if applicable)
-                </label>
-                <input
-                  type="text"
-                  id="previousCourse"
-                  name="previousCourse"
-                  value={formData.previousCourse}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your previous course"
-                />
-              </div>
-
-              <div className="mt-6">
-                <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-2">
-                  Reason for Readmission *
-                </label>
-                <textarea
-                  id="reason"
-                  name="reason"
-                  rows={4}
-                  value={formData.reason}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Please provide your reason for readmission..."
-                  required
-                />
-              </div>
-            </div>
+            {/* Readmission Details removed per new requirements */}
 
             {/* Submit Button */}
             <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
@@ -318,12 +263,9 @@ const Readmissions = () => {
                 type="reset"
                 onClick={() => setFormData({
                   studentName: '',
-                  email: '',
                   contact: '',
                   course: '',
-                  slotName: '',
-                  reason: '',
-                  previousCourse: ''
+                  slotName: ''
                 })}
                 className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               >
@@ -340,6 +282,49 @@ const Readmissions = () => {
           </form>
         </div>
 
+        {/* Live Available Slots */}
+        <div className="mt-6 bg-white border border-blue-200 rounded-lg">
+          <div className="px-6 py-4 border-b bg-blue-50 rounded-t-lg flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-blue-900">Available Seats</h3>
+            <div className="text-xs text-blue-800">
+              {lastUpdated ? `Last updated: ${lastUpdated.toLocaleTimeString()}` : 'Loading...'}
+            </div>
+          </div>
+
+          <div className="p-6">
+            {slotsLoading ? (
+              <p className="text-gray-500">Loading available slots...</p>
+            ) : Object.keys(groupedSlots).length === 0 ? (
+              <p className="text-red-500">No active slots available right now.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {Object.entries(groupedSlots).map(([course, courseSlots]) => (
+                  <div key={course} className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="px-4 py-3 bg-gray-50 border-b">
+                      <h4 className="text-sm font-semibold text-gray-800">{course}</h4>
+                    </div>
+                    <ul className="divide-y divide-gray-200">
+                      {courseSlots.map((slot) => (
+                        <li key={slot._id} className="px-4 py-3 flex items-start justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{slot.name}</p>
+                            <p className="text-xs text-gray-600 mt-0.5">{slot.startTime} - {slot.endTime} • {slot.type}</p>
+                          </div>
+                          <div className="ml-4">
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800">
+                              {Math.max(slot.capacity - slot.enrolledStudents, 0)} seats left
+                            </span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Info Box */}
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-blue-900 mb-2">Important Information</h3>
@@ -352,6 +337,44 @@ const Readmissions = () => {
         </div>
       </div>
     </div>
+    
+    {/* Google Form Modal for Payment Receipt Upload */ }
+  {
+    showGFormModal && (
+      <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-4xl bg-white rounded-xl shadow-xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b">
+            <h3 className="text-lg font-semibold text-gray-900">Upload Payment Receipt</h3>
+            <button onClick={() => setShowGFormModal(false)} className="text-gray-500 hover:text-gray-700">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="p-4">
+            <p className="text-sm text-gray-700 mb-4">We opened the Google Form in a new tab. If it didn’t open, click the button below.</p>
+            <div className="flex items-center justify-between">
+              <a
+                href="https://forms.gle/ZCuE8XFDgXuQ625s7"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+              >
+                Open Google Form
+              </a>
+              <button
+                onClick={() => setShowGFormModal(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  </>
   );
 };
 

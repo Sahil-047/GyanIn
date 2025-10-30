@@ -30,8 +30,7 @@ const Slots = () => {
     subject: '',
     class: '',
     type: 'online',
-    startTime: '',
-    endTime: '',
+    // startTime and endTime removed from form per requirements
     days: [],
     instructor: '',
     location: '',
@@ -124,14 +123,12 @@ const Slots = () => {
   const validateForm = () => {
     const errors = {}
     
-    if (!formData.name.trim()) errors.name = 'Slot name is required'
-    if (!formData.course.trim()) errors.course = 'Course is required'
+    if (!formData.name.trim()) errors.name = 'Batch name is required'
+    // Course removed from form
     if (!formData.subject.trim()) errors.subject = 'Subject is required'
-    if (!formData.class.trim()) errors.class = 'Class is required'
-    if (!formData.startTime.trim()) errors.startTime = 'Start time is required'
-    if (!formData.endTime.trim()) errors.endTime = 'End time is required'
+    if (!formData.class.toString().trim()) errors.class = 'Class is required'
     if (formData.days.length === 0) errors.days = 'At least one day must be selected'
-    if (!formData.instructor.trim()) errors.instructor = 'Instructor is required'
+    if (!formData.instructor.trim()) errors.instructor = 'Teacher name is required'
     if (!formData.location.trim()) errors.location = 'Location is required'
     if (formData.capacity < 1 || formData.capacity > 50) errors.capacity = 'Capacity must be between 1 and 50'
     if (formData.enrolledStudents < 0) errors.enrolledStudents = 'Enrolled students cannot be negative'
@@ -168,8 +165,6 @@ const Slots = () => {
           subject: '',
           class: '',
           type: 'online',
-          startTime: '',
-          endTime: '',
           days: [],
           instructor: '',
           location: '',
@@ -268,7 +263,7 @@ const Slots = () => {
         <div>
           <h3 className="text-lg font-semibold text-gray-900">{slot.name}</h3>
           <p className="text-sm text-gray-600">{slot.course} - {slot.subject}</p>
-          <p className="text-sm text-gray-500">{slot.class} Level</p>
+          <p className="text-sm text-gray-500">Class {slot.class}</p>
         </div>
         <div className="flex items-center space-x-2">
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -704,7 +699,7 @@ const Slots = () => {
           <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Add New Slot</h3>
+                <h3 className="text-lg font-medium text-gray-900">Add New Batch</h3>
                 <button
                   onClick={() => setShowAddModal(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -718,30 +713,19 @@ const Slots = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Slot Name *</label>
+                    <label className="block text-sm font-medium text-gray-700">Batch Name *</label>
                     <input
                       type="text"
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
                       className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.name ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                      placeholder="Enter slot name"
+                      placeholder="Enter batch name"
                     />
                     {formErrors.name && <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Course *</label>
-                    <input
-                      type="text"
-                      name="course"
-                      value={formData.course}
-                      onChange={handleInputChange}
-                      placeholder="Enter course name"
-                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.course ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                    />
-                    {formErrors.course && <p className="mt-1 text-sm text-red-600">{formErrors.course}</p>}
-                  </div>
+                  {/* Course removed per requirements */}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Subject *</label>
@@ -757,13 +741,15 @@ const Slots = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Class *</label>
+                    <label className="block text-sm font-medium text-gray-700">Class (Number) *</label>
                     <input
-                      type="text"
+                      type="number"
                       name="class"
                       value={formData.class}
                       onChange={handleInputChange}
-                      placeholder="Enter class (e.g., Beginner, Intermediate, Advanced)"
+                      min="1"
+                      max="12"
+                      placeholder="Enter class number (e.g., 1, 2, 3...)"
                       className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.class ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
                     />
                     {formErrors.class && <p className="mt-1 text-sm text-red-600">{formErrors.class}</p>}
@@ -782,39 +768,17 @@ const Slots = () => {
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Start Time *</label>
-                    <input
-                      type="time"
-                      name="startTime"
-                      value={formData.startTime}
-                      onChange={handleInputChange}
-                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.startTime ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                    />
-                    {formErrors.startTime && <p className="mt-1 text-sm text-red-600">{formErrors.startTime}</p>}
-                  </div>
+                  {/* Start/End time removed per requirements */}
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">End Time *</label>
-                    <input
-                      type="time"
-                      name="endTime"
-                      value={formData.endTime}
-                      onChange={handleInputChange}
-                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.endTime ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                    />
-                    {formErrors.endTime && <p className="mt-1 text-sm text-red-600">{formErrors.endTime}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Instructor *</label>
+                    <label className="block text-sm font-medium text-gray-700">Teacher Name *</label>
                     <input
                       type="text"
                       name="instructor"
                       value={formData.instructor}
                       onChange={handleInputChange}
                       className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.instructor ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                      placeholder="Enter instructor name"
+                      placeholder="Enter teacher name"
                     />
                     {formErrors.instructor && <p className="mt-1 text-sm text-red-600">{formErrors.instructor}</p>}
                   </div>
@@ -909,7 +873,7 @@ const Slots = () => {
           <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Edit Slot</h3>
+                <h3 className="text-lg font-medium text-gray-900">Edit Batch</h3>
                 <button
                   onClick={() => setShowEditModal(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -923,30 +887,19 @@ const Slots = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Slot Name *</label>
+                    <label className="block text-sm font-medium text-gray-700">Batch Name *</label>
                     <input
                       type="text"
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
                       className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.name ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                      placeholder="Enter slot name"
+                      placeholder="Enter batch name"
                     />
                     {formErrors.name && <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Course *</label>
-                    <input
-                      type="text"
-                      name="course"
-                      value={formData.course}
-                      onChange={handleInputChange}
-                      placeholder="Enter course name"
-                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.course ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                    />
-                    {formErrors.course && <p className="mt-1 text-sm text-red-600">{formErrors.course}</p>}
-                  </div>
+                  {/* Course removed per requirements */}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Subject *</label>
@@ -962,13 +915,15 @@ const Slots = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Class *</label>
+                    <label className="block text-sm font-medium text-gray-700">Class (Number) *</label>
                     <input
-                      type="text"
+                      type="number"
                       name="class"
                       value={formData.class}
                       onChange={handleInputChange}
-                      placeholder="Enter class (e.g., Beginner, Intermediate, Advanced)"
+                      min="1"
+                      max="12"
+                      placeholder="Enter class number (e.g., 1, 2, 3...)"
                       className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.class ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
                     />
                     {formErrors.class && <p className="mt-1 text-sm text-red-600">{formErrors.class}</p>}
@@ -987,39 +942,17 @@ const Slots = () => {
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Start Time *</label>
-                    <input
-                      type="time"
-                      name="startTime"
-                      value={formData.startTime}
-                      onChange={handleInputChange}
-                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.startTime ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                    />
-                    {formErrors.startTime && <p className="mt-1 text-sm text-red-600">{formErrors.startTime}</p>}
-                  </div>
+                  {/* Start/End time removed per requirements */}
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">End Time *</label>
-                    <input
-                      type="time"
-                      name="endTime"
-                      value={formData.endTime}
-                      onChange={handleInputChange}
-                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.endTime ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                    />
-                    {formErrors.endTime && <p className="mt-1 text-sm text-red-600">{formErrors.endTime}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Instructor *</label>
+                    <label className="block text-sm font-medium text-gray-700">Teacher Name *</label>
                     <input
                       type="text"
                       name="instructor"
                       value={formData.instructor}
                       onChange={handleInputChange}
                       className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.instructor ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                      placeholder="Enter instructor name"
+                      placeholder="Enter teacher name"
                     />
                     {formErrors.instructor && <p className="mt-1 text-sm text-red-600">{formErrors.instructor}</p>}
                   </div>

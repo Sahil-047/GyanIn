@@ -5,12 +5,11 @@ const Slot = require('../models/Slot');
 
 const router = express.Router();
 
-// Validation rules
+// Validation rules (email, previousCourse, reason removed)
 const readmissionValidation = [
     body('studentName').trim().isLength({ min: 2 }).withMessage('Student name must be at least 2 characters'),
     body('course').trim().isLength({ min: 2 }).withMessage('Course must be at least 2 characters'),
     body('contact').trim().isLength({ min: 10 }).withMessage('Contact must be at least 10 characters'),
-    body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
     body('slotName').trim().isLength({ min: 2 }).withMessage('Slot name must be at least 2 characters')
 ];
 

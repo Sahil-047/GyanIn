@@ -11,8 +11,9 @@ import Slots from './pages/admin/Slots'
 import LandingPage from './pages/public/LandingPage'
 import Courses from './pages/public/Courses'
 import ContactUs from './pages/public/ContactUs'
-import ReadmissionsPublic from './pages/public/Readmissions'
-import Admission from './pages/public/Admission'
+import Admissions from './pages/public/Admissions'
+import PublicLogin from './pages/public/Login'
+import Teachers from './pages/public/Teachers'
 
 function App() {
   return (
@@ -43,6 +44,19 @@ function App() {
           </div>
         } 
       />
+
+      <Route 
+        path="/teachers" 
+        element={
+          <div className="min-h-screen flex flex-col">
+            <Navbar />
+            <main className="flex-grow">
+              <Teachers />
+            </main>
+            <Footer />
+          </div>
+        } 
+      />
       
       <Route 
         path="/contact" 
@@ -58,25 +72,51 @@ function App() {
       />
       
       <Route 
-        path="/readmissions" 
+        path="/admissions" 
         element={
           <div className="min-h-screen flex flex-col">
             <Navbar />
             <main className="flex-grow">
-              <ReadmissionsPublic />
+              <Admissions />
             </main>
             <Footer />
           </div>
         } 
       />
-      
+
+      <Route 
+        path="/login" 
+        element={
+          <div className="min-h-screen flex flex-col">
+            <Navbar />
+            <main className="flex-grow">
+              <PublicLogin />
+            </main>
+            <Footer />
+          </div>
+        } 
+      />
+
+      {/* Backward-compatible routes map to the unified page with preselected tabs */}
       <Route 
         path="/admission" 
         element={
           <div className="min-h-screen flex flex-col">
             <Navbar />
             <main className="flex-grow">
-              <Admission />
+              <Admissions defaultView="admission" />
+            </main>
+            <Footer />
+          </div>
+        } 
+      />
+      <Route 
+        path="/readmissions" 
+        element={
+          <div className="min-h-screen flex flex-col">
+            <Navbar />
+            <main className="flex-grow">
+              <Admissions defaultView="readmission" />
             </main>
             <Footer />
           </div>

@@ -33,10 +33,7 @@ const Readmissions = () => {
     studentName: '',
     course: '',
     contact: '',
-    email: '',
-    slotName: '',
-    reason: '',
-    previousCourse: ''
+    slotName: ''
   })
 
   const [formErrors, setFormErrors] = useState({})
@@ -133,14 +130,7 @@ const Readmissions = () => {
     if (!formData.studentName.trim()) errors.studentName = 'Student name is required'
     if (!formData.course.trim()) errors.course = 'Course is required'
     if (!formData.contact.trim()) errors.contact = 'Contact is required'
-    if (!formData.email.trim()) errors.email = 'Email is required'
     if (!formData.slotName.trim()) errors.slotName = 'Slot is required'
-    
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (formData.email && !emailRegex.test(formData.email)) {
-      errors.email = 'Please enter a valid email address'
-    }
     
     // Phone validation
     const phoneRegex = /^[0-9]{10}$/
@@ -183,10 +173,7 @@ const Readmissions = () => {
           studentName: '',
           course: '',
           contact: '',
-          email: '',
-          slotName: '',
-          reason: '',
-          previousCourse: ''
+          slotName: ''
         })
         fetchReadmissions()
         fetchStats()
@@ -710,18 +697,7 @@ const Readmissions = () => {
                     {formErrors.contact && <p className="mt-1 text-sm text-red-600">{formErrors.contact}</p>}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Email *</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.email ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                      placeholder="Enter email address"
-                    />
-                    {formErrors.email && <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>}
-                  </div>
+                  
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Slot *</label>
@@ -745,29 +721,7 @@ const Readmissions = () => {
                     {formErrors.slotName && <p className="mt-1 text-sm text-red-600">{formErrors.slotName}</p>}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Previous Course</label>
-                    <input
-                      type="text"
-                      name="previousCourse"
-                      value={formData.previousCourse}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter previous course (optional)"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700">Reason for Readmission</label>
-                    <textarea
-                      name="reason"
-                      value={formData.reason}
-                      onChange={handleInputChange}
-                      rows={3}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter reason for readmission (optional)"
-                    />
-                  </div>
+                  
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">
@@ -868,10 +822,7 @@ const Readmissions = () => {
                     <label className="block text-sm font-medium text-gray-700">Contact</label>
                     <p className="mt-1 text-sm text-gray-900">{selectedReadmission.contact}</p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedReadmission.email}</p>
-                  </div>
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Slot</label>
                     <p className="mt-1 text-sm text-gray-900">{selectedReadmission.slotName}</p>
@@ -902,18 +853,7 @@ const Readmissions = () => {
                     <label className="block text-sm font-medium text-gray-700">Applied Date</label>
                     <p className="mt-1 text-sm text-gray-900">{new Date(selectedReadmission.createdAt).toLocaleDateString()}</p>
                   </div>
-                  {selectedReadmission.previousCourse && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Previous Course</label>
-                      <p className="mt-1 text-sm text-gray-900">{selectedReadmission.previousCourse}</p>
-                    </div>
-                  )}
-                  {selectedReadmission.reason && (
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700">Reason</label>
-                      <p className="mt-1 text-sm text-gray-900">{selectedReadmission.reason}</p>
-                    </div>
-                  )}
+                  
                   {selectedReadmission.notes && (
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700">Notes</label>

@@ -8,7 +8,7 @@ const slotSchema = new mongoose.Schema({
   },
   course: {
     type: String,
-    required: true,
+    required: false,
     trim: true
   },
   subject: {
@@ -17,9 +17,8 @@ const slotSchema = new mongoose.Schema({
     trim: true
   },
   class: {
-    type: String,
+    type: Number,
     required: true,
-    trim: true
   },
   type: {
     type: String,
@@ -28,12 +27,12 @@ const slotSchema = new mongoose.Schema({
   },
   startTime: {
     type: String,
-    required: true,
+    required: false,
     trim: true
   },
   endTime: {
     type: String,
-    required: true,
+    required: false,
     trim: true
   },
   days: [{

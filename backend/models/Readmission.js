@@ -16,12 +16,6 @@ const readmissionSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  email: {
-    type: String,
-    required: true,
-    trim: true,
-    lowercase: true
-  },
   slotName: {
     type: String,
     required: true,
@@ -32,14 +26,7 @@ const readmissionSchema = new mongoose.Schema({
     enum: ['pending', 'approved', 'rejected'],
     default: 'pending'
   },
-  reason: {
-    type: String,
-    trim: true
-  },
-  previousCourse: {
-    type: String,
-    trim: true
-  },
+  // Removed: email, reason, previousCourse per new requirements
   notes: {
     type: String,
     trim: true

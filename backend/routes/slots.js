@@ -6,16 +6,15 @@ const router = express.Router();
 
 // Validation rules
 const slotValidation = [
-  body('name').trim().isLength({ min: 2 }).withMessage('Slot name must be at least 2 characters'),
-  body('course').trim().isLength({ min: 2 }).withMessage('Course must be at least 2 characters'),
+  body('name').trim().isLength({ min: 2 }).withMessage('Batch name must be at least 2 characters'),
+  // Course removed from required fields
   body('subject').trim().isLength({ min: 2 }).withMessage('Subject must be at least 2 characters'),
-  body('class').trim().notEmpty().withMessage('Class level is required'),
+  body('class').isInt({ min: 1, max: 12 }).withMessage('Class must be a number between 1 and 12'),
   body('type').isIn(['online', 'offline']).withMessage('Type must be online or offline'),
-  body('startTime').trim().isLength({ min: 1 }).withMessage('Start time is required'),
-  body('endTime').trim().isLength({ min: 1 }).withMessage('End time is required'),
+  // startTime and endTime removed from validation
   body('days').isArray({ min: 1 }).withMessage('At least one day must be selected'),
   body('capacity').isInt({ min: 1, max: 50 }).withMessage('Capacity must be between 1 and 50'),
-  body('instructor').trim().isLength({ min: 2 }).withMessage('Instructor name must be at least 2 characters'),
+  body('instructor').trim().isLength({ min: 2 }).withMessage('Teacher name must be at least 2 characters'),
   body('location').trim().isLength({ min: 2 }).withMessage('Location must be at least 2 characters')
 ];
 

@@ -5,6 +5,7 @@ import CssBaseline from '@mui/material/CssBaseline'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import './index.css'
+import { EdgeStoreProvider } from './edgestore'
 
 // Create a custom Material UI theme matching Learnly's color scheme
 const theme = createTheme({
@@ -114,7 +115,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
-        <App />
+        <EdgeStoreProvider>
+          <App />
+        </EdgeStoreProvider>
       </BrowserRouter>
     </ThemeProvider>
   </React.StrictMode>,

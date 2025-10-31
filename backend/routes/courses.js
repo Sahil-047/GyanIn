@@ -10,9 +10,9 @@ const courseValidation = [
   body('description').trim().isLength({ min: 10 }).withMessage('Description must be at least 10 characters'),
   body('instructor').trim().isLength({ min: 2 }).withMessage('Instructor name must be at least 2 characters'),
   body('price').isNumeric().isFloat({ min: 0 }).withMessage('Price must be a positive number'),
-  body('duration').trim().isLength({ min: 1 }).withMessage('Duration is required'),
-  body('level').isIn(['Beginner', 'Intermediate', 'Advanced']).withMessage('Invalid level'),
-  body('category').trim().isLength({ min: 2 }).withMessage('Category must be at least 2 characters'),
+  body('duration').optional({ nullable: true }).trim(),
+  body('class').isInt({ min: 1, max: 12 }).withMessage('Class must be a number between 1 and 12'),
+  body('category').optional({ nullable: true }).trim(),
   body('image').optional().isURL().withMessage('Image must be a valid URL')
 ];
 
@@ -23,7 +23,7 @@ const courseUpdateValidation = [
   body('instructor').optional({ nullable: true, checkFalsy: true }).trim().isLength({ min: 2 }).withMessage('Instructor name must be at least 2 characters'),
   body('price').optional({ nullable: true }).isFloat({ min: 0 }).withMessage('Price must be a positive number'),
   body('duration').optional({ nullable: true, checkFalsy: true }).trim().isLength({ min: 1 }).withMessage('Duration is required'),
-  body('level').optional({ nullable: true }).isIn(['Beginner', 'Intermediate', 'Advanced']).withMessage('Invalid level'),
+  body('class').optional({ nullable: true }).isInt({ min: 1, max: 12 }).withMessage('Class must be a number between 1 and 12'),
   body('category').optional({ nullable: true, checkFalsy: true }).trim().isLength({ min: 2 }).withMessage('Category must be at least 2 characters'),
   body('image').optional({ nullable: true, checkFalsy: true }).isURL().withMessage('Image must be a valid URL'),
   body('rating').optional({ nullable: true }).isFloat({ min: 0, max: 5 }).withMessage('Rating must be between 0 and 5'),
@@ -39,7 +39,7 @@ router.get('/', async (req, res) => {
       page = 1, 
       limit = 10, 
       category, 
-      level, 
+      class: level, 
       sortBy = 'createdAt', 
       sortOrder = 'desc',
       search 
@@ -52,7 +52,7 @@ router.get('/', async (req, res) => {
     }
     
     if (level) {
-      filter.level = level;
+      filter.class = parseInt(level);
     }
 
     if (search) {
@@ -84,7 +84,6 @@ router.get('/', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get courses error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch courses',
@@ -104,7 +103,6 @@ router.get('/categories', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get categories error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch categories',
@@ -131,7 +129,6 @@ router.get('/:id', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get course error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch course',
@@ -162,7 +159,6 @@ router.post('/', courseValidation, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Create course error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to create course',
@@ -176,8 +172,7 @@ router.put('/:id', courseUpdateValidation, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log('Validation errors:', errors.array());
-      console.log('Request body:', req.body);
+      
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
@@ -205,7 +200,6 @@ router.put('/:id', courseUpdateValidation, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Update course error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update course',
@@ -232,7 +226,6 @@ router.delete('/:id', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Delete course error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to delete course',

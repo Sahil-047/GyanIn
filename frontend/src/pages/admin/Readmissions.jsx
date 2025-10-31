@@ -33,7 +33,8 @@ const Readmissions = () => {
     studentName: '',
     course: '',
     contact: '',
-    slotName: ''
+    slotName: '',
+    batch: ''
   })
 
   const [formErrors, setFormErrors] = useState({})
@@ -56,7 +57,7 @@ const Readmissions = () => {
         setTotalPages(data.pagination.pages)
       }
     } catch (error) {
-      console.error('Error fetching readmissions:', error)
+      
     }
     setLoading(false)
   }
@@ -70,7 +71,7 @@ const Readmissions = () => {
         setSlots(data.data)
       }
     } catch (error) {
-      console.error('Error fetching slots:', error)
+      
     }
   }
 
@@ -83,7 +84,7 @@ const Readmissions = () => {
         setStats(data.data)
       }
     } catch (error) {
-      console.error('Error fetching stats:', error)
+      
     }
   }
 
@@ -118,7 +119,8 @@ const Readmissions = () => {
     setFormData(prev => ({
       ...prev,
       slotName: slot.name,
-      course: slot.course
+      course: slot.course,
+      batch: String(slot.class ?? '')
     }))
     setShowSlotModal(false)
   }
@@ -164,7 +166,7 @@ const Readmissions = () => {
     setLoading(true)
     try {
       // Log the form data being sent for debugging
-      console.log('Submitting readmission data:', formData)
+      
       const data = await readmissionsAPI.createReadmission(formData)
       
       if (data.success) {
@@ -180,13 +182,6 @@ const Readmissions = () => {
         showSnackbar('Readmission created successfully!', 'success')
       }
     } catch (error) {
-      console.error('Error creating readmission:', error)
-      console.error('Error details:', {
-        message: error.message,
-        status: error.status,
-        data: error.data,
-        errors: error.errors
-      })
       
       // Handle validation errors from server
       if (error.errors) {
@@ -220,7 +215,7 @@ const Readmissions = () => {
         showSnackbar(`Readmission ${statusText} successfully!`, 'success')
       }
     } catch (error) {
-      console.error('Error updating status:', error)
+      
       // Show error notification
       const errorMessage = error.data?.message || error.message || 'Failed to update status'
       showSnackbar(errorMessage, 'error')
@@ -242,7 +237,7 @@ const Readmissions = () => {
         showSnackbar('Readmission deleted successfully!', 'success')
       }
     } catch (error) {
-      console.error('Error deleting readmission:', error)
+      
       showSnackbar('Failed to delete readmission', 'error')
     }
     setLoading(false)

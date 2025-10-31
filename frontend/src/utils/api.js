@@ -17,15 +17,6 @@ export const apiCall = async (endpoint, options = {}) => {
     const data = await response.json()
     
     if (!response.ok) {
-      // Log the request details for debugging
-      console.error('API Error Details:', {
-        url,
-        method: config.method || 'GET',
-        status: response.status,
-        requestBody: config.body,
-        responseData: data
-      })
-      
       // Create a custom error object that includes the full response data
       const error = new Error(data.message || 'API call failed')
       error.status = response.status
@@ -39,7 +30,7 @@ export const apiCall = async (endpoint, options = {}) => {
     
     return data
   } catch (error) {
-    console.error('API call error:', error)
+    
     throw error
   }
 }
@@ -176,9 +167,21 @@ export const cmsAPI = {
     body: JSON.stringify(carouselData)
   }),
 
+  // Update carousel item in CMS
+  updateCarouselItem: (carouselId, carouselData) => apiCall(`/cms/carousel/${carouselId}`, {
+    method: 'PUT',
+    body: JSON.stringify(carouselData)
+  }),
+
   // Add offer to CMS
   addOffer: (offerData) => apiCall('/cms/offers', {
     method: 'POST',
+    body: JSON.stringify(offerData)
+  }),
+
+  // Update offer in CMS
+  updateOffer: (offerId, offerData) => apiCall(`/cms/offers/${offerId}`, {
+    method: 'PUT',
     body: JSON.stringify(offerData)
   }),
 
@@ -191,6 +194,31 @@ export const cmsAPI = {
   deleteCarouselItem: (carouselId) => apiCall(`/cms/carousel/${carouselId}`, {
     method: 'DELETE'
   })
+}
+
+// Uploads API (multipart)
+const UPLOADS_BASE = 'http://localhost:5000/api/uploads'
+
+export const uploadsAPI = {
+  uploadImage: async (file, type = 'teacher') => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('type', type) // 'teacher' or 'course'
+
+    const response = await fetch(`${UPLOADS_BASE}/image`, {
+      method: 'POST',
+      body: formData
+    })
+
+    const data = await response.json()
+    if (!response.ok) {
+      const error = new Error(data.message || 'Upload failed')
+      error.status = response.status
+      error.data = data
+      throw error
+    }
+    return data
+  }
 }
 
 // Courses API (Public API - different base URL)
@@ -211,14 +239,6 @@ const publicApiCall = async (endpoint, options = {}) => {
     const data = await response.json()
     
     if (!response.ok) {
-      console.error('Public API Error Details:', {
-        url,
-        method: config.method || 'GET',
-        status: response.status,
-        requestBody: config.body,
-        responseData: data
-      })
-      
       const error = new Error(data.message || 'API call failed')
       error.status = response.status
       error.data = data
@@ -230,7 +250,7 @@ const publicApiCall = async (endpoint, options = {}) => {
     
     return data
   } catch (error) {
-    console.error('Public API call error:', error)
+    
     throw error
   }
 }
@@ -296,6 +316,7 @@ export default {
   dashboardAPI,
   cmsAPI,
   coursesAPI,
+  uploadsAPI,
   publicReadmissionsAPI,
   publicSlotsAPI
 }

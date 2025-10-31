@@ -82,7 +82,6 @@ router.get('/dashboard', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Dashboard error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch dashboard data',
@@ -118,7 +117,6 @@ router.get('/contacts', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Get admin contacts error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch contacts',
@@ -130,11 +128,11 @@ router.get('/contacts', async (req, res) => {
 // GET /api/admin/courses - Get all courses (including inactive)
 router.get('/courses', async (req, res) => {
     try {
-        const { page = 1, limit = 10, category, level, isActive } = req.query;
+        const { page = 1, limit = 10, category, class: courseClass, isActive } = req.query;
 
         const filter = {};
         if (category && category !== 'All') filter.category = category;
-        if (level) filter.level = level;
+        if (courseClass) filter.class = parseInt(courseClass);
         if (isActive !== undefined) filter.isActive = isActive === 'true';
 
         const courses = await Course.find(filter)
@@ -155,7 +153,6 @@ router.get('/courses', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Get admin courses error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch courses',
@@ -190,7 +187,6 @@ router.get('/teachers', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Get admin teachers error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch teachers',
@@ -231,7 +227,6 @@ router.put('/contacts/:id/status', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Update contact status error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to update contact status',
@@ -262,7 +257,6 @@ router.put('/courses/:id/toggle', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Toggle course status error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to toggle course status',
@@ -293,7 +287,6 @@ router.put('/teachers/:id/toggle', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Toggle teacher status error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to toggle teacher status',

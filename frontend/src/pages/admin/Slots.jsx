@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { slotsAPI } from '../../utils/api'
+import { slotsAPI, cmsAPI } from '../../utils/api'
 
 const Slots = () => {
   const [activeTab, setActiveTab] = useState('manage')
@@ -39,6 +39,7 @@ const Slots = () => {
   })
 
   const [formErrors, setFormErrors] = useState({})
+  const [instructors, setInstructors] = useState([])
 
   // Static data for dropdowns
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -63,7 +64,7 @@ const Slots = () => {
         setTotalPages(data.pagination.pages)
       }
     } catch (error) {
-      console.error('Error fetching slots:', error)
+      
     }
     setLoading(false)
   }
@@ -77,7 +78,7 @@ const Slots = () => {
         setStats(data.data)
       }
     } catch (error) {
-      console.error('Error fetching stats:', error)
+      
     }
   }
 
@@ -88,6 +89,29 @@ const Slots = () => {
 
   useEffect(() => {
     fetchStats()
+  }, [])
+
+  // Fetch instructors from carousel API
+  useEffect(() => {
+    const fetchInstructors = async () => {
+      try {
+        const response = await cmsAPI.getCMSSection('carousel')
+        if (response.success && response.data.data.carouselItems) {
+          // Extract instructor names from carousel data
+          const instructorNames = new Set()
+          response.data.data.carouselItems.forEach(item => {
+            const teacherName = item.teacher?.name || item.title || item.subtitle
+            if (teacherName && teacherName.trim()) {
+              instructorNames.add(teacherName.trim())
+            }
+          })
+          setInstructors(Array.from(instructorNames).sort())
+        }
+      } catch (error) {
+        // Silently fail - instructors will remain empty, form will use text input
+      }
+    }
+    fetchInstructors()
   }, [])
 
   // Handle form input changes
@@ -175,7 +199,7 @@ const Slots = () => {
         fetchStats()
       }
     } catch (error) {
-      console.error('Error saving slot:', error)
+      
       // Handle validation errors from server
       if (error.errors) {
         const serverErrors = {}
@@ -214,7 +238,7 @@ const Slots = () => {
         fetchStats()
       }
     } catch (error) {
-      console.error('Error deleting slot:', error)
+      
     }
     setLoading(false)
   }
@@ -230,7 +254,7 @@ const Slots = () => {
         fetchStats()
       }
     } catch (error) {
-      console.error('Error toggling slot status:', error)
+      
     }
     setLoading(false)
   }
@@ -246,7 +270,7 @@ const Slots = () => {
         fetchStats()
       }
     } catch (error) {
-      console.error('Error updating enrolled students:', error)
+      
     }
     setLoading(false)
   }
@@ -772,14 +796,30 @@ const Slots = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Teacher Name *</label>
-                    <input
-                      type="text"
-                      name="instructor"
-                      value={formData.instructor}
-                      onChange={handleInputChange}
-                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.instructor ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                      placeholder="Enter teacher name"
-                    />
+                    {instructors.length > 0 ? (
+                      <select
+                        name="instructor"
+                        value={formData.instructor}
+                        onChange={handleInputChange}
+                        className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.instructor ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                      >
+                        <option value="">Select an instructor</option>
+                        {instructors.map((instructor, index) => (
+                          <option key={index} value={instructor}>
+                            {instructor}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        name="instructor"
+                        value={formData.instructor}
+                        onChange={handleInputChange}
+                        className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.instructor ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                        placeholder="Enter teacher name (no instructors available in carousel)"
+                      />
+                    )}
                     {formErrors.instructor && <p className="mt-1 text-sm text-red-600">{formErrors.instructor}</p>}
                   </div>
 
@@ -946,14 +986,30 @@ const Slots = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Teacher Name *</label>
-                    <input
-                      type="text"
-                      name="instructor"
-                      value={formData.instructor}
-                      onChange={handleInputChange}
-                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.instructor ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                      placeholder="Enter teacher name"
-                    />
+                    {instructors.length > 0 ? (
+                      <select
+                        name="instructor"
+                        value={formData.instructor}
+                        onChange={handleInputChange}
+                        className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.instructor ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                      >
+                        <option value="">Select an instructor</option>
+                        {instructors.map((instructor, index) => (
+                          <option key={index} value={instructor}>
+                            {instructor}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        name="instructor"
+                        value={formData.instructor}
+                        onChange={handleInputChange}
+                        className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.instructor ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                        placeholder="Enter teacher name (no instructors available in carousel)"
+                      />
+                    )}
                     {formErrors.instructor && <p className="mt-1 text-sm text-red-600">{formErrors.instructor}</p>}
                   </div>
 

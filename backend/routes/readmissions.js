@@ -82,8 +82,7 @@ router.get('/', async (req, res) => {
             }
         });
 
-    } catch (error) {
-        console.error('Get readmissions error:', error);
+  } catch (error) {
         res.status(500).json({
             success: false,
             message: 'Failed to fetch readmissions',
@@ -117,8 +116,7 @@ router.get('/stats', async (req, res) => {
             }
         });
 
-    } catch (error) {
-        console.error('Get readmission stats error:', error);
+  } catch (error) {
         res.status(500).json({
             success: false,
             message: 'Failed to fetch readmission statistics',
@@ -159,8 +157,7 @@ router.get('/:id', async (req, res) => {
             data: readmissionData
         });
 
-    } catch (error) {
-        console.error('Get readmission error:', error);
+  } catch (error) {
         res.status(500).json({
             success: false,
             message: 'Failed to fetch readmission',
@@ -214,8 +211,7 @@ router.post('/', readmissionValidation, async (req, res) => {
             data: readmission
         });
 
-    } catch (error) {
-        console.error('Create readmission error:', error);
+  } catch (error) {
         res.status(500).json({
             success: false,
             message: 'Failed to create readmission',
@@ -285,8 +281,7 @@ router.put('/:id', readmissionValidation, async (req, res) => {
             data: readmission
         });
 
-    } catch (error) {
-        console.error('Update readmission error:', error);
+  } catch (error) {
         res.status(500).json({
             success: false,
             message: 'Failed to update readmission',
@@ -360,7 +355,7 @@ router.put('/:id/status', async (req, res) => {
             slot.enrolledStudents += 1;
             await slot.save();
             
-            console.log(`✓ Approved readmission: Slot "${slot.name}" enrollment updated to ${slot.enrolledStudents}/${slot.capacity}`);
+            
         }
 
         // If rejecting a previously approved readmission, decrement slot enrollment
@@ -389,8 +384,7 @@ router.put('/:id/status', async (req, res) => {
             data: readmission
         });
 
-    } catch (error) {
-        console.error('Update readmission status error:', error);
+  } catch (error) {
         res.status(500).json({
             success: false,
             message: 'Failed to update readmission status',
@@ -428,8 +422,7 @@ router.delete('/:id', async (req, res) => {
             message: 'Readmission deleted successfully'
         });
 
-    } catch (error) {
-        console.error('Delete readmission error:', error);
+  } catch (error) {
         res.status(500).json({
             success: false,
             message: 'Failed to delete readmission',

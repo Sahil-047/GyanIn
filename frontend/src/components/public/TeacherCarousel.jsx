@@ -34,7 +34,7 @@ const TeacherCarousel = () => {
                     ]);
                 }
             } catch (error) {
-                console.error('Error fetching carousel data:', error);
+                
                 // Fallback to mock data on error
                 setCarouselItems([
                     {
@@ -76,8 +76,14 @@ const TeacherCarousel = () => {
         setCurrentIndex((prevIndex) => (prevIndex - 1 + carouselItems.length) % carouselItems.length);
     };
 
-    const handleTeacherClick = (teacher) => {
-        setSelectedTeacher(teacher);
+    const handleTeacherClick = (teacherData) => {
+        // Ensure we pass the full teacher object including scheduleImage
+        // Support both nested teacher structure and flat structure
+        const teacher = teacherData?.teacher || teacherData;
+        setSelectedTeacher({
+            ...teacher,
+            scheduleImage: teacher?.scheduleImage || teacherData?.teacher?.scheduleImage || ''
+        });
         setIsModalOpen(true);
     };
 

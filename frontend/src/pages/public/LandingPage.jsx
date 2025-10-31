@@ -7,6 +7,9 @@ const LandingPage = () => {
   const [courses, setCourses] = useState([]);
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [displayedText, setDisplayedText] = useState('');
+  const [isTyping, setIsTyping] = useState(true);
+  const fullText = 'Unlock Your Potential With New Skills';
 
   // Fetch CMS data
   useEffect(() => {
@@ -64,7 +67,7 @@ const LandingPage = () => {
           ]);
         }
       } catch (error) {
-        console.error('Error fetching CMS data:', error);
+        
       } finally {
         setLoading(false);
       }
@@ -72,6 +75,25 @@ const LandingPage = () => {
 
     fetchCMSData();
   }, []);
+
+  // Autotyping effect
+  useEffect(() => {
+    let currentIndex = 0;
+    setDisplayedText('');
+    setIsTyping(true);
+    
+    const typingInterval = setInterval(() => {
+      if (currentIndex < fullText.length) {
+        setDisplayedText(fullText.slice(0, currentIndex + 1));
+        currentIndex++;
+      } else {
+        setIsTyping(false);
+        clearInterval(typingInterval);
+      }
+    }, 100); // Adjust speed here (lower = faster, 100ms = medium speed)
+
+    return () => clearInterval(typingInterval);
+  }, []); // Run once on mount
   return (
     <div className="w-full overflow-x-hidden">
       {/* Hero Section with Teacher Carousel */}
@@ -81,7 +103,10 @@ const LandingPage = () => {
             {/* Left Column - Text Content */}
             <div className="flex flex-col justify-center space-y-6 md:pr-8">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                Unlock Your Potential With New Skills
+                {displayedText}
+                {isTyping && (
+                  <span className="inline-block w-0.5 h-[1em] bg-current ml-1 animate-pulse">|</span>
+                )}
               </h1>
               <p className="text-gray-600 text-lg md:text-xl">
                 Unlock a world of opportunities and take control of your future by mastering new skills that empower you to achieve your goals.
@@ -89,9 +114,33 @@ const LandingPage = () => {
               <div>
                 <Link 
                   to="/courses"
-                  className="inline-flex px-8 py-4 bg-[#0061FF] text-white rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors duration-200"
+                  className="group relative inline-flex items-center gap-4 px-8 py-4 bg-blue-600 hover:bg-black text-white rounded-full text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden"
                 >
-                  Explore Courses
+                  <span className="relative z-10">Explore Courses</span>
+                  <span className="relative z-10 flex items-center justify-center w-10 h-10 bg-white rounded-full">
+                    <span 
+                      className="relative w-6 h-6 transition-transform duration-300 group-hover:rotate-45" 
+                      style={{ transformOrigin: 'center center' }}
+                    >
+                      {/* Arrow shaft */}
+                      <span 
+                        className="absolute top-1/2 left-0 w-3 h-0.5 bg-gray-800 transform -translate-y-1/2 origin-left"
+                        style={{ left: '10%' }}
+                      ></span>
+                      {/* Arrow head */}
+                      <span 
+                        className="absolute top-1/2 right-0 transform -translate-y-1/2"
+                        style={{ 
+                          width: 0, 
+                          height: 0,
+                          borderLeft: '4px solid #1f2937',
+                          borderTop: '3px solid transparent',
+                          borderBottom: '3px solid transparent',
+                          right: '10%'
+                        }}
+                      ></span>
+                    </span>
+                  </span>
                 </Link>
               </div>
             </div>

@@ -69,7 +69,7 @@ router.post('/', contactValidation, async (req, res) => {
           `
         });
       } catch (emailError) {
-        console.error('Email sending failed:', emailError);
+        
         // Don't fail the request if email fails
       }
     }
@@ -88,7 +88,7 @@ router.post('/', contactValidation, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Contact form submission error:', error);
+    
     res.status(500).json({
       success: false,
       message: 'Failed to submit contact form',
@@ -124,7 +124,7 @@ router.get('/', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get contacts error:', error);
+    
     res.status(500).json({
       success: false,
       message: 'Failed to fetch contacts',
@@ -165,7 +165,7 @@ router.put('/:id', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Update contact error:', error);
+    
     res.status(500).json({
       success: false,
       message: 'Failed to update contact',

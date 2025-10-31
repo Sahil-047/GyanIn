@@ -75,7 +75,6 @@ router.get('/', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Get slots error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch slots',
@@ -117,7 +116,6 @@ router.get('/stats', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Get slot stats error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch slot statistics',
@@ -144,7 +142,6 @@ router.get('/:id', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Get slot error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch slot',
@@ -175,7 +172,6 @@ router.post('/', slotValidation, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Create slot error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to create slot',
@@ -216,7 +212,6 @@ router.put('/:id', slotValidation, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Update slot error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to update slot',
@@ -247,7 +242,6 @@ router.put('/:id/toggle', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Toggle slot status error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to toggle slot status',
@@ -294,7 +288,6 @@ router.put('/:id/enroll', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Update enrolled students error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to update enrolled students',
@@ -321,7 +314,6 @@ router.delete('/:id', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Delete slot error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to delete slot',

@@ -23,18 +23,21 @@ const courseSchema = new mongoose.Schema({
   },
   duration: {
     type: String,
-    required: true,
-    trim: true
+    required: false,
+    trim: true,
+    default: ''
   },
-  level: {
-    type: String,
+  class: {
+    type: Number,
     required: true,
-    enum: ['Beginner', 'Intermediate', 'Advanced']
+    min: 1,
+    max: 12
   },
   category: {
     type: String,
-    required: true,
-    trim: true
+    required: false,
+    trim: true,
+    default: ''
   },
   image: {
     type: String,

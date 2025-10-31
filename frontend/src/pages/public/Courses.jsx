@@ -28,7 +28,7 @@ const Courses = () => {
           })));
         }
       } catch (err) {
-        console.error('Error fetching courses:', err);
+        
         setError('Failed to load courses. Please try again later.');
       } finally {
         setLoading(false);

@@ -30,7 +30,7 @@ const Readmissions = () => {
         setLastUpdated(new Date());
       }
     } catch (error) {
-      console.error('Error fetching slots:', error);
+      
     } finally {
       setSlotsLoading(false);
     }
@@ -67,31 +67,46 @@ const Readmissions = () => {
     const selectedSlot = slots.find(slot => slot._id === slotId);
 
     if (selectedSlot) {
+      // Ensure course is set - use subject as fallback if course is empty
+      const courseValue = selectedSlot.course && selectedSlot.course.trim() 
+        ? selectedSlot.course.trim() 
+        : (selectedSlot.subject && selectedSlot.subject.trim() 
+          ? selectedSlot.subject.trim() 
+          : 'General');
+      
       setFormData(prev => ({
         ...prev,
         slotName: selectedSlot.name,
-        course: selectedSlot.course,
+        course: courseValue,
         slotId: selectedSlot._id
       }));
     }
   };
 
-  const validateForm = () => {
-    const errors = {};
-    if (!formData.studentName.trim()) errors.studentName = 'Student name is required';
-    if (!formData.contact.trim() || formData.contact.length < 10) {
-      errors.contact = 'Valid contact number is required';
-    }
-    if (!formData.course) errors.course = 'Please select a course';
-    if (!formData.slotName) errors.slotName = 'Please select a slot';
-    return Object.keys(errors).length === 0;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validateForm()) {
-      setSubmitStatus({ success: false, message: 'Please fill all required fields correctly' });
+    // Validate and collect all errors
+    const errors = {};
+    if (!formData.studentName.trim()) errors.studentName = 'Student name is required';
+    if (!formData.contact.trim() || formData.contact.length < 10) {
+      errors.contact = 'Valid contact number is required (at least 10 digits)';
+    }
+    if (!formData.course || !formData.course.trim() || formData.course.trim().length < 2) {
+      errors.course = 'Please select a valid slot with a course';
+    }
+    if (!formData.slotName || !formData.slotName.trim() || formData.slotName.trim().length < 2) {
+      errors.slotName = 'Please select a valid slot';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      const errorMessages = Object.values(errors).filter(msg => msg);
+      setSubmitStatus({ 
+        success: false, 
+        message: errorMessages.length > 0 
+          ? errorMessages.join('. ') 
+          : 'Please fill all required fields correctly' 
+      });
       return;
     }
 
@@ -99,11 +114,12 @@ const Readmissions = () => {
       setLoading(true);
       setSubmitStatus({ success: false, message: '' });
 
+      // Ensure all fields are properly trimmed and meet backend requirements
       const submitData = {
         studentName: formData.studentName.trim(),
         contact: formData.contact.trim(),
-        course: formData.course,
-        slotName: formData.slotName
+        course: formData.course.trim(), // Ensure course is trimmed and has length >= 2
+        slotName: formData.slotName.trim() // Ensure slotName is trimmed and has length >= 2
       };
 
       const response = await publicApiCall('/public/readmissions', {
@@ -128,7 +144,7 @@ const Readmissions = () => {
         setSubmitStatus({ success: false, message: response.message || 'Failed to submit request' });
       }
     } catch (error) {
-      console.error('Error submitting readmission:', error);
+      
       setSubmitStatus({ success: false, message: 'Failed to submit request. Please try again.' });
     } finally {
       setLoading(false);
@@ -136,13 +152,21 @@ const Readmissions = () => {
   };
 
   // Group slots by course and filter out full slots
+  // Use subject as fallback if course is empty
   const groupedSlots = slots
     .filter(slot => slot.enrolledStudents < slot.capacity) // Only show slots with available capacity
     .reduce((acc, slot) => {
-      if (!acc[slot.course]) {
-        acc[slot.course] = [];
+      // Use course if available, otherwise use subject, or 'General' as last resort
+      const groupKey = (slot.course && slot.course.trim()) 
+        ? slot.course.trim() 
+        : (slot.subject && slot.subject.trim() 
+          ? slot.subject.trim() 
+          : 'General');
+      
+      if (!acc[groupKey]) {
+        acc[groupKey] = [];
       }
-      acc[slot.course].push(slot);
+      acc[groupKey].push(slot);
       return acc;
     }, {});
 

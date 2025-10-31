@@ -29,7 +29,7 @@ router.get('/', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Get CMS content error:', error);
+        
         res.status(500).json({
             success: false,
             message: 'Failed to fetch CMS content',
@@ -53,7 +53,7 @@ router.get('/:section', async (req, res) => {
         const cmsContent = await CMS.findOne({ section }).sort({ createdAt: -1 });
 
         if (!cmsContent) {
-            console.log(`No CMS content found for section: ${section}`);
+            
             return res.status(404).json({
                 success: false,
                 message: 'CMS content not found for this section'
@@ -61,12 +61,7 @@ router.get('/:section', async (req, res) => {
         }
 
         if (section === 'offers') {
-            console.log('Found offers section:');
-            console.log('- Document ID:', cmsContent._id);
-            console.log('- Created At:', cmsContent.createdAt);
-            console.log('- Is Active:', cmsContent.isActive);
-            console.log('- Number of offers:', cmsContent.data.offers?.length || 0);
-            console.log('- Offers array:', JSON.stringify(cmsContent.data.offers, null, 2));
+            
 
             // Ensure offers array exists and has the correct structure
             if (!cmsContent.data.offers) {
@@ -86,7 +81,7 @@ router.get('/:section', async (req, res) => {
             }));
         }
 
-        console.log(`Fetched ${section} content:`, JSON.stringify(cmsContent, null, 2));
+        
 
         res.json({
             success: true,
@@ -94,7 +89,7 @@ router.get('/:section', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Get CMS section error:', error);
+        
         res.status(500).json({
             success: false,
             message: 'Failed to fetch CMS section',
@@ -137,7 +132,7 @@ router.post('/', cmsValidation, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Save CMS content error:', error);
+        
         res.status(500).json({
             success: false,
             message: 'Failed to save CMS content',
@@ -178,7 +173,7 @@ router.put('/:id', cmsValidation, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Update CMS content error:', error);
+        
         res.status(500).json({
             success: false,
             message: 'Failed to update CMS content',
@@ -209,7 +204,7 @@ router.put('/:id/toggle', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Toggle CMS content status error:', error);
+        
         res.status(500).json({
             success: false,
             message: 'Failed to toggle CMS content status',
@@ -236,7 +231,7 @@ router.delete('/:id', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Delete CMS content error:', error);
+        
         res.status(500).json({
             success: false,
             message: 'Failed to delete CMS content',
@@ -248,7 +243,7 @@ router.delete('/:id', async (req, res) => {
 // POST /api/admin/cms/courses - Add course to CMS
 router.post('/courses', async (req, res) => {
     try {
-        const { title, description, instructor, price, duration, level, category, image, rating, students, tags } = req.body;
+        const { title, description, instructor, price, class: courseClass, image } = req.body;
 
         if (!title || !description) {
             return res.status(400).json({
@@ -278,19 +273,19 @@ router.post('/courses', async (req, res) => {
         await coursesSection.save();
 
         // Also add to the courses collection with full course details
-        if (instructor && price && duration && level && category) {
+        if (instructor && price && courseClass) {
             const fullCourseData = {
                 title,
                 description,
                 instructor,
                 price,
-                duration,
-                level,
-                category,
+                class: courseClass,
+                duration: '', // Default empty since field was removed
+                category: '', // Default empty since field was removed
                 image: image || 'default-course.jpg',
-                rating: rating || 0,
-                students: students || 0,
-                tags: tags || [],
+                rating: 0,
+                students: 0,
+                tags: [],
                 isActive: true
             };
 
@@ -305,7 +300,7 @@ router.post('/courses', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Add course to CMS error:', error);
+        
         res.status(500).json({
             success: false,
             message: 'Failed to add course to CMS',
@@ -317,8 +312,8 @@ router.post('/courses', async (req, res) => {
 // POST /api/admin/cms/carousel - Add carousel item to CMS
 router.post('/carousel', async (req, res) => {
     try {
-        console.log('Received carousel creation request:', req.body);
-        const { teacherName, description, teacherImage } = req.body;
+        
+        const { teacherName, description, teacherImage, scheduleImage } = req.body;
 
         if (!teacherName || !description) {
             return res.status(400).json({
@@ -330,7 +325,7 @@ router.post('/carousel', async (req, res) => {
         // Find or get carousel section
         let carouselSection = await CMS.findOne({ section: 'carousel' }).lean();
 
-        console.log('Carousel section from DB:', JSON.stringify(carouselSection, null, 2));
+        
 
         if (!carouselSection) {
             carouselSection = {
@@ -349,17 +344,18 @@ router.post('/carousel', async (req, res) => {
             teacher: {
                 name: teacherName,
                 description: description,
-                image: teacherImage || 'https://via.placeholder.com/300x300?text=Teacher'
+                image: teacherImage || 'https://via.placeholder.com/300x300?text=Teacher',
+                scheduleImage: scheduleImage || ''
             }
         };
 
-        console.log('New carousel item:', JSON.stringify(newCarouselItem, null, 2));
+        
 
         // Get existing items and add new one
         const existingItems = carouselSection.data.carouselItems || [];
         existingItems.push(newCarouselItem);
 
-        console.log('Total carousel items after push:', existingItems.length);
+        
 
         // Use findOneAndUpdate for atomic operation
         const savedSection = await CMS.findOneAndUpdate(
@@ -379,7 +375,7 @@ router.post('/carousel', async (req, res) => {
             }
         );
 
-        console.log('Saved carousel section:', JSON.stringify(savedSection, null, 2));
+        
 
         res.status(201).json({
             success: true,
@@ -388,10 +384,77 @@ router.post('/carousel', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Add carousel item to CMS error:', error);
+        
         res.status(500).json({
             success: false,
             message: 'Failed to add carousel item to CMS',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+// PUT /api/admin/cms/carousel/:id - Update carousel item
+router.put('/carousel/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { teacherName, description, teacherImage, scheduleImage } = req.body;
+
+        if (!teacherName || !description) {
+            return res.status(400).json({
+                success: false,
+                message: 'Teacher name and description are required'
+            });
+        }
+
+        const carouselSection = await CMS.findOne({ section: 'carousel' });
+        if (!carouselSection || !carouselSection.data || !carouselSection.data.carouselItems) {
+            return res.status(404).json({
+                success: false,
+                message: 'Carousel section not found'
+            });
+        }
+
+        const itemIndex = carouselSection.data.carouselItems.findIndex(item => item.id.toString() === id.toString());
+        
+        if (itemIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: 'Carousel item not found'
+            });
+        }
+
+        // Update the carousel item
+        carouselSection.data.carouselItems[itemIndex] = {
+            id: carouselSection.data.carouselItems[itemIndex].id,
+            teacher: {
+                name: teacherName,
+                description: description,
+                image: teacherImage || 'https://via.placeholder.com/300x300?text=Teacher',
+                scheduleImage: scheduleImage || ''
+            }
+        };
+
+        const updatedSection = await CMS.findOneAndUpdate(
+            { section: 'carousel' },
+            { 
+                $set: { 
+                    'data.carouselItems': carouselSection.data.carouselItems,
+                    updatedAt: new Date()
+                }
+            },
+            { new: true }
+        );
+
+        res.json({
+            success: true,
+            message: 'Carousel item updated successfully',
+            data: carouselSection.data.carouselItems[itemIndex]
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update carousel item',
             error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
         });
     }
@@ -438,10 +501,80 @@ router.delete('/carousel/:id', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Delete carousel item error:', error);
+        
         res.status(500).json({
             success: false,
             message: 'Failed to delete carousel item',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+// PUT /api/admin/cms/offers/:id - Update offer in CMS
+router.put('/offers/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, offer, logo, color, discount, validUntil, isActive = true } = req.body;
+
+        if (!name || !offer) {
+            return res.status(400).json({
+                success: false,
+                message: 'Company name and offer description are required'
+            });
+        }
+
+        const offersSection = await CMS.findOne({ section: 'offers' });
+        if (!offersSection || !offersSection.data || !offersSection.data.offers) {
+            return res.status(404).json({
+                success: false,
+                message: 'Offers section not found'
+            });
+        }
+
+        const offerIndex = offersSection.data.offers.findIndex(offerItem => 
+            offerItem.id.toString() === id.toString()
+        );
+        
+        if (offerIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: 'Offer not found'
+            });
+        }
+
+        // Update the offer
+        offersSection.data.offers[offerIndex] = {
+            id: offersSection.data.offers[offerIndex].id,
+            name,
+            offer,
+            logo: logo || name.substring(0, 2).toUpperCase(),
+            color: color || 'from-blue-500 to-blue-600',
+            discount: discount || '',
+            validUntil: validUntil || '',
+            isActive
+        };
+
+        const updatedSection = await CMS.findOneAndUpdate(
+            { section: 'offers' },
+            { 
+                $set: { 
+                    'data.offers': offersSection.data.offers,
+                    updatedAt: new Date()
+                }
+            },
+            { new: true }
+        );
+
+        res.json({
+            success: true,
+            message: 'Offer updated successfully',
+            data: offersSection.data.offers[offerIndex]
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update offer',
             error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
         });
     }
@@ -451,7 +584,7 @@ router.delete('/carousel/:id', async (req, res) => {
 router.delete('/offers/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        console.log('Deleting offer with ID:', id);
+        
 
         // Find the offers section
         const offersSection = await CMS.findOne({ section: 'offers' });
@@ -462,16 +595,15 @@ router.delete('/offers/:id', async (req, res) => {
             });
         }
 
-        console.log('Current offers:', JSON.stringify(offersSection.data.offers, null, 2));
-        console.log('Looking for offer with ID:', id);
+        
         
         // Find the offer index
         const offerIndex = offersSection.data.offers.findIndex(offer => {
-            console.log('Comparing offer ID:', offer.id, 'with:', id);
+            
             return offer.id.toString() === id.toString()
         });
         
-        console.log('Found offer at index:', offerIndex);
+        
         
         if (offerIndex === -1) {
             return res.status(404).json({
@@ -482,8 +614,7 @@ router.delete('/offers/:id', async (req, res) => {
 
         // Remove the offer from the array
         const removedOffer = offersSection.data.offers.splice(offerIndex, 1)[0];
-        console.log('Removed offer:', JSON.stringify(removedOffer, null, 2));
-        console.log('Updated offers array:', JSON.stringify(offersSection.data.offers, null, 2));
+        
 
         // Use findOneAndUpdate for atomic operation
         const updatedSection = await CMS.findOneAndUpdate(
@@ -497,7 +628,7 @@ router.delete('/offers/:id', async (req, res) => {
             { new: true }
         );
         
-        console.log('Updated document:', JSON.stringify(updatedSection, null, 2));
+        
 
         res.json({
             success: true,
@@ -505,7 +636,7 @@ router.delete('/offers/:id', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Delete offer error:', error);
+        
         res.status(500).json({
             success: false,
             message: 'Failed to delete offer',
@@ -517,11 +648,11 @@ router.delete('/offers/:id', async (req, res) => {
 // POST /api/admin/cms/offers - Add offer to CMS
 router.post('/offers', async (req, res) => {
     try {
-        console.log('Received offer creation request:', req.body);
+        
         const { name, offer, logo, color, discount, validUntil, isActive = true } = req.body;
 
         if (!name || !offer) {
-            console.log('Validation failed: missing name or offer');
+        
             return res.status(400).json({
                 success: false,
                 message: 'Company name and offer description are required'
@@ -532,7 +663,7 @@ router.post('/offers', async (req, res) => {
         let offersSection = await CMS.findOne({ section: 'offers' }).lean();
 
         // Log the raw document from MongoDB
-        console.log('Raw document from MongoDB:', JSON.stringify(offersSection, null, 2));
+        
 
         if (!offersSection) {
             // Create new document
@@ -584,7 +715,7 @@ router.post('/offers', async (req, res) => {
         };
 
         // Log the update operation
-        console.log('Update operation:', JSON.stringify(updateOperation, null, 2));
+        
 
         // Use findOneAndUpdate to ensure atomic operation
         const savedSection = await CMS.findOneAndUpdate(
@@ -596,7 +727,7 @@ router.post('/offers', async (req, res) => {
                 runValidators: true  // Run schema validation
             }
         );
-        console.log('Saved offers section:', JSON.stringify(savedSection, null, 2));
+        
 
         res.status(201).json({
             success: true,
@@ -605,7 +736,7 @@ router.post('/offers', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Add offer to CMS error:', error);
+        
         res.status(500).json({
             success: false,
             message: 'Failed to add offer to CMS',

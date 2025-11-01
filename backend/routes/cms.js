@@ -73,7 +73,7 @@ router.get('/:section', async (req, res) => {
                 id: offer.id,
                 name: offer.name || offer.title,
                 offer: offer.offer || offer.description,
-                logo: offer.logo,
+                courseId: offer.courseId || '',
                 color: offer.color,
                 discount: offer.discount || '',
                 validUntil: offer.validUntil || '',
@@ -514,12 +514,12 @@ router.delete('/carousel/:id', async (req, res) => {
 router.put('/offers/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, offer, logo, color, discount, validUntil, isActive = true } = req.body;
+        const { name, offer, courseId, color, discount, validUntil, isActive = true } = req.body;
 
         if (!name || !offer) {
             return res.status(400).json({
                 success: false,
-                message: 'Company name and offer description are required'
+                message: 'Offer name and offer description are required'
             });
         }
 
@@ -547,7 +547,7 @@ router.put('/offers/:id', async (req, res) => {
             id: offersSection.data.offers[offerIndex].id,
             name,
             offer,
-            logo: logo || name.substring(0, 2).toUpperCase(),
+            courseId: courseId || '',
             color: color || 'from-blue-500 to-blue-600',
             discount: discount || '',
             validUntil: validUntil || '',
@@ -649,13 +649,13 @@ router.delete('/offers/:id', async (req, res) => {
 router.post('/offers', async (req, res) => {
     try {
         
-        const { name, offer, logo, color, discount, validUntil, isActive = true } = req.body;
+        const { name, offer, courseId, color, discount, validUntil, isActive = true } = req.body;
 
         if (!name || !offer) {
         
             return res.status(400).json({
                 success: false,
-                message: 'Company name and offer description are required'
+                message: 'Offer name and offer description are required'
             });
         }
 
@@ -682,7 +682,7 @@ router.post('/offers', async (req, res) => {
             id: Date.now(),
             name,
             offer,
-            logo: logo || name.substring(0, 2).toUpperCase(),
+            courseId: courseId || '',
             color: color || 'from-blue-500 to-blue-600',
             discount: discount || '',
             validUntil: validUntil || '',
@@ -694,7 +694,7 @@ router.post('/offers', async (req, res) => {
             id: offer.id,
             name: offer.name || offer.title,
             offer: offer.offer || offer.description,
-            logo: offer.logo,
+            courseId: offer.courseId || '',
             color: offer.color,
             discount: offer.discount || '',
             validUntil: offer.validUntil || '',

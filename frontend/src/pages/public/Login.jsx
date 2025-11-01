@@ -10,7 +10,7 @@ const Login = () => {
             title: 'Student Login',
             description: 'Access your courses, schedules and updates',
             icon: <FaUserGraduate className="w-6 h-6 text-blue-600" />,
-            onClick: () => { },
+            onClick: () => window.open('https://web.classplusapp.com/', '_blank'),
             styles: 'border-blue-100 hover:border-blue-300 hover:bg-blue-50/40',
         },
         {
@@ -18,7 +18,7 @@ const Login = () => {
             title: 'Teacher Login',
             description: 'Manage your classes, slots and student progress',
             icon: <FaChalkboardTeacher className="w-6 h-6 text-emerald-600" />,
-            onClick: () => { },
+            onClick: () => window.open('https://web.classplusapp.com/', '_blank'),
             styles: 'border-emerald-100 hover:border-emerald-300 hover:bg-emerald-50/40',
         },
         {
@@ -62,7 +62,17 @@ const Login = () => {
                         ))}
                     </div>
 
-                    <p className="mt-8 text-center text-sm text-gray-500">Student and Teacher login will be available soon.</p>
+                    <p className="mt-8 text-center text-sm text-gray-500">
+                        Student and Teacher login is available through{' '}
+                        <a 
+                            href="https://web.classplusapp.com/" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-700 font-medium underline"
+                        >
+                            ClassPlus
+                        </a>
+                    </p>
                 </div>
             </div>
         </div>

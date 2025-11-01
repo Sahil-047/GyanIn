@@ -97,27 +97,27 @@ const LandingPage = () => {
   return (
     <div className="w-full overflow-x-hidden">
       {/* Hero Section with Teacher Carousel */}
-      <section className="w-full bg-white py-12 md:py-16">
-        <div className="w-full mt-10 max-w-[1440px] mx-auto px-4 md:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
+      <section className="w-full bg-white py-8 sm:py-10 md:py-12 lg:py-16">
+        <div className="w-full mt-6 sm:mt-8 md:mt-10 max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center">
             {/* Left Column - Text Content */}
-            <div className="flex flex-col justify-center space-y-6 md:pr-8">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+            <div className="flex flex-col justify-center space-y-4 sm:space-y-5 md:space-y-6 text-center md:text-left md:pr-8 order-2 md:order-1">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
                 {displayedText}
                 {isTyping && (
                   <span className="inline-block w-0.5 h-[1em] bg-current ml-1 animate-pulse">|</span>
                 )}
               </h1>
-              <p className="text-gray-600 text-lg md:text-xl">
+              <p className="text-gray-600 text-base sm:text-lg md:text-xl">
                 Unlock a world of opportunities and take control of your future by mastering new skills that empower you to achieve your goals.
               </p>
-              <div>
+              <div className="flex justify-center md:justify-start">
                 <Link 
                   to="/courses"
-                  className="group relative inline-flex items-center gap-4 px-8 py-4 bg-blue-600 hover:bg-black text-white rounded-full text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden"
+                  className="group relative inline-flex items-center gap-2 sm:gap-3 md:gap-4 px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 bg-blue-600 hover:bg-black text-white rounded-full text-sm sm:text-base md:text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden"
                 >
                   <span className="relative z-10">Explore Courses</span>
-                  <span className="relative z-10 flex items-center justify-center w-10 h-10 bg-white rounded-full">
+                  <span className="relative z-10 flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-white rounded-full">
                     <span 
                       className="relative w-6 h-6 transition-transform duration-300 group-hover:rotate-45" 
                       style={{ transformOrigin: 'center center' }}
@@ -146,7 +146,7 @@ const LandingPage = () => {
             </div>
 
             {/* Right Column - Teacher Carousel */}
-            <div className="w-full">
+            <div className="w-full order-1 md:order-2">
               <TeacherCarousel />
             </div>
           </div>
@@ -154,13 +154,13 @@ const LandingPage = () => {
       </section>
 
       {/* Sales & Offers Section */}
-      <section className="w-full bg-white py-16 border-t border-gray-200">
+      <section className="w-full bg-white py-8 sm:py-12 md:py-16 border-t border-gray-200">
         <div className="w-full">
-          <div className="text-center mb-12">
-            <h3 className="text-gray-800 text-2xl font-bold mb-2">
+          <div className="text-center mb-6 sm:mb-8 md:mb-12 px-4">
+            <h3 className="text-gray-800 text-xl sm:text-2xl md:text-3xl font-bold mb-2">
               Sales & Offers
             </h3>
-            <p className="text-gray-600 text-sm">
+            <p className="text-gray-600 text-xs sm:text-sm md:text-base">
               Exclusive offers and discounts for our learners
             </p>
           </div>
@@ -178,41 +178,38 @@ const LandingPage = () => {
                     {offers.map((offer, index) => (
                       <div
                         key={`${repeatIndex}-${index}`}
-                        className="flex-shrink-0 mx-4 my-4 bg-gray-100 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 min-w-[280px] max-w-[320px]"
+                        className="flex-shrink-0 mx-4 my-4 bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 min-w-[280px] max-w-[320px] border border-gray-200 overflow-hidden relative"
                       >
+                        <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${offer.color || 'from-blue-500 to-blue-600'}`}></div>
                         <div className="p-6">
-                          <div className="flex items-center mb-4">
-                            <div className={`w-16 h-16 bg-gradient-to-r ${offer.color || 'from-blue-500 to-blue-600'} rounded-xl flex items-center justify-center shadow-lg`}>
-                              <span className="text-white font-bold text-lg">{offer.logo || offer.title?.charAt(0) || 'O'}</span>
-                            </div>
-                            <div className="ml-4 flex-1">
-                              <h4 className="font-bold text-gray-900 text-lg">{offer.name || offer.title}</h4>
-                              <div className="flex items-center mt-1">
-                                <svg className="w-4 h-4 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                </svg>
-                                <span className="text-yellow-600 font-semibold text-sm">
-                                  {offer.isActive ? 'Active Offer' : 'Premium Partner'}
+                          <div className="mb-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-semibold text-gray-900 text-lg leading-tight">{offer.name || offer.title}</h4>
+                              {offer.isActive && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                                  {offer.isActive ? 'Active' : 'Premium'}
                                 </span>
-                              </div>
+                              )}
                             </div>
                           </div>
-                          <div className="bg-gray-200 rounded-lg my-2 px-3">
-                            <p className="text-gray-700 font-medium text-sm">{offer.offer || offer.description}</p>
+                          <div className="my-4 pb-2">
+                            <p className="text-gray-800 font-medium text-base leading-relaxed">{offer.offer || offer.description}</p>
                           </div>
                           {offer.discount && (
-                            <div className="bg-red-100 text-red-800 rounded-lg my-2 px-3 py-1">
-                              <p className="font-bold text-sm">{offer.discount}</p>
+                            <div className="my-3 pt-3 border-t border-gray-100">
+                              <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-100">
+                                <p className="text-blue-600 font-semibold text-sm">{offer.discount}</p>
+                              </div>
                             </div>
                           )}
                           {offer.validUntil && (
-                            <div className="text-xs text-gray-500 mb-2">
-                              Valid until: {new Date(offer.validUntil).toLocaleDateString()}
+                            <div className="flex items-center text-gray-400 text-xs mt-4 pt-3 border-t border-gray-100">
+                              <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <span>Valid until {new Date(offer.validUntil).toLocaleDateString()}</span>
                             </div>
                           )}
-                          <button className="w-full mt-4 bg-gradient-to-r from-gray-800 to-gray-900 text-white py-2 px-4 rounded-lg font-semibold hover:from-gray-700 hover:to-gray-800 transition-all duration-200">
-                            Claim Offer
-                          </button>
                         </div>
                       </div>
                     ))}
@@ -225,22 +222,22 @@ const LandingPage = () => {
       </section>
 
       {/* Featured Courses Section */}
-      <section className="w-full bg-white py-20">
-        <div className="max-w-[1440px] mx-auto px-4 md:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">
+      <section className="w-full bg-white py-12 sm:py-16 md:py-20">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 sm:mb-12 md:mb-16">
             Our Featured Courses
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             {loading ? (
               // Loading skeleton
               Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="bg-white rounded-2xl overflow-hidden shadow-sm">
-                  <div className="h-[200px] bg-gray-200 animate-pulse"></div>
-                  <div className="p-6">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded animate-pulse mb-4"></div>
-                    <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+                <div key={index} className="bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm">
+                  <div className="h-[180px] sm:h-[200px] bg-gray-200 animate-pulse"></div>
+                  <div className="p-4 sm:p-5 md:p-6">
+                    <div className="h-3 sm:h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+                    <div className="h-2 sm:h-3 bg-gray-200 rounded animate-pulse mb-4"></div>
+                    <div className="h-7 sm:h-8 bg-gray-200 rounded animate-pulse"></div>
                   </div>
                 </div>
               ))
@@ -248,9 +245,9 @@ const LandingPage = () => {
               courses.map((course, index) => (
                 <div 
                   key={course._id || course.id || index}
-                  className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                  className="bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                 >
-                  <div className="h-[200px] bg-slate-200 relative">
+                  <div className="h-[180px] sm:h-[200px] bg-slate-200 relative">
                     {course.image ? (
                       <img 
                         src={course.image} 
@@ -262,19 +259,19 @@ const LandingPage = () => {
                         <span className="text-blue-600 font-bold text-lg">{course.title?.charAt(0) || 'C'}</span>
                       </div>
                     )}
-                    <span className="absolute top-3 left-3 bg-white px-3 py-1 rounded text-xs font-bold">
-                      {course.level || 'Featured'}
+                    <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white px-2 sm:px-3 py-0.5 sm:py-1 rounded text-xs font-bold">
+                      {course.level || course.class ? `Class ${course.class}` : 'Featured'}
                     </span>
                   </div>
 
-                  <div className="p-6">
+                  <div className="p-4 sm:p-5 md:p-6">
                     <div className="flex justify-end mb-2">
-                      <span className="text-[#0061FF] text-xl font-bold">
+                      <span className="text-[#0061FF] text-lg sm:text-xl font-bold">
                         ₹{course.price || '299.99'}
                       </span>
                     </div>
 
-                    <h3 className="text-xl font-bold mb-2">{course.title}</h3>
+                    <h3 className="text-lg sm:text-xl font-bold mb-2 line-clamp-2">{course.title}</h3>
                     <p className="text-gray-500 text-sm mb-4">
                       {course.description || 'Learn from industry experts with practical projects.'}
                     </p>
@@ -312,10 +309,10 @@ const LandingPage = () => {
         </div>
 
         {/* View All Courses Button */}
-        <div className="text-center mt-12">
+        <div className="text-center mt-8 sm:mt-10 md:mt-12">
           <Link 
             to="/courses"
-            className="inline-flex items-center px-8 py-4 bg-[#0061FF] text-white rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors duration-200"
+            className="inline-flex items-center px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 bg-[#0061FF] text-white rounded-lg text-sm sm:text-base md:text-lg font-semibold hover:bg-blue-700 transition-colors duration-200"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -326,16 +323,16 @@ const LandingPage = () => {
       </section>
 
       {/* Why Choose Us Section */}
-      <section className="w-full bg-white py-20">
-        <div className="max-w-[1440px] mx-auto px-4 md:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+      <section className="w-full bg-white py-12 sm:py-16 md:py-20">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-3 sm:mb-4">
             Why Choose GyanIN
           </h2>
-          <p className="text-gray-600 text-center max-w-2xl mx-auto mb-16">
+          <p className="text-gray-600 text-sm sm:text-base text-center max-w-2xl mx-auto mb-8 sm:mb-12 md:mb-16 px-4">
             Gain clarity & achieve your educational goals with expert guidance.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10 md:gap-12">
             {[
               {
                 icon: (
@@ -365,12 +362,12 @@ const LandingPage = () => {
                 description: 'Our philosophy: hands-on learning creates impact. Every course fosters practical skills and transparency.'
               }
             ].map((feature, index) => (
-              <div key={index} className="text-center">
-                <div className="w-16 h-16 rounded-full bg-blue-50 text-[#0061FF] flex items-center justify-center mx-auto mb-6 p-4">
-                  {feature.icon}
+              <div key={index} className="text-center px-4 sm:px-0">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-blue-50 text-[#0061FF] flex items-center justify-center mx-auto mb-4 sm:mb-5 md:mb-6 p-3 sm:p-3.5 md:p-4">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6">{feature.icon}</div>
                 </div>
-                <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-                <p className="text-gray-600 text-sm">{feature.description}</p>
+                <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3">{feature.title}</h3>
+                <p className="text-gray-600 text-xs sm:text-sm">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -379,19 +376,19 @@ const LandingPage = () => {
 
 
       {/* CTA Section */}
-      <section className="w-full bg-[#0061FF] text-white py-20 relative overflow-hidden">
-        <div className="absolute top-[-100px] right-[-100px] w-[300px] h-[300px] rounded-full bg-[#0047b3] opacity-20"></div>
-        <div className="max-w-[1440px] mx-auto px-4 md:px-8 relative z-10">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+      <section className="w-full bg-[#0061FF] text-white py-12 sm:py-16 md:py-20 relative overflow-hidden">
+        <div className="absolute top-[-100px] right-[-100px] w-[200px] h-[200px] sm:w-[250px] sm:h-[250px] md:w-[300px] md:h-[300px] rounded-full bg-[#0047b3] opacity-20"></div>
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 relative z-10">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-3 sm:mb-4">
             Unlock Your Learning Potential Today
           </h2>
-          <p className="text-xl text-center max-w-3xl mx-auto mb-8 opacity-90">
+          <p className="text-base sm:text-lg md:text-xl text-center max-w-3xl mx-auto mb-6 sm:mb-8 opacity-90 px-2">
             Join thousands of learners around the world who are advancing their careers with our expertly crafted courses.
           </p>
           <div className="text-center">
             <Link 
               to="/courses"
-              className="inline-flex px-8 py-4 bg-white text-[#0061FF] rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors duration-200"
+              className="inline-flex px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 bg-white text-[#0061FF] rounded-lg text-sm sm:text-base md:text-lg font-semibold hover:bg-gray-100 transition-colors duration-200"
             >
               Explore Courses
             </Link>

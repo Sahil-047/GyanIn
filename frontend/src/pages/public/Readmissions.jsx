@@ -172,32 +172,32 @@ const Readmissions = () => {
 
   return (
     <>
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-8 md:py-12 px-3 sm:px-4 md:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="bg-white shadow-xl rounded-lg overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-8 text-white">
-            <h1 className="text-3xl font-bold mb-2">Readmission Application</h1>
-            <p className="text-blue-100">Apply for readmission to continue your learning journey</p>
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-5 md:px-6 py-6 sm:py-7 md:py-8 text-white">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-1.5 sm:mb-2">Readmission Application</h1>
+            <p className="text-sm sm:text-base text-blue-100">Apply for readmission to continue your learning journey</p>
           </div>
 
           {/* Success/Error Message */}
           {submitStatus.message && (
-            <div className={`px-6 py-4 ${submitStatus.success ? 'bg-green-50 border-l-4 border-green-500' : 'bg-red-50 border-l-4 border-red-500'
+            <div className={`px-4 sm:px-5 md:px-6 py-3 sm:py-4 ${submitStatus.success ? 'bg-green-50 border-l-4 border-green-500' : 'bg-red-50 border-l-4 border-red-500'
               }`}>
-              <p className={`text-sm ${submitStatus.success ? 'text-green-800' : 'text-red-800'}`}>
+              <p className={`text-xs sm:text-sm ${submitStatus.success ? 'text-green-800' : 'text-red-800'}`}>
                 {submitStatus.message}
               </p>
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="px-6 py-8 space-y-6">
+          <form onSubmit={handleSubmit} className="px-4 sm:px-5 md:px-6 py-6 sm:py-7 md:py-8 space-y-5 sm:space-y-6">
             {/* Personal Information */}
-            <div className="border-b border-gray-200 pb-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h2>
+            <div className="border-b border-gray-200 pb-4 sm:pb-5 md:pb-6">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Personal Information</h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
                 <div>
                   <label htmlFor="studentName" className="block text-sm font-medium text-gray-700 mb-2">
                     Full Name *

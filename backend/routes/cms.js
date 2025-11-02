@@ -2,8 +2,43 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const CMS = require('../models/CMS');
 const Course = require('../models/Course');
+const edgestoreHandler = require('./edgestore');
+
+// Initialize EdgeStore backend client for deleting files
+const { initEdgeStoreClient } = require('@edgestore/server/core');
+const backendClient = initEdgeStoreClient({
+  accessKey: process.env.EDGE_STORE_ACCESS_KEY,
+  secretKey: process.env.EDGE_STORE_SECRET_KEY,
+});
 
 const router = express.Router();
+
+// Helper function to delete image from EdgeStore
+const deleteImageFromEdgeStore = async (url) => {
+    try {
+        // Determine which bucket the URL belongs to
+        if (url.includes('edgestore') || url.includes('publicFiles')) {
+            // Try Teachers bucket first (since carousel images are in Teachers bucket)
+            try {
+                await backendClient.Teachers.delete({ url });
+                return true;
+            } catch (err) {
+                // If Teachers fails, try Courses bucket
+                try {
+                    await backendClient.Courses.delete({ url });
+                    return true;
+                } catch (err2) {
+                    console.error('Error deleting from both buckets:', err2.message);
+                    return false;
+                }
+            }
+        }
+        return true; // Not an EdgeStore URL, return success
+    } catch (error) {
+        console.error('Error deleting image from EdgeStore:', error.message);
+        return false;
+    }
+};
 
 // Validation rules
 const cmsValidation = [
@@ -68,17 +103,18 @@ router.get('/:section', async (req, res) => {
                 cmsContent.data.offers = [];
             }
 
-            // Map each offer to ensure consistent structure
-            cmsContent.data.offers = cmsContent.data.offers.map(offer => ({
-                id: offer.id,
-                name: offer.name || offer.title,
-                offer: offer.offer || offer.description,
-                courseId: offer.courseId || '',
-                color: offer.color,
-                discount: offer.discount || '',
-                validUntil: offer.validUntil || '',
-                isActive: typeof offer.isActive === 'boolean' ? offer.isActive : true
-            }));
+        // Map each offer to ensure consistent structure
+        cmsContent.data.offers = cmsContent.data.offers.map(offer => ({
+          id: offer.id,
+          name: offer.name || offer.title,
+          offer: offer.offer || offer.description,
+          slotId: offer.slotId || '',
+          courseId: offer.courseId || '',
+          color: offer.color,
+          discount: offer.discount || '',
+          validUntil: offer.validUntil || '',
+          isActive: typeof offer.isActive === 'boolean' ? offer.isActive : true
+        }));
         }
 
         
@@ -482,6 +518,23 @@ router.delete('/carousel/:id', async (req, res) => {
             });
         }
 
+        // Get the item to be deleted to extract image URLs
+        const itemToDelete = carouselSection.data.carouselItems[itemIndex];
+        
+        // Delete images from EdgeStore
+        const teacherImage = itemToDelete?.teacher?.image;
+        const scheduleImage = itemToDelete?.teacher?.scheduleImage;
+        
+        // Delete teacher image from EdgeStore if it exists and is from EdgeStore
+        if (teacherImage && (teacherImage.includes('edgestore') || teacherImage.includes('publicFiles'))) {
+            await deleteImageFromEdgeStore(teacherImage);
+        }
+        
+        // Delete schedule image from EdgeStore if it exists and is from EdgeStore
+        if (scheduleImage && (scheduleImage.includes('edgestore') || scheduleImage.includes('publicFiles'))) {
+            await deleteImageFromEdgeStore(scheduleImage);
+        }
+
         carouselSection.data.carouselItems.splice(itemIndex, 1);
 
         const updatedSection = await CMS.findOneAndUpdate(
@@ -514,7 +567,7 @@ router.delete('/carousel/:id', async (req, res) => {
 router.put('/offers/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, offer, courseId, color, discount, validUntil, isActive = true } = req.body;
+        const { name, offer, slotId, courseId, color, discount, validUntil, isActive = true } = req.body;
 
         if (!name || !offer) {
             return res.status(400).json({
@@ -547,6 +600,7 @@ router.put('/offers/:id', async (req, res) => {
             id: offersSection.data.offers[offerIndex].id,
             name,
             offer,
+            slotId: slotId || '',
             courseId: courseId || '',
             color: color || 'from-blue-500 to-blue-600',
             discount: discount || '',
@@ -649,7 +703,7 @@ router.delete('/offers/:id', async (req, res) => {
 router.post('/offers', async (req, res) => {
     try {
         
-        const { name, offer, courseId, color, discount, validUntil, isActive = true } = req.body;
+        const { name, offer, slotId, courseId, color, discount, validUntil, isActive = true } = req.body;
 
         if (!name || !offer) {
         
@@ -682,6 +736,7 @@ router.post('/offers', async (req, res) => {
             id: Date.now(),
             name,
             offer,
+            slotId: slotId || '',
             courseId: courseId || '',
             color: color || 'from-blue-500 to-blue-600',
             discount: discount || '',
@@ -694,6 +749,7 @@ router.post('/offers', async (req, res) => {
             id: offer.id,
             name: offer.name || offer.title,
             offer: offer.offer || offer.description,
+            slotId: offer.slotId || '',
             courseId: offer.courseId || '',
             color: offer.color,
             discount: offer.discount || '',

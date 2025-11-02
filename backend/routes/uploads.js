@@ -118,6 +118,71 @@ Response preview: ${responseText.substring(0, 200)}`;
   }
 });
 
+// Delete image from EdgeStore
+router.delete('/image', async (req, res) => {
+  try {
+    const { url } = req.body;
+
+    if (!url) {
+      return res.status(400).json({ success: false, message: 'No URL provided' });
+    }
+
+    const accessKey = process.env.EDGE_STORE_ACCESS_KEY;
+    const secretKey = process.env.EDGE_STORE_SECRET_KEY;
+
+    if (!accessKey || !secretKey) {
+      return res.status(501).json({
+        success: false,
+        message: 'Edge Store is not configured on the server. Add EDGE_STORE_ACCESS_KEY and EDGE_STORE_SECRET_KEY env vars.',
+      });
+    }
+
+    try {
+      // Try Edge Store delete API endpoint
+      const endpoint = 'https://files.edgestore.dev/api/delete';
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessKey}:${secretKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      const responseText = await response.text();
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        throw new Error(`Edge Store API returned invalid response: ${responseText.substring(0, 200)}`);
+      }
+
+      if (response.ok) {
+        return res.json({
+          success: true,
+          message: 'Image deleted successfully',
+        });
+      } else {
+        throw new Error(data.message || `Delete failed: ${response.status} ${response.statusText}`);
+      }
+    } catch (deleteError) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to delete from Edge Store',
+        error: process.env.NODE_ENV === 'development' ? deleteError.message : 'Internal server error',
+      });
+    }
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete image',
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',
+    });
+  }
+});
+
 module.exports = router;
 
 

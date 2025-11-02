@@ -36,6 +36,10 @@ const edgeStoreRouter = es.router({
             maxSize: 1024 * 1024 * 5, // 5MB
             accept: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
         })
+        .beforeDelete(({ ctx, fileInfo }) => {
+            // Allow deletion for all files
+            return true;
+        })
         .input(
             z.object({
                 type: z.enum(['course']),
@@ -45,6 +49,10 @@ const edgeStoreRouter = es.router({
         .imageBucket({
             maxSize: 1024 * 1024 * 5, // 5MB
             accept: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+        })
+        .beforeDelete(({ ctx, fileInfo }) => {
+            // Allow deletion for all files
+            return true;
         })
         .input(
             z.object({
@@ -60,6 +68,7 @@ if (createEdgeStoreExpressHandler) {
         createContext: (req, res) => ({}),
     });
     module.exports = handler;
+    module.exports.edgeStoreRouter = edgeStoreRouter;
 } else {
     const express = require('express');
     const fallback = express.Router();
@@ -70,5 +79,6 @@ if (createEdgeStoreExpressHandler) {
         });
     });
     module.exports = fallback;
+    module.exports.edgeStoreRouter = edgeStoreRouter;
 }
 

@@ -14,6 +14,7 @@ import ContactUs from './pages/public/ContactUs'
 import Admissions from './pages/public/Admissions'
 import PublicLogin from './pages/public/Login'
 import Teachers from './pages/public/Teachers'
+import Merchandise from './pages/public/Merchandise'
 
 function App() {
   return (
@@ -52,6 +53,19 @@ function App() {
             <Navbar />
             <main className="flex-grow">
               <Teachers />
+            </main>
+            <Footer />
+          </div>
+        } 
+      />
+
+      <Route 
+        path="/merchandise" 
+        element={
+          <div className="min-h-screen flex flex-col">
+            <Navbar />
+            <main className="flex-grow">
+              <Merchandise />
             </main>
             <Footer />
           </div>

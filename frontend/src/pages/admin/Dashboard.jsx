@@ -114,7 +114,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Active Slots */}
+          {/* Active Batches */}
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
               <div className="flex items-center">
@@ -124,7 +124,7 @@ const Dashboard = () => {
                   </svg>
                 </div>
                 <div className="ml-5 w-0 flex-1">
-                  <dt className="text-sm font-medium text-gray-500 truncate">Active Slots</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Active Batches</dt>
                   <dd className="flex items-baseline">
                     <div className="text-2xl font-semibold text-gray-900">{statistics?.slots?.active || 0}</div>
                   </dd>
@@ -179,10 +179,10 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Slots Overview */}
+          {/* Batches Overview */}
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-base font-medium text-gray-900">Slots Overview</h3>
+              <h3 className="text-base font-medium text-gray-900">Batches Overview</h3>
               <div className="mt-4 space-y-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Active</span>
@@ -249,8 +249,8 @@ const Dashboard = () => {
                 </svg>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Slot Management</h3>
-                <p className="mt-1 text-sm text-gray-500">Manage time slots and bookings</p>
+                <h3 className="text-lg font-medium text-gray-900">Batch Management</h3>
+                <p className="mt-1 text-sm text-gray-500">Manage batches and bookings</p>
               </div>
             </div>
           </Link>

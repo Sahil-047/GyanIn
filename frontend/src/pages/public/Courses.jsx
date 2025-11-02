@@ -7,6 +7,8 @@ const Courses = () => {
   const [sortBy, setSortBy] = useState('popular');
   const [courses, setCourses] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [instructors, setInstructors] = useState([]);
+  const [selectedInstructor, setSelectedInstructor] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -26,6 +28,13 @@ const Courses = () => {
             id: cat,
             name: index === 0 ? 'All Courses' : cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, ' ')
           })));
+          
+          // Extract unique instructors
+          const uniqueInstructors = ['all', ...new Set(response.data.map(course => course.instructor).filter(inst => inst && inst.trim()))];
+          setInstructors(uniqueInstructors.map((inst, index) => ({
+            id: inst,
+            name: index === 0 ? 'All Teachers' : inst
+          })));
         }
       } catch (err) {
         
@@ -38,9 +47,11 @@ const Courses = () => {
     fetchCourses();
   }, []);
 
-  const filteredCourses = courses.filter(course => 
-    selectedCategory === 'all' || course.category === selectedCategory
-  );
+  const filteredCourses = courses.filter(course => {
+    const categoryMatch = selectedCategory === 'all' || course.category === selectedCategory;
+    const instructorMatch = selectedInstructor === 'all' || course.instructor === selectedInstructor;
+    return categoryMatch && instructorMatch;
+  });
 
   const sortedCourses = [...filteredCourses].sort((a, b) => {
     switch (sortBy) {
@@ -75,23 +86,48 @@ const Courses = () => {
 
       {/* Filters */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
-        <div className="mb-6 sm:mb-8">
+        <div className="mb-6 sm:mb-8 space-y-4">
           {/* Category Filter */}
-          <div className="flex flex-wrap gap-2 sm:gap-3">
-            {categories.filter(category => category.id && category.name).map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors ${
-                  selectedCategory === category.id
-                    ? 'bg-[#0061FF] text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                {category.name}
-              </button>
-            ))}
+          <div>
+            <h3 className="text-sm sm:text-base font-semibold text-gray-700 mb-2">Filter by Category</h3>
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              {categories.filter(category => category.id && category.name).map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors ${
+                    selectedCategory === category.id
+                      ? 'bg-[#0061FF] text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>
           </div>
+          
+          {/* Teacher Filter */}
+          {instructors.length > 1 && (
+            <div>
+              <h3 className="text-sm sm:text-base font-semibold text-gray-700 mb-2">Filter by Teacher</h3>
+              <div className="flex flex-wrap gap-2 sm:gap-3">
+                {instructors.filter(instructor => instructor.id && instructor.name).map((instructor) => (
+                  <button
+                    key={instructor.id}
+                    onClick={() => setSelectedInstructor(instructor.id)}
+                    className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors ${
+                      selectedInstructor === instructor.id
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                    }`}
+                  >
+                    {instructor.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Results Count */}
@@ -99,6 +135,7 @@ const Courses = () => {
           <p className="text-sm sm:text-base text-gray-600">
             Showing {sortedCourses.length} course{sortedCourses.length !== 1 ? 's' : ''}
             {selectedCategory !== 'all' && ` in ${categories.find(c => c.id === selectedCategory)?.name}`}
+            {selectedInstructor !== 'all' && ` by ${selectedInstructor}`}
           </p>
         </div>
 
@@ -220,12 +257,23 @@ const Courses = () => {
                       </div>
 
                       {/* Action Button */}
-                      <Link
-                        to="/admissions"
-                        className="w-full py-2.5 sm:py-3 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 inline-block text-center text-sm sm:text-base"
-                      >
-                        Enroll Now
-                      </Link>
+                      {course.enrollmentUrl ? (
+                        <a
+                          href={course.enrollmentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full py-2.5 sm:py-3 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 inline-block text-center text-sm sm:text-base"
+                        >
+                          Enroll Now
+                        </a>
+                      ) : (
+                        <Link
+                          to="/admissions"
+                          className="w-full py-2.5 sm:py-3 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 inline-block text-center text-sm sm:text-base"
+                        >
+                          Enroll Now
+                        </Link>
+                      )}
                     </div>
                   </div>
                 ))}

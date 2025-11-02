@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import TeacherCarousel from '../../components/public/TeacherCarousel';
-import { cmsAPI, coursesAPI } from '../../utils/api';
+import { cmsAPI, coursesAPI, slotsAPI } from '../../utils/api';
 
 const LandingPage = () => {
   const [courses, setCourses] = useState([]);
   const [offers, setOffers] = useState([]);
+  const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
@@ -16,16 +17,19 @@ const LandingPage = () => {
     const fetchCMSData = async () => {
       try {
         // Fetch courses from courses API instead of CMS
-        const [coursesResponse, offersResponse] = await Promise.allSettled([
-          coursesAPI.getCourses({ limit: 6 }),
-          cmsAPI.getCMSSection('offers')
+        const [coursesResponse, offersResponse, slotsResponse] = await Promise.allSettled([
+          coursesAPI.getCourses({ limit: 3 }),
+          cmsAPI.getCMSSection('offers'),
+          slotsAPI.getSlots({ limit: 100 })
         ]);
 
         // Set courses from courses API
         if (coursesResponse.status === 'fulfilled' && coursesResponse.value.success) {
-          setCourses(coursesResponse.value.data || []);
+          // Limit to 3 courses even if API returns more
+          const coursesData = coursesResponse.value.data || [];
+          setCourses(coursesData.slice(0, 3));
         } else {
-          // Fallback to mock data
+          // Fallback to mock data - only 3 courses
           setCourses([
             {
               id: 1,
@@ -66,8 +70,13 @@ const LandingPage = () => {
             { name: "DevOps Academy", offer: "Industry Certification", logo: "DA", color: "from-emerald-500 to-emerald-600" }
           ]);
         }
+
+        // Set slots
+        if (slotsResponse.status === 'fulfilled' && slotsResponse.value.success) {
+          setSlots(slotsResponse.value.data || []);
+        }
       } catch (error) {
-        
+
       } finally {
         setLoading(false);
       }
@@ -81,7 +90,7 @@ const LandingPage = () => {
     let currentIndex = 0;
     setDisplayedText('');
     setIsTyping(true);
-    
+
     const typingInterval = setInterval(() => {
       if (currentIndex < fullText.length) {
         setDisplayedText(fullText.slice(0, currentIndex + 1));
@@ -153,18 +162,18 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Sales & Offers Section */}
+      {/* Ongoing Courses Section */}
       <section className="w-full bg-white py-8 sm:py-12 md:py-16 border-t border-gray-200">
         <div className="w-full">
           <div className="text-center mb-6 sm:mb-8 md:mb-12 px-4">
             <h3 className="text-gray-800 text-xl sm:text-2xl md:text-3xl font-bold mb-2">
-              Sales & Offers
+              Ongoing Courses
             </h3>
             <p className="text-gray-600 text-xs sm:text-sm md:text-base">
-              Exclusive offers and discounts for our learners
+              Currently running batches with available seats
             </p>
           </div>
-          
+
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -195,7 +204,23 @@ const LandingPage = () => {
                           <div className="my-4 pb-2">
                             <p className="text-gray-800 font-medium text-base leading-relaxed">{offer.offer || offer.description}</p>
                           </div>
-                          {offer.discount && (
+                          {offer.slotId && slots.find(s => s._id === offer.slotId) && (() => {
+                            const availableSeats = slots.find(s => s._id === offer.slotId).capacity - slots.find(s => s._id === offer.slotId).enrolledStudents;
+                            const isLowAvailability = availableSeats < 10;
+                            return (
+                              <div className="my-3 pt-3 border-t border-gray-100">
+                                <div className={`inline-flex items-center px-3 py-1.5 rounded-lg ${isLowAvailability ? 'bg-red-50 border border-red-100' : 'bg-green-50 border border-green-100'}`}>
+                                  <svg className={`w-4 h-4 mr-1.5 ${isLowAvailability ? 'text-red-600' : 'text-green-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                  </svg>
+                                  <p className={`${isLowAvailability ? 'text-red-600' : 'text-green-600'} font-semibold text-sm`}>
+                                    {availableSeats} Seats Available
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                          {!offer.slotId && offer.discount && (
                             <div className="my-3 pt-3 border-t border-gray-100">
                               <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-100">
                                 <p className="text-blue-600 font-semibold text-sm">{offer.discount}</p>
@@ -243,14 +268,14 @@ const LandingPage = () => {
               ))
             ) : (
               courses.map((course, index) => (
-                <div 
+                <div
                   key={course._id || course.id || index}
                   className="bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                 >
                   <div className="h-[180px] sm:h-[200px] bg-slate-200 relative">
                     {course.image ? (
-                      <img 
-                        src={course.image} 
+                      <img
+                        src={course.image}
                         alt={course.title}
                         className="w-full h-full object-cover"
                       />
@@ -298,9 +323,23 @@ const LandingPage = () => {
                       </div>
                     )}
 
-                    <button className="w-full mt-6 py-3 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-blue-50 transition-colors duration-200">
-                      View Course
-                    </button>
+                    {course.enrollmentUrl ? (
+                      <a
+                        href={course.enrollmentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full mt-6 py-2.5 sm:py-3 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 text-sm sm:text-base inline-block text-center"
+                      >
+                        Enroll Now
+                      </a>
+                    ) : (
+                      <Link
+                        to="/admissions"
+                        className="w-full mt-6 py-2.5 sm:py-3 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 text-sm sm:text-base inline-block text-center"
+                      >
+                        Enroll Now
+                      </Link>
+                    )}
                   </div>
                 </div>
               ))
@@ -308,16 +347,34 @@ const LandingPage = () => {
           </div>
         </div>
 
-        {/* View All Courses Button */}
-        <div className="text-center mt-8 sm:mt-10 md:mt-12">
-          <Link 
+        {/* Navigation Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mt-8 sm:mt-10 md:mt-12">
+          <Link
             to="/courses"
-            className="inline-flex items-center px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 bg-[#0061FF] text-white rounded-lg text-sm sm:text-base md:text-lg font-semibold hover:bg-blue-700 transition-colors duration-200"
+            className="inline-flex items-center px-6 sm:px-8 md:px-10 py-2.5 sm:py-3 md:py-4 bg-[#0061FF] text-white rounded-lg text-sm sm:text-base md:text-lg font-semibold hover:bg-blue-700 transition-colors duration-200 shadow-md hover:shadow-lg"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
-            View All Courses
+            All Courses
+          </Link>
+          <Link
+            to="/teachers"
+            className="inline-flex items-center px-6 sm:px-8 md:px-10 py-2.5 sm:py-3 md:py-4 bg-[#0061FF] text-white rounded-lg text-sm sm:text-base md:text-lg font-semibold hover:bg-blue-700 transition-colors duration-200 shadow-md hover:shadow-lg"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            Teachers
+          </Link>
+          <Link
+            to="/merchandise"
+            className="inline-flex items-center px-6 sm:px-8 md:px-10 py-2.5 sm:py-3 md:py-4 bg-[#0061FF] text-white rounded-lg text-sm sm:text-base md:text-lg font-semibold hover:bg-blue-700 transition-colors duration-200 shadow-md hover:shadow-lg"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            Merchandise
           </Link>
         </div>
       </section>
@@ -386,7 +443,7 @@ const LandingPage = () => {
             Join thousands of learners around the world who are advancing their careers with our expertly crafted courses.
           </p>
           <div className="text-center">
-            <Link 
+            <Link
               to="/courses"
               className="inline-flex px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 bg-white text-[#0061FF] rounded-lg text-sm sm:text-base md:text-lg font-semibold hover:bg-gray-100 transition-colors duration-200"
             >

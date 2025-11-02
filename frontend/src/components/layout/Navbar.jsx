@@ -44,7 +44,7 @@ const Navbar = () => {
                   : 'text-gray-500 hover:text-[#0061FF]'
               }`}
             >
-              Courses
+              All Courses
             </Link>
             <Link
               to="/teachers"
@@ -55,6 +55,16 @@ const Navbar = () => {
               }`}
             >
               Teachers
+            </Link>
+            <Link
+              to="/merchandise"
+              className={`inline-flex items-center px-2 lg:px-3 py-2 text-sm lg:text-base font-medium transition-colors ${
+                isActive('/merchandise') 
+                  ? 'text-[#0061FF]' 
+                  : 'text-gray-500 hover:text-[#0061FF]'
+              }`}
+            >
+              Merchandise
             </Link>
             <Link
               to="/admissions"
@@ -138,6 +148,7 @@ const Navbar = () => {
           >
             Home
           </Link>
+          
           <Link
             to="/courses"
             onClick={() => setIsMenuOpen(false)}
@@ -149,7 +160,7 @@ const Navbar = () => {
             }`}
             style={{ transitionDelay: isMenuOpen ? '0.1s' : '0s' }}
           >
-            Courses
+            All Courses
           </Link>
           <Link
             to="/teachers"
@@ -165,6 +176,19 @@ const Navbar = () => {
             Teachers
           </Link>
           <Link
+            to="/merchandise"
+            onClick={() => setIsMenuOpen(false)}
+            className={`block pl-3 pr-4 py-2.5 sm:py-3 border-l-4 text-base font-medium transition-all duration-300 ease-out ${
+              isMenuOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+            } ${isActive('/merchandise') 
+              ? 'border-[#0061FF] text-[#0061FF] bg-blue-50' 
+              : 'border-transparent text-gray-500 hover:text-[#0061FF] hover:bg-gray-50'
+            }`}
+            style={{ transitionDelay: isMenuOpen ? '0.2s' : '0s' }}
+          >
+            Merchandise
+          </Link>
+          <Link
             to="/admissions"
             onClick={() => setIsMenuOpen(false)}
             className={`block pl-3 pr-4 py-2.5 sm:py-3 border-l-4 text-base font-medium transition-all duration-300 ease-out ${
@@ -173,7 +197,7 @@ const Navbar = () => {
               ? 'border-[#0061FF] text-[#0061FF] bg-blue-50' 
               : 'border-transparent text-gray-500 hover:text-[#0061FF] hover:bg-gray-50'
             }`}
-            style={{ transitionDelay: isMenuOpen ? '0.2s' : '0s' }}
+            style={{ transitionDelay: isMenuOpen ? '0.25s' : '0s' }}
           >
             Admissions
           </Link>
@@ -186,7 +210,7 @@ const Navbar = () => {
               ? 'border-[#0061FF] text-[#0061FF] bg-blue-50' 
               : 'border-transparent text-gray-500 hover:text-[#0061FF] hover:bg-gray-50'
             }`}
-            style={{ transitionDelay: isMenuOpen ? '0.25s' : '0s' }}
+            style={{ transitionDelay: isMenuOpen ? '0.3s' : '0s' }}
           >
             Contact Us
           </Link>

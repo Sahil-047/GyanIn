@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { cmsAPI, coursesAPI } from '../../utils/api'
+import { cmsAPI, coursesAPI, slotsAPI } from '../../utils/api'
 import ImageUploader from '../../components/common/ImageUploader'
 
 const CMS = () => {
@@ -17,6 +17,7 @@ const CMS = () => {
   const [formErrors, setFormErrors] = useState({})
   const [instructors, setInstructors] = useState([])
   const [availableCourses, setAvailableCourses] = useState([])
+  const [availableSlots, setAvailableSlots] = useState([])
 
   // Fetch CMS data
   const fetchCMSData = async () => {
@@ -33,8 +34,11 @@ const CMS = () => {
 
       // Fetch courses from the courses collection
       const coursesPromise = coursesAPI.getCourses({ limit: 100 })
+      
+      // Fetch slots from the slots collection
+      const slotsPromise = slotsAPI.getSlots({ limit: 100 })
 
-      const allResults = await Promise.allSettled([...cmsPromises, coursesPromise])
+      const allResults = await Promise.allSettled([...cmsPromises, coursesPromise, slotsPromise])
 
       const newData = {
         carousel: { carouselItems: [] },
@@ -62,7 +66,8 @@ const CMS = () => {
                   id: offer.id,
                   name: offer.name || offer.title,
                   offer: offer.offer || offer.description,
-                  courseId: offer.courseId || '',
+                  slotId: offer.slotId || '',
+                  courseId: offer.courseId || '', // Keep for backward compatibility
                   color: offer.color,
                   discount: offer.discount,
                   validUntil: offer.validUntil,
@@ -102,13 +107,20 @@ const CMS = () => {
           instructor: course.instructor,
           price: course.price,
           class: course.class,
-          image: course.image
+          image: course.image,
+          enrollmentUrl: course.enrollmentUrl
         }))
         newData.courses = { courses: coursesData }
         // Set available courses for offers dropdown (only active/live courses)
         setAvailableCourses(coursesData.filter(course => course.id))
       }
 
+      // Process slots from the slots collection
+      const slotsResult = allResults[sections.length + 1]
+      if (slotsResult.status === 'fulfilled' && slotsResult.value.success) {
+        // Set available slots for ongoing courses dropdown
+        setAvailableSlots(slotsResult.value.data.filter(slot => slot.isActive))
+      }
 
       setCmsData(newData)
 
@@ -165,8 +177,9 @@ const CMS = () => {
         if (!formData.class || formData.class < 1 || formData.class > 12) errors.class = 'Class must be a number between 1 and 12'
         break
       case 'offers':
-        if (!formData.name?.trim()) errors.name = 'Offer name is required'
-        if (!formData.offer?.trim()) errors.offer = 'Offer description is required'
+        if (!formData.name?.trim()) errors.name = 'Batch name is required'
+        if (!formData.offer?.trim()) errors.offer = 'Description is required'
+        if (!formData.slotId?.trim()) errors.slotId = 'Batch selection is required'
         break
     }
 
@@ -209,14 +222,13 @@ const CMS = () => {
         };
       }
     } else if (activeTab === 'offers') {
-      // Ensure courseId is included for offers
+      // Ensure slotId is included for ongoing courses
       formDataToSet = {
         id: item.id,
         name: item.name || '',
         offer: item.offer || '',
-        courseId: item.courseId || '',
+        slotId: item.slotId || '',
         color: item.color || '',
-        discount: item.discount || '',
         validUntil: item.validUntil || '',
         isActive: item.isActive !== undefined ? item.isActive : true
       };
@@ -482,6 +494,19 @@ const CMS = () => {
               </div>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Enrollment URL</label>
+              <input
+                type="url"
+                name="enrollmentUrl"
+                value={formData.enrollmentUrl || ''}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="https://example.com/enroll"
+              />
+              <p className="mt-1 text-xs text-gray-500">Leave empty to use default admissions page</p>
+            </div>
+
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Course Image</label>
               <ImageUploader
@@ -498,94 +523,73 @@ const CMS = () => {
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Offer name *</label>
+              <label className="block text-sm font-medium text-gray-700">Batch Name *</label>
               <input
                 type="text"
                 name="name"
                 value={formData.name || ''}
                 onChange={handleInputChange}
                 className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.name ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                placeholder="e.g., Summer Sale, New Year Offer"
+                placeholder="e.g., Weekend Batch A, Evening Batch B"
               />
               {formErrors.name && <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Offer description *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select Batch *</label>
+              <select
+                name="slotId"
+                value={formData.slotId || ''}
+                onChange={handleInputChange}
+                className={`mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 ${formErrors.slotId ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+              >
+                <option value="">Select a batch</option>
+                {availableSlots.map((slot) => {
+                  const availableSeats = slot.capacity - slot.enrolledStudents;
+                  return (
+                    <option key={slot._id} value={slot._id}>
+                      {slot.name} - {slot.subject} (Class {slot.class}) - {availableSeats} seats available
+                    </option>
+                  );
+                })}
+              </select>
+              {formErrors.slotId && <p className="mt-1 text-sm text-red-600">{formErrors.slotId}</p>}
+              <p className="mt-1 text-xs text-gray-500">Choose an active batch from the slots</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Description *</label>
               <textarea
                 name="offer"
                 value={formData.offer || ''}
                 onChange={handleInputChange}
                 rows={3}
                 className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.offer ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                placeholder="e.g., 20% Off All Courses, Free Trial Available"
+                placeholder="e.g., Evening classes with flexible timings"
               />
               {formErrors.offer && <p className="mt-1 text-sm text-red-600">{formErrors.offer}</p>}
-
-              <div className="mt-3">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Select Course (Optional)</label>
-                <select
-                  name="courseId"
-                  value={formData.courseId || ''}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select a course (existing or ongoing)</option>
-                  {availableCourses.map((course) => (
-                    <option key={course.id} value={course.id}>
-                      {course.title} - Class {course.class}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-gray-500">Choose an existing or ongoing course that is live</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Color Theme</label>
-                <select
-                  name="color"
-                  value={formData.color || ''}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select color</option>
-                  <option value="from-blue-500 to-blue-600">Blue</option>
-                  <option value="from-green-500 to-green-600">Green</option>
-                  <option value="from-purple-500 to-purple-600">Purple</option>
-                  <option value="from-orange-500 to-orange-600">Orange</option>
-                  <option value="from-red-500 to-red-600">Red</option>
-                  <option value="from-teal-500 to-teal-600">Teal</option>
-                  <option value="from-indigo-500 to-indigo-600">Indigo</option>
-                  <option value="from-pink-500 to-pink-600">Pink</option>
-                  <option value="from-cyan-500 to-cyan-600">Cyan</option>
-                  <option value="from-emerald-500 to-emerald-600">Emerald</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Discount</label>
-                <input
-                  type="text"
-                  name="discount"
-                  value={formData.discount || ''}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g., 20% OFF, $50 OFF"
-                />
-              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Valid Until</label>
-              <input
-                type="date"
-                name="validUntil"
-                value={formData.validUntil || ''}
+              <label className="block text-sm font-medium text-gray-700">Color Theme</label>
+              <select
+                name="color"
+                value={formData.color || ''}
                 onChange={handleInputChange}
                 className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
+              >
+                <option value="">Select color</option>
+                <option value="from-blue-500 to-blue-600">Blue</option>
+                <option value="from-green-500 to-green-600">Green</option>
+                <option value="from-purple-500 to-purple-600">Purple</option>
+                <option value="from-orange-500 to-orange-600">Orange</option>
+                <option value="from-red-500 to-red-600">Red</option>
+                <option value="from-teal-500 to-teal-600">Teal</option>
+                <option value="from-indigo-500 to-indigo-600">Indigo</option>
+                <option value="from-pink-500 to-pink-600">Pink</option>
+                <option value="from-cyan-500 to-cyan-600">Cyan</option>
+                <option value="from-emerald-500 to-emerald-600">Emerald</option>
+              </select>
             </div>
 
             <div className="flex items-center">
@@ -626,7 +630,7 @@ const CMS = () => {
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium leading-6 text-gray-900">
               {activeTab === 'carousel' ? 'Carousel Items' :
-                activeTab === 'courses' ? 'Courses' : 'Sales & Offers'}
+                activeTab === 'courses' ? 'Courses' : 'Ongoing Courses'}
             </h3>
             <button
               onClick={handleAdd}
@@ -697,12 +701,20 @@ const CMS = () => {
                             </span>
                           </div>
                           <p className="text-sm text-gray-600 mt-1">{item.offer || item.description}</p>
-                          {item.courseId && (
+                          {item.slotId && (
                             <p className="text-xs text-blue-600 mt-1">
-                              Course: {availableCourses.find(c => c.id === item.courseId)?.title || 'Course selected'}
+                              Batch: {availableSlots.find(s => s._id === item.slotId)?.name || 'Batch selected'}
                             </p>
                           )}
-                          {item.discount && <p className="text-sm text-blue-600 font-medium mt-1">{item.discount}</p>}
+                          {availableSlots.find(s => s._id === item.slotId) && (() => {
+                            const availableSeats = availableSlots.find(s => s._id === item.slotId).capacity - availableSlots.find(s => s._id === item.slotId).enrolledStudents;
+                            const isLowAvailability = availableSeats < 10;
+                            return (
+                              <p className={`text-xs mt-1 ${isLowAvailability ? 'text-red-600' : 'text-green-600'}`}>
+                                Seats Available: {availableSeats}
+                              </p>
+                            );
+                          })()}
                           {item.validUntil && <p className="text-xs text-gray-400 mt-1">Valid until: {new Date(item.validUntil).toLocaleDateString()}</p>}
                         </div>
                       )}
@@ -760,7 +772,7 @@ const CMS = () => {
           >
             <option value="carousel">Carousel & Teachers</option>
             <option value="courses">Courses</option>
-            <option value="offers">Sales & Offers</option>
+            <option value="offers">Ongoing Courses</option>
           </select>
         </div>
         <div className="hidden sm:block">
@@ -791,7 +803,7 @@ const CMS = () => {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
               >
-                Sales & Offers
+                Ongoing Courses
               </button>
             </nav>
           </div>

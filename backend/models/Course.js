@@ -39,6 +39,12 @@ const courseSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
+  enrollmentUrl: {
+    type: String,
+    required: false,
+    trim: true,
+    default: ''
+  },
   image: {
     type: String,
     required: true,

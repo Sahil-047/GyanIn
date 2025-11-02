@@ -43,6 +43,7 @@ const Slots = () => {
 
   // Static data for dropdowns
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  const locations = ['GyanIN-1', 'GyanIN-2']
 
   // Fetch slots
   const fetchSlots = async () => {
@@ -58,13 +59,13 @@ const Slots = () => {
       }
 
       const data = await slotsAPI.getSlots(params)
-      
+
       if (data.success) {
         setSlots(data.data)
         setTotalPages(data.pagination.pages)
       }
     } catch (error) {
-      
+
     }
     setLoading(false)
   }
@@ -73,12 +74,12 @@ const Slots = () => {
   const fetchStats = async () => {
     try {
       const data = await slotsAPI.getStats()
-      
+
       if (data.success) {
         setStats(data.data)
       }
     } catch (error) {
-      
+
     }
   }
 
@@ -117,12 +118,12 @@ const Slots = () => {
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
-    
+
     if (type === 'checkbox') {
       if (name === 'days') {
         setFormData(prev => ({
           ...prev,
-          days: checked 
+          days: checked
             ? [...prev.days, value]
             : prev.days.filter(day => day !== value)
         }))
@@ -133,7 +134,7 @@ const Slots = () => {
         [name]: value
       }))
     }
-    
+
     // Clear error when user starts typing
     if (formErrors[name]) {
       setFormErrors(prev => ({
@@ -146,7 +147,7 @@ const Slots = () => {
   // Validate form
   const validateForm = () => {
     const errors = {}
-    
+
     if (!formData.name.trim()) errors.name = 'Batch name is required'
     // Course removed from form
     if (!formData.subject.trim()) errors.subject = 'Subject is required'
@@ -157,7 +158,7 @@ const Slots = () => {
     if (formData.capacity < 1 || formData.capacity > 50) errors.capacity = 'Capacity must be between 1 and 50'
     if (formData.enrolledStudents < 0) errors.enrolledStudents = 'Enrolled students cannot be negative'
     if (formData.enrolledStudents > formData.capacity) errors.enrolledStudents = 'Enrolled students cannot exceed capacity'
-    
+
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -165,9 +166,9 @@ const Slots = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     if (!validateForm()) return
-    
+
     setLoading(true)
     try {
       let data
@@ -178,7 +179,7 @@ const Slots = () => {
         // Create new slot
         data = await slotsAPI.createSlot(formData)
       }
-      
+
       if (data.success) {
         setShowAddModal(false)
         setShowEditModal(false)
@@ -199,7 +200,7 @@ const Slots = () => {
         fetchStats()
       }
     } catch (error) {
-      
+
       // Handle validation errors from server
       if (error.errors) {
         const serverErrors = {}
@@ -227,18 +228,18 @@ const Slots = () => {
 
   // Handle delete
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this slot?')) return
-    
+    if (!window.confirm('Are you sure you want to delete this batch?')) return
+
     setLoading(true)
     try {
       const data = await slotsAPI.deleteSlot(id)
-      
+
       if (data.success) {
         fetchSlots()
         fetchStats()
       }
     } catch (error) {
-      
+
     }
     setLoading(false)
   }
@@ -248,13 +249,13 @@ const Slots = () => {
     setLoading(true)
     try {
       const data = await slotsAPI.toggleSlot(id)
-      
+
       if (data.success) {
         fetchSlots()
         fetchStats()
       }
     } catch (error) {
-      
+
     }
     setLoading(false)
   }
@@ -264,13 +265,13 @@ const Slots = () => {
     setLoading(true)
     try {
       const data = await slotsAPI.updateEnrolledStudents(id, enrolledStudents)
-      
+
       if (data.success) {
         fetchSlots()
         fetchStats()
       }
     } catch (error) {
-      
+
     }
     setLoading(false)
   }
@@ -290,18 +291,16 @@ const Slots = () => {
           <p className="text-sm text-gray-500">Class {slot.class}</p>
         </div>
         <div className="flex items-center space-x-2">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            slot.type === 'online' 
-              ? 'bg-blue-100 text-blue-800' 
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${slot.type === 'online'
+              ? 'bg-blue-100 text-blue-800'
               : 'bg-green-100 text-green-800'
-          }`}>
+            }`}>
             {slot.type.toUpperCase()}
           </span>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            slot.isActive 
-              ? 'bg-green-100 text-green-800' 
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${slot.isActive
+              ? 'bg-green-100 text-green-800'
               : 'bg-red-100 text-red-800'
-          }`}>
+            }`}>
             {slot.isActive ? 'ACTIVE' : 'INACTIVE'}
           </span>
         </div>
@@ -332,14 +331,13 @@ const Slots = () => {
           <span className="text-sm text-gray-600">{slot.enrolledStudents}/{slot.capacity}</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
-            className={`h-2 rounded-full ${
-              slot.enrolledStudents / slot.capacity > 0.8 
-                ? 'bg-red-500' 
-                : slot.enrolledStudents / slot.capacity > 0.6 
-                ? 'bg-yellow-500' 
-                : 'bg-green-500'
-            }`}
+          <div
+            className={`h-2 rounded-full ${slot.enrolledStudents / slot.capacity > 0.8
+                ? 'bg-red-500'
+                : slot.enrolledStudents / slot.capacity > 0.6
+                  ? 'bg-yellow-500'
+                  : 'bg-green-500'
+              }`}
             style={{ width: `${(slot.enrolledStudents / slot.capacity) * 100}%` }}
           ></div>
         </div>
@@ -360,11 +358,10 @@ const Slots = () => {
         </button>
         <button
           onClick={() => handleToggleStatus(slot._id)}
-          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium ${
-            slot.isActive 
-              ? 'bg-yellow-600 text-white hover:bg-yellow-700' 
+          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium ${slot.isActive
+              ? 'bg-yellow-600 text-white hover:bg-yellow-700'
               : 'bg-green-600 text-white hover:bg-green-700'
-          }`}
+            }`}
         >
           {slot.isActive ? 'Deactivate' : 'Activate'}
         </button>
@@ -380,8 +377,8 @@ const Slots = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-semibold text-gray-900">Slot Management</h1>
-      <p className="mt-1 text-sm text-gray-500">Manage time slots for online and offline classes.</p>
+      <h1 className="text-2xl font-semibold text-gray-900">Batch Management</h1>
+      <p className="mt-1 text-sm text-gray-500">Manage batches for online and offline classes.</p>
 
       {/* Stats Cards */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -395,7 +392,7 @@ const Slots = () => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Slots</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Total Batches</dt>
                   <dd className="text-lg font-medium text-gray-900">{stats.total}</dd>
                 </dl>
               </div>
@@ -413,7 +410,7 @@ const Slots = () => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Active Slots</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Active Batches</dt>
                   <dd className="text-lg font-medium text-gray-900">{stats.active}</dd>
                 </dl>
               </div>
@@ -431,7 +428,7 @@ const Slots = () => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Inactive Slots</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Inactive Batches</dt>
                   <dd className="text-lg font-medium text-gray-900">{stats.inactive}</dd>
                 </dl>
               </div>
@@ -484,31 +481,28 @@ const Slots = () => {
             <div className="flex space-x-2">
               <button
                 onClick={() => setFilterStatus('All')}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${
-                  filterStatus === 'All'
+                className={`px-3 py-2 text-sm font-medium rounded-md ${filterStatus === 'All'
                     ? 'bg-blue-100 text-blue-700'
                     : 'text-gray-500 hover:text-gray-700 bg-white'
-                }`}
+                  }`}
               >
                 All ({stats.total})
               </button>
               <button
                 onClick={() => setFilterStatus('Active')}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${
-                  filterStatus === 'Active'
+                className={`px-3 py-2 text-sm font-medium rounded-md ${filterStatus === 'Active'
                     ? 'bg-green-100 text-green-700'
                     : 'text-gray-500 hover:text-gray-700 bg-white'
-                }`}
+                  }`}
               >
                 Active ({stats.active})
               </button>
               <button
                 onClick={() => setFilterStatus('Inactive')}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${
-                  filterStatus === 'Inactive'
+                className={`px-3 py-2 text-sm font-medium rounded-md ${filterStatus === 'Inactive'
                     ? 'bg-red-100 text-red-700'
                     : 'text-gray-500 hover:text-gray-700 bg-white'
-                }`}
+                  }`}
               >
                 Inactive ({stats.inactive})
               </button>
@@ -586,21 +580,19 @@ const Slots = () => {
             <nav className="-mb-px flex space-x-8">
               <button
                 onClick={() => setActiveTab('manage')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'manage'
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'manage'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                  }`}
               >
-                Manage Slots
+                Manage Batches
               </button>
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'overview'
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'overview'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 Overview
               </button>
@@ -618,7 +610,7 @@ const Slots = () => {
               </div>
             ) : slots.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                No slots found
+                No batches found
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -629,14 +621,14 @@ const Slots = () => {
             {/* Pagination */}
             <div className="flex items-center justify-between mt-6">
               <div className="flex-1 flex justify-between sm:hidden">
-                <button 
+                <button
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
                   className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
                   className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -653,7 +645,7 @@ const Slots = () => {
                 </div>
                 <div>
                   <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                    <button 
+                    <button
                       onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                       disabled={currentPage === 1}
                       className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -666,7 +658,7 @@ const Slots = () => {
                     <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
                       {currentPage}
                     </button>
-                    <button 
+                    <button
                       onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                       disabled={currentPage === totalPages}
                       className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -685,27 +677,27 @@ const Slots = () => {
 
         {activeTab === 'overview' && (
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Slot Overview</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Batch Overview</h3>
             <div className="space-y-4">
               {Array.from(new Set(slots.map(slot => slot.course))).map(course => {
                 const courseSlots = slots.filter(slot => slot.course === course)
                 const onlineSlots = courseSlots.filter(slot => slot.type === 'online')
                 const offlineSlots = courseSlots.filter(slot => slot.type === 'offline')
-                
+
                 return (
                   <div key={course} className="border rounded-lg p-4">
                     <h4 className="font-medium text-gray-900 mb-2">{course}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="bg-blue-50 p-3 rounded">
-                        <h5 className="font-medium text-blue-900">Online Slots</h5>
+                        <h5 className="font-medium text-blue-900">Online Batches</h5>
                         <p className="text-sm text-blue-700">
-                          {onlineSlots.length} slots, {onlineSlots.reduce((sum, slot) => sum + slot.enrolledStudents, 0)}/{onlineSlots.reduce((sum, slot) => sum + slot.capacity, 0)} enrolled
+                          {onlineSlots.length} batches, {onlineSlots.reduce((sum, slot) => sum + slot.enrolledStudents, 0)}/{onlineSlots.reduce((sum, slot) => sum + slot.capacity, 0)} enrolled
                         </p>
                       </div>
                       <div className="bg-green-50 p-3 rounded">
-                        <h5 className="font-medium text-green-900">Offline Slots</h5>
+                        <h5 className="font-medium text-green-900">Offline Batches</h5>
                         <p className="text-sm text-green-700">
-                          {offlineSlots.length} slots, {offlineSlots.reduce((sum, slot) => sum + slot.enrolledStudents, 0)}/{offlineSlots.reduce((sum, slot) => sum + slot.capacity, 0)} enrolled
+                          {offlineSlots.length} batches, {offlineSlots.reduce((sum, slot) => sum + slot.enrolledStudents, 0)}/{offlineSlots.reduce((sum, slot) => sum + slot.capacity, 0)} enrolled
                         </p>
                       </div>
                     </div>
@@ -717,7 +709,7 @@ const Slots = () => {
         )}
       </div>
 
-      {/* Add Slot Modal */}
+      {/* Add Batch Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
@@ -733,7 +725,7 @@ const Slots = () => {
                   </svg>
                 </button>
               </div>
-              
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -825,14 +817,30 @@ const Slots = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Location *</label>
-                    <input
-                      type="text"
-                      name="location"
-                      value={formData.location}
-                      onChange={handleInputChange}
-                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.location ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                      placeholder={formData.type === 'online' ? 'Online Platform (e.g., Zoom, Google Meet)' : 'Physical Location (e.g., Room 101)'}
-                    />
+                    {formData.type === 'offline' ? (
+                      <select
+                        name="location"
+                        value={formData.location}
+                        onChange={handleInputChange}
+                        className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.location ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                      >
+                        <option value="">Select a location</option>
+                        {locations.map((location, index) => (
+                          <option key={index} value={location}>
+                            {location}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        name="location"
+                        value={formData.location}
+                        onChange={handleInputChange}
+                        className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.location ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                        placeholder="Online Platform (e.g., Zoom, Google Meet)"
+                      />
+                    )}
                     {formErrors.location && <p className="mt-1 text-sm text-red-600">{formErrors.location}</p>}
                   </div>
 
@@ -898,7 +906,7 @@ const Slots = () => {
                     disabled={loading}
                     className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loading ? 'Creating...' : 'Create Slot'}
+                    {loading ? 'Creating...' : 'Create Batch'}
                   </button>
                 </div>
               </form>
@@ -907,7 +915,7 @@ const Slots = () => {
         </div>
       )}
 
-      {/* Edit Slot Modal */}
+      {/* Edit Batch Modal */}
       {showEditModal && selectedSlot && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
@@ -923,7 +931,7 @@ const Slots = () => {
                   </svg>
                 </button>
               </div>
-              
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -1015,14 +1023,30 @@ const Slots = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Location *</label>
-                    <input
-                      type="text"
-                      name="location"
-                      value={formData.location}
-                      onChange={handleInputChange}
-                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.location ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                      placeholder={formData.type === 'online' ? 'Online Platform (e.g., Zoom, Google Meet)' : 'Physical Location (e.g., Room 101)'}
-                    />
+                    {formData.type === 'offline' ? (
+                      <select
+                        name="location"
+                        value={formData.location}
+                        onChange={handleInputChange}
+                        className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.location ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                      >
+                        <option value="">Select a location</option>
+                        {locations.map((location, index) => (
+                          <option key={index} value={location}>
+                            {location}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        name="location"
+                        value={formData.location}
+                        onChange={handleInputChange}
+                        className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.location ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                        placeholder="Online Platform (e.g., Zoom, Google Meet)"
+                      />
+                    )}
                     {formErrors.location && <p className="mt-1 text-sm text-red-600">{formErrors.location}</p>}
                   </div>
 
@@ -1088,7 +1112,7 @@ const Slots = () => {
                     disabled={loading}
                     className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loading ? 'Updating...' : 'Update Slot'}
+                    {loading ? 'Updating...' : 'Update Batch'}
                   </button>
                 </div>
               </form>
@@ -1097,13 +1121,13 @@ const Slots = () => {
         </div>
       )}
 
-      {/* View Slot Modal */}
+      {/* View Batch Modal */}
       {showViewModal && selectedSlot && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Slot Details</h3>
+                <h3 className="text-lg font-medium text-gray-900">Batch Details</h3>
                 <button
                   onClick={() => setShowViewModal(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -1113,11 +1137,11 @@ const Slots = () => {
                   </svg>
                 </button>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Slot Name</label>
+                    <label className="block text-sm font-medium text-gray-700">Batch Name</label>
                     <p className="mt-1 text-sm text-gray-900">{selectedSlot.name}</p>
                   </div>
                   <div>
@@ -1134,21 +1158,19 @@ const Slots = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Type</label>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      selectedSlot.type === 'online' 
-                        ? 'bg-blue-100 text-blue-800' 
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${selectedSlot.type === 'online'
+                        ? 'bg-blue-100 text-blue-800'
                         : 'bg-green-100 text-green-800'
-                    }`}>
+                      }`}>
                       {selectedSlot.type.toUpperCase()}
                     </span>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Status</label>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      selectedSlot.isActive 
-                        ? 'bg-green-100 text-green-800' 
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${selectedSlot.isActive
+                        ? 'bg-green-100 text-green-800'
                         : 'bg-red-100 text-red-800'
-                    }`}>
+                      }`}>
                       {selectedSlot.isActive ? 'ACTIVE' : 'INACTIVE'}
                     </span>
                   </div>
@@ -1195,15 +1217,14 @@ const Slots = () => {
                       }}
                       className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
-                      Edit Slot
+                      Edit Batch
                     </button>
                     <button
                       onClick={() => handleToggleStatus(selectedSlot._id)}
-                      className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                        selectedSlot.isActive 
-                          ? 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500' 
+                      className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${selectedSlot.isActive
+                          ? 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500'
                           : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
-                      } focus:outline-none focus:ring-2 focus:ring-offset-2`}
+                        } focus:outline-none focus:ring-2 focus:ring-offset-2`}
                     >
                       {selectedSlot.isActive ? 'Deactivate' : 'Activate'}
                     </button>

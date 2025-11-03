@@ -1,69 +1,37 @@
 import { useEffect, useState } from 'react'
+import { merchandiseAPI } from '../../utils/api'
 
 const Merchandise = () => {
   const [merchandise, setMerchandise] = useState([])
+  const [categories, setCategories] = useState([])
+  const [selectedCategory, setSelectedCategory] = useState('all')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    // Simulate loading merchandise data
     const fetchMerchandise = async () => {
       try {
         setLoading(true)
-        // Mock merchandise data - Replace with actual API call
-        const mockMerchandise = [
-          {
-            id: 1,
-            name: 'GyanIN T-Shirt',
-            description: 'Premium quality cotton t-shirt with GyanIN branding',
-            price: 299,
-            image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500&q=80',
-            category: 'Apparel'
-          },
-          {
-            id: 2,
-            name: 'Study Planner Notebook',
-            description: 'Aesthetic planner to organize your study schedule',
-            price: 149,
-            image: 'https://images.unsplash.com/photo-1532619675605-1ede6c2ed2b0?w=500&q=80',
-            category: 'Stationery'
-          },
-          {
-            id: 3,
-            name: 'GyanIN Mug',
-            description: 'Keep your motivation hot with this inspiring mug',
-            price: 199,
-            image: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=500&q=80',
-            category: 'Accessories'
-          },
-          {
-            id: 4,
-            name: 'Premium Pen Set',
-            description: 'Professional pen set for exams and notes',
-            price: 249,
-            image: 'https://images.unsplash.com/photo-1583484953889-a8b38fe6a4d7?w=500&q=80',
-            category: 'Stationery'
-          },
-          {
-            id: 5,
-            name: 'Backpack',
-            description: 'Durable backpack perfect for students',
-            price: 899,
-            image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500&q=80',
-            category: 'Accessories'
-          },
-          {
-            id: 6,
-            name: 'Hoodie',
-            description: 'Comfortable hoodie with GyanIN logo',
-            price: 599,
-            image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=500&q=80',
-            category: 'Apparel'
-          }
-        ]
-        
-        setMerchandise(mockMerchandise)
+        setError(null)
+
+        const response = await merchandiseAPI.getMerchandise({ limit: 100 })
+
+        if (response.success) {
+          const items = response.data || []
+          setMerchandise(items)
+
+          // Extract unique categories
+          const uniqueCategories = ['all', ...new Set(items.map(item => item.category).filter(cat => cat && cat.trim()))]
+          setCategories(uniqueCategories.map((cat, index) => ({
+            id: cat,
+            name: index === 0 ? 'All Items' : cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, ' ')
+          })))
+        } else {
+          setError('Failed to load merchandise')
+        }
       } catch (e) {
         console.error('Failed to load merchandise:', e)
+        setError('Failed to load merchandise. Please try again later.')
       } finally {
         setLoading(false)
       }
@@ -71,63 +39,152 @@ const Merchandise = () => {
     fetchMerchandise()
   }, [])
 
+  const filteredMerchandise = merchandise.filter(item => {
+    return selectedCategory === 'all' || item.category === selectedCategory
+  })
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8 sm:py-10 md:py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8 sm:mb-10 md:mb-12">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3 sm:mb-4">GyanIN Merchandise</h1>
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-2">
-            Show your GyanIN pride with our exclusive merchandise collection
-          </p>
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <div className="bg-white py-8 sm:py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3 sm:mb-4">
+              GyanIN Merchandise
+            </h1>
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-2 sm:px-0">
+              Show your GyanIN pride with our exclusive merchandise collection. Quality products designed for learners like you.
+            </p>
+          </div>
         </div>
+      </div>
 
-        {loading ? (
+      {/* Filters */}
+      {categories.length > 1 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="mb-6 sm:mb-8">
+            <h3 className="text-sm sm:text-base font-semibold text-gray-700 mb-2">Filter by Category</h3>
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              {categories.filter(category => category.id && category.name).map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors ${selectedCategory === category.id
+                      ? 'bg-[#0061FF] text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Results Count */}
+          <div className="mb-2 sm:mb-3">
+            <p className="text-sm sm:text-base text-gray-600">
+              Showing {filteredMerchandise.length} item{filteredMerchandise.length !== 1 ? 's' : ''}
+              {selectedCategory !== 'all' && ` in ${categories.find(c => c.id === selectedCategory)?.name}`}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-3 pb-4 sm:pb-6 md:pb-8">
+        {/* Loading State */}
+        {loading && (
           <div className="flex justify-center items-center py-12 sm:py-16 md:py-20">
-            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600" />
+            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-[#0061FF]"></div>
           </div>
-        ) : merchandise.length === 0 ? (
-          <div className="bg-white border rounded-xl p-6 sm:p-8 text-center text-gray-500 shadow-lg text-sm sm:text-base">
-            No merchandise available at the moment.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-            {merchandise.map((item) => (
-              <div 
-                key={item.id} 
-                className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden group border border-gray-100"
-              >
-                {/* Product Image Section */}
-                <div className="relative h-48 sm:h-56 md:h-64 bg-gradient-to-br from-blue-500 to-indigo-600 overflow-hidden">
-                  <div className="absolute inset-0 bg-black bg-opacity-20 group-hover:bg-opacity-30 transition-opacity"></div>
-                  <img
-                    src={item.image || 'https://via.placeholder.com/400'}
-                    alt={item.name}
-                    className="w-full h-full object-cover p-4"
-                  />
-                  <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md">
-                    <span className="text-xs font-semibold text-gray-700">{item.category}</span>
-                  </div>
-                </div>
+        )}
 
-                {/* Content Section */}
-                <div className="p-4 sm:p-5 md:p-6">
-                  <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-2">{item.name}</h3>
-                  <p className="text-gray-600 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-5 md:mb-6 line-clamp-2">
-                    {item.description}
-                  </p>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-2xl sm:text-3xl font-bold text-blue-600">₹{item.price}</span>
-                    </div>
-                    <button className="px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-xs sm:text-sm md:text-base font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-12 sm:py-16 md:py-20 px-4">
+            <p className="text-red-600 text-base sm:text-lg">{error}</p>
           </div>
+        )}
+
+        {/* Merchandise Grid */}
+        {!loading && !error && (
+          <>
+            {filteredMerchandise.length === 0 ? (
+              <div className="text-center py-12 sm:py-16 md:py-20 px-4">
+                <p className="text-gray-600 text-base sm:text-lg">No merchandise available at the moment.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+                {filteredMerchandise.map((item) => (
+                  <div
+                    key={item._id || item.id}
+                    className="bg-gray-100 rounded-xl sm:rounded-2xl shadow-md sm:shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 overflow-hidden"
+                  >
+                    {/* Product Image */}
+                    <div className="relative h-32 sm:h-36 md:h-40 overflow-hidden bg-gray-200">
+                      <img
+                        src={item.image || 'https://via.placeholder.com/400'}
+                        alt={item.title || 'Merchandise item'}
+                        className="w-full h-full object-cover"
+                      />
+                      {item.category && (
+                        <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 md:top-2.5 md:left-2.5">
+                          <span className="bg-white px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full text-xs font-bold shadow-md">
+                            {item.category}
+                          </span>
+                        </div>
+                      )}
+                      {item.stock !== undefined && item.stock <= 0 && (
+                        <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 md:top-2.5 md:right-2.5">
+                          <span className="bg-red-500 text-white px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full text-xs font-bold shadow-md">
+                            Out of Stock
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Product Content */}
+                    <div className="p-3 sm:p-4 md:p-5">
+                      {/* Price */}
+                      <div className="flex justify-end mb-1.5">
+                        <span className="text-[#0061FF] text-lg sm:text-xl md:text-2xl font-bold">
+                          ₹{item.price}
+                        </span>
+                      </div>
+
+                      {/* Title */}
+                      <h3 className="text-base sm:text-lg md:text-xl font-bold mb-1.5 sm:mb-2 line-clamp-2">{item.title}</h3>
+
+                      {/* Description */}
+                      <p className="text-gray-600 text-xs sm:text-sm mb-2 sm:mb-2.5 line-clamp-2">
+                        {item.description}
+                      </p>
+
+                      {/* Stock Info */}
+                      {item.stock !== undefined && (
+                        <div className="flex items-center mb-2 sm:mb-2.5 text-xs sm:text-sm text-gray-500">
+                          <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                          </svg>
+                          <span className={`font-medium ${item.stock <= 0 ? 'text-red-600' : item.stock < 10 ? 'text-orange-600' : 'text-green-600'}`}>
+                            {item.stock <= 0 ? 'Out of Stock' : `${item.stock} ${item.stock === 1 ? 'item' : 'items'} available`}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Action Button */}
+                      <button
+                        disabled={item.stock !== undefined && item.stock <= 0}
+                        className="w-full py-2 sm:py-2.5 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-[#0061FF] text-xs sm:text-sm"
+                      >
+                        {item.stock !== undefined && item.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

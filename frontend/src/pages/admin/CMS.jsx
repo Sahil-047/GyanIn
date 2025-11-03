@@ -200,6 +200,7 @@ const CMS = () => {
       case 'merchandise':
         if (!formData.title?.trim()) errors.title = 'Merchandise title is required'
         if (!formData.description?.trim()) errors.description = 'Description is required'
+        else if (formData.description.trim().length < 10) errors.description = 'Description must be at least 10 characters'
         if (!formData.price || formData.price <= 0) errors.price = 'Valid price is required'
         break
       case 'offers':
@@ -247,6 +248,17 @@ const CMS = () => {
           scheduleImage: item.scheduleImage || ''
         };
       }
+    } else if (activeTab === 'merchandise') {
+      // Ensure proper ID and structure for merchandise
+      formDataToSet = {
+        id: item.id || item._id, // Use id if available, fallback to _id
+        title: item.title || '',
+        description: item.description || '',
+        price: item.price || 0,
+        category: item.category || '',
+        image: item.image || '',
+        stock: item.stock !== undefined ? item.stock : ''
+      };
     } else if (activeTab === 'offers') {
       // Ensure slotId is included for ongoing courses
       formDataToSet = {
@@ -324,7 +336,18 @@ const CMS = () => {
           // Update existing merchandise - remove id from the update data
           const { id, ...updateData } = submitData
 
-          result = await merchandiseAPI.updateMerchandise(selectedItem.id, updateData)
+          // Ensure we use the correct ID from selectedItem (prefer id, fallback to _id)
+          const merchandiseId = selectedItem.id || selectedItem._id
+          if (!merchandiseId) {
+            throw new Error('Merchandise ID is missing. Please refresh and try again.')
+          }
+
+          // Validate ID format - MongoDB ObjectId should be 24 hex characters
+          if (typeof merchandiseId !== 'string' || !/^[0-9a-fA-F]{24}$/.test(merchandiseId)) {
+            throw new Error('Invalid merchandise ID format. Please refresh the page and try again.')
+          }
+
+          result = await merchandiseAPI.updateMerchandise(merchandiseId, updateData)
         } else {
           // Create new merchandise
           result = await merchandiseAPI.createMerchandise(submitData)
@@ -367,10 +390,24 @@ const CMS = () => {
       if (result && result.success) {
         setShowAddModal(false)
         setShowEditModal(false)
+        setFormData({})
+        setFormErrors({})
         fetchCMSData()
       }
     } catch (error) {
-
+      // Handle validation errors from backend
+      if (error.data && error.data.errors) {
+        const backendErrors = {}
+        error.data.errors.forEach(err => {
+          backendErrors[err.path] = err.msg
+        })
+        setFormErrors(backendErrors)
+      } else if (error.data && error.data.message) {
+        // Show general error message
+        alert(error.data.message || 'Failed to save. Please check the form and try again.')
+      } else {
+        alert(error.message || 'An error occurred. Please try again.')
+      }
     }
     setLoading(false)
   }
@@ -597,10 +634,20 @@ const CMS = () => {
                 value={formData.description || ''}
                 onChange={handleInputChange}
                 rows={3}
+                minLength={10}
                 className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.description ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                placeholder="Enter merchandise description"
+                placeholder="Enter merchandise description (minimum 10 characters)"
               />
-              {formErrors.description && <p className="mt-1 text-sm text-red-600">{formErrors.description}</p>}
+              <div className="mt-1 flex items-center justify-between">
+                {formErrors.description ? (
+                  <p className="text-sm text-red-600">{formErrors.description}</p>
+                ) : (
+                  <p className="text-xs text-gray-500">Minimum 10 characters required</p>
+                )}
+                <p className={`text-xs ${(formData.description?.length || 0) < 10 ? 'text-red-500' : 'text-gray-500'}`}>
+                  {(formData.description?.length || 0)} / 10 characters
+                </p>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

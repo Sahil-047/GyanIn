@@ -168,9 +168,9 @@ const Courses = () => {
                     className="bg-gray-100 rounded-xl sm:rounded-2xl shadow-md sm:shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 overflow-hidden"
                   >
                     {/* Course Image */}
-                    <div className="relative h-40 sm:h-44 md:h-48 overflow-hidden">
+                    <div className="relative h-40 sm:h-44 md:h-48 overflow-hidden bg-gray-200">
                       <img
-                        src={course.image}
+                        src={course.image || 'https://via.placeholder.com/400'}
                         alt={course.title}
                         className="w-full h-full object-cover"
                       />

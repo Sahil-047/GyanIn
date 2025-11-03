@@ -286,6 +286,37 @@ export const coursesAPI = {
   })
 }
 
+export const merchandiseAPI = {
+  // Get all merchandise
+  getMerchandise: (params = {}) => {
+    const queryParams = new URLSearchParams(params)
+    return publicApiCall(`/merchandise?${queryParams}`)
+  },
+
+  // Get single merchandise item
+  getMerchandiseItem: (id) => publicApiCall(`/merchandise/${id}`),
+
+  // Get all categories
+  getCategories: () => publicApiCall('/merchandise/categories'),
+
+  // Create new merchandise
+  createMerchandise: (merchandiseData) => publicApiCall('/merchandise', {
+    method: 'POST',
+    body: JSON.stringify(merchandiseData)
+  }),
+
+  // Update merchandise
+  updateMerchandise: (id, merchandiseData) => publicApiCall(`/merchandise/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(merchandiseData)
+  }),
+
+  // Delete merchandise
+  deleteMerchandise: (id) => publicApiCall(`/merchandise/${id}`, {
+    method: 'DELETE'
+  })
+}
+
 // Public Readmissions API (for students to submit applications)
 export const publicReadmissionsAPI = {
   // Submit a readmission application
@@ -316,6 +347,7 @@ export default {
   dashboardAPI,
   cmsAPI,
   coursesAPI,
+  merchandiseAPI,
   uploadsAPI,
   publicReadmissionsAPI,
   publicSlotsAPI

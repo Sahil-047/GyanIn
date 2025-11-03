@@ -22,6 +22,8 @@ router.get('/dashboard', async (req, res) => {
             pendingReadmissions,
             totalSlots,
             activeSlots,
+            onlineSlots,
+            offlineSlots,
             recentContacts,
             recentCourses,
             recentReadmissions
@@ -36,6 +38,8 @@ router.get('/dashboard', async (req, res) => {
             Readmission.countDocuments({ status: 'pending' }),
             Slot.countDocuments(),
             Slot.countDocuments({ isActive: true }),
+            Slot.countDocuments({ type: 'online' }),
+            Slot.countDocuments({ type: 'offline' }),
             Contact.find().sort({ createdAt: -1 }).limit(5),
             Course.find({ isActive: true }).sort({ createdAt: -1 }).limit(5),
             Readmission.find().sort({ createdAt: -1 }).limit(5)
@@ -70,7 +74,9 @@ router.get('/dashboard', async (req, res) => {
           slots: {
             total: totalSlots,
             active: activeSlots,
-            inactive: totalSlots - activeSlots
+            inactive: totalSlots - activeSlots,
+            online: onlineSlots,
+            offline: offlineSlots
           }
         },
         recent: {

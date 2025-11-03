@@ -10,7 +10,9 @@ const Readmissions = () => {
   const [loading, setLoading] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [showSlotModal, setShowSlotModal] = useState(false)
+  const [showEditSlotModal, setShowEditSlotModal] = useState(false)
   const [selectedReadmission, setSelectedReadmission] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -37,7 +39,17 @@ const Readmissions = () => {
     batch: ''
   })
 
+  // Form state for editing readmission
+  const [editFormData, setEditFormData] = useState({
+    studentName: '',
+    course: '',
+    contact: '',
+    slotName: '',
+    batch: ''
+  })
+
   const [formErrors, setFormErrors] = useState({})
+  const [editFormErrors, setEditFormErrors] = useState({})
 
   // Fetch readmissions
   const fetchReadmissions = async () => {
@@ -223,6 +235,93 @@ const Readmissions = () => {
     setLoading(false)
   }
 
+  // Handle edit
+  const handleEdit = (readmission) => {
+    setSelectedReadmission(readmission)
+    setEditFormData({
+      studentName: readmission.studentName,
+      course: readmission.course,
+      contact: readmission.contact,
+      slotName: readmission.slotName,
+      batch: readmission.batch || ''
+    })
+    setEditFormErrors({})
+    setShowEditModal(true)
+  }
+
+  // Handle edit slot select
+  const handleEditSlotSelect = (slot) => {
+    setEditFormData(prev => ({
+      ...prev,
+      slotName: slot.name,
+      course: slot.course,
+      batch: String(slot.class ?? '')
+    }))
+    setShowEditSlotModal(false)
+  }
+
+  // Validate edit form
+  const validateEditForm = () => {
+    const errors = {}
+    
+    if (!editFormData.studentName.trim()) errors.studentName = 'Student name is required'
+    if (!editFormData.course.trim()) errors.course = 'Course is required'
+    if (!editFormData.contact.trim()) errors.contact = 'Contact is required'
+    if (!editFormData.slotName.trim()) errors.slotName = 'Slot is required'
+    
+    // Phone validation
+    const phoneRegex = /^[0-9]{10}$/
+    if (editFormData.contact && !phoneRegex.test(editFormData.contact)) {
+      errors.contact = 'Please enter a valid 10-digit phone number'
+    }
+    
+    setEditFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  // Handle edit form submission
+  const handleEditSubmit = async (e) => {
+    e.preventDefault()
+    
+    if (!validateEditForm()) {
+      showSnackbar('Please fill all required fields correctly', 'warning')
+      return
+    }
+    
+    setLoading(true)
+    try {
+      const data = await readmissionsAPI.updateReadmission(selectedReadmission._id, editFormData)
+      
+      if (data.success) {
+        setShowEditModal(false)
+        setEditFormData({
+          studentName: '',
+          course: '',
+          contact: '',
+          slotName: '',
+          batch: ''
+        })
+        fetchReadmissions()
+        fetchStats()
+        showSnackbar('Readmission updated successfully!', 'success')
+      }
+    } catch (error) {
+      // Handle validation errors from server
+      if (error.errors) {
+        const serverErrors = {}
+        error.errors.forEach(err => {
+          serverErrors[err.path] = err.msg
+        })
+        setEditFormErrors(serverErrors)
+        showSnackbar('Please correct the errors in the form', 'error')
+      } else {
+        const errorMessage = error.data?.message || error.message || 'Failed to update readmission'
+        showSnackbar(errorMessage, 'error')
+      }
+    }
+    setLoading(false)
+  }
+
   // Handle delete
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this readmission?')) return
@@ -280,79 +379,87 @@ const Readmissions = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-semibold text-gray-900">Readmission Management</h1>
-      <p className="mt-1 text-sm text-gray-500">View and manage student readmission applications.</p>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Page Header */}
+      <div className="mb-8">
+        <div className="flex items-center space-x-3 mb-2">
+          <div className="p-3 bg-gray-100 rounded-lg">
+            <svg className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Readmission Management</h1>
+            <p className="mt-1 text-sm text-gray-600">Manage and track student readmission applications</p>
+          </div>
+        </div>
+      </div>
 
       {/* Stats Cards */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white overflow-hidden shadow-md rounded-lg border border-gray-200">
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.total}</p>
+                <p className="text-xs text-gray-500 mt-1">Applications</p>
+              </div>
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
               </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Applications</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.total}</dd>
-                </dl>
-              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-6 w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="bg-white overflow-hidden shadow-md rounded-lg border border-gray-200">
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Pending</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.pending}</p>
+                <p className="text-xs text-gray-500 mt-1">Awaiting Review</p>
+              </div>
+              <div className="p-3 bg-yellow-50 rounded-lg">
+                <svg className="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Pending</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.pending}</dd>
-                </dl>
-              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="bg-white overflow-hidden shadow-md rounded-lg border border-gray-200">
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Approved</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.approved}</p>
+                <p className="text-xs text-gray-500 mt-1">Accepted</p>
+              </div>
+              <div className="p-3 bg-green-50 rounded-lg">
+                <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Approved</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.approved}</dd>
-                </dl>
-              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="bg-white overflow-hidden shadow-md rounded-lg border border-gray-200">
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Rejected</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.rejected}</p>
+                <p className="text-xs text-gray-500 mt-1">Declined</p>
+              </div>
+              <div className="p-3 bg-red-50 rounded-lg">
+                <svg className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Rejected</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.rejected}</dd>
-                </dl>
               </div>
             </div>
           </div>
@@ -364,43 +471,43 @@ const Readmissions = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
             {/* Filter Tabs */}
-            <div className="flex space-x-2">
+            <div className="flex space-x-3 bg-white p-2 rounded-xl shadow-md border border-gray-200">
               <button
                 onClick={() => setSelectedTab('all')}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${
+                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
                   selectedTab === 'all'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-500 hover:text-gray-700 bg-white'
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md transform scale-105'
+                    : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
                 }`}
               >
                 All ({stats.total})
               </button>
               <button
                 onClick={() => setSelectedTab('pending')}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${
+                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
                   selectedTab === 'pending'
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : 'text-gray-500 hover:text-gray-700 bg-white'
+                    ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-md transform scale-105'
+                    : 'text-gray-600 hover:text-yellow-600 hover:bg-yellow-50'
                 }`}
               >
                 Pending ({stats.pending})
               </button>
               <button
                 onClick={() => setSelectedTab('approved')}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${
+                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
                   selectedTab === 'approved'
-                    ? 'bg-green-100 text-green-700'
-                    : 'text-gray-500 hover:text-gray-700 bg-white'
+                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md transform scale-105'
+                    : 'text-gray-600 hover:text-green-600 hover:bg-green-50'
                 }`}
               >
                 Approved ({stats.approved})
               </button>
               <button
                 onClick={() => setSelectedTab('rejected')}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${
+                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
                   selectedTab === 'rejected'
-                    ? 'bg-red-100 text-red-700'
-                    : 'text-gray-500 hover:text-gray-700 bg-white'
+                    ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md transform scale-105'
+                    : 'text-gray-600 hover:text-red-600 hover:bg-red-50'
                 }`}
               >
                 Rejected ({stats.rejected})
@@ -408,44 +515,33 @@ const Readmissions = () => {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
             {/* Search */}
-            <div className="relative rounded-md shadow-sm">
+            <div className="relative flex-1">
               <input
                 type="text"
-                className="focus:ring-blue-500 focus:border-blue-500 block w-full pr-10 sm:text-sm border-gray-300 rounded-md"
-                placeholder="Search by name, ID, or course"
+                className="focus:ring-2 focus:ring-gray-500 focus:border-gray-500 block w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg bg-white placeholder-gray-400"
+                placeholder="Search by name, ID, or course..."
                 value={searchTerm}
                 onChange={handleSearch}
               />
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
             </div>
 
-            {/* Export */}
-            <button
-              type="button"
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-            >
-              <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Export
-            </button>
-
             {/* Add New */}
             <button
               type="button"
               onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="inline-flex items-center justify-center px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
             >
-              <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Add New
+              Add New Readmission
             </button>
           </div>
         </div>
@@ -454,26 +550,26 @@ const Readmissions = () => {
         <div className="flex flex-col">
           <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
             <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
-              <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+              <div className="shadow-xl overflow-hidden border border-gray-200 sm:rounded-xl bg-white">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                     <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Student
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Course
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Slot
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Batch
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Status
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Date
                       </th>
-                      <th scope="col" className="relative px-6 py-3">
+                      <th scope="col" className="relative px-6 py-4">
                         <span className="sr-only">Actions</span>
                       </th>
                     </tr>
@@ -496,25 +592,30 @@ const Readmissions = () => {
                       </tr>
                     ) : (
                       readmissions.map((readmission) => (
-                        <tr key={readmission._id}>
+                        <tr key={readmission._id} className="hover:bg-gray-50 transition-colors duration-150">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
+                            <div className="flex items-center space-x-3">
+                              <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-sm">
+                                <span className="text-white font-semibold text-sm">
+                                  {readmission.studentName.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
                               <div>
-                                <div className="text-sm font-medium text-gray-900">{readmission.studentName}</div>
+                                <div className="text-sm font-semibold text-gray-900">{readmission.studentName}</div>
                                 <div className="text-sm text-gray-500">{readmission.contact}</div>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{readmission.course}</div>
+                            <div className="text-sm font-semibold text-gray-900">{readmission.course}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{readmission.slotName}</div>
+                            <div className="text-sm font-semibold text-gray-900">{readmission.slotName}</div>
                             {readmission.slotInfo && (
-                              <div className="text-xs text-gray-500">
-                                {readmission.slotInfo.enrolledStudents}/{readmission.slotInfo.capacity} enrolled
+                              <div className="text-xs text-gray-500 mt-1">
+                                <span className="font-medium">{readmission.slotInfo.enrolledStudents}/{readmission.slotInfo.capacity}</span> enrolled
                                 {readmission.slotInfo.isFull && (
-                                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">
                                     FULL
                                   </span>
                                 )}
@@ -528,43 +629,64 @@ const Readmissions = () => {
                             {new Date(readmission.createdAt).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex space-x-2 justify-end">
+                            <div className="flex items-center space-x-1 justify-end">
                               <button 
                                 onClick={() => {
                                   setSelectedReadmission(readmission)
                                   setShowViewModal(true)
                                 }}
-                                className="text-blue-600 hover:text-blue-900"
+                                className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all duration-150"
+                                title="View details"
                               >
-                                View
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                              </button>
+                              <button 
+                                onClick={() => handleEdit(readmission)}
+                                className="p-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-all duration-150"
+                                title="Edit readmission"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
                               </button>
                               {readmission.status === 'pending' && (
                                 <>
                                   <button 
                                     onClick={() => handleStatusUpdate(readmission._id, 'approved')}
                                     disabled={readmission.slotInfo?.isFull}
-                                    className={`${
+                                    className={`p-2 rounded-lg transition-all duration-150 ${
                                       readmission.slotInfo?.isFull 
                                         ? 'text-gray-400 cursor-not-allowed' 
-                                        : 'text-green-600 hover:text-green-900'
+                                        : 'text-green-600 hover:text-green-700 hover:bg-green-50'
                                     }`}
                                     title={readmission.slotInfo?.isFull ? 'Slot is FULL - Cannot approve' : 'Approve readmission'}
                                   >
-                                    Approve
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
                                   </button>
                                   <button 
                                     onClick={() => handleStatusUpdate(readmission._id, 'rejected')}
-                                    className="text-red-600 hover:text-red-900"
+                                    className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-150"
+                                    title="Reject readmission"
                                   >
-                                    Reject
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
                                   </button>
                                 </>
                               )}
                               <button 
                                 onClick={() => handleDelete(readmission._id)}
-                                className="text-red-600 hover:text-red-900"
+                                className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-150"
+                                title="Delete readmission"
                               >
-                                Delete
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
                               </button>
                             </div>
                           </td>
@@ -695,7 +817,7 @@ const Readmissions = () => {
                   
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Slot *</label>
+                    <label className="block text-sm font-medium text-gray-700">Batch *</label>
                     <div className="mt-1 flex">
                       <input
                         type="text"
@@ -703,7 +825,7 @@ const Readmissions = () => {
                         value={formData.slotName}
                         readOnly
                         className="block w-full border border-gray-300 rounded-l-md px-3 py-2 bg-gray-50"
-                        placeholder="Select a slot"
+                        placeholder="Select a batch"
                       />
                       <button
                         type="button"
@@ -741,13 +863,13 @@ const Readmissions = () => {
         </div>
       )}
 
-      {/* Slot Selection Modal */}
+      {/* Batch Selection Modal */}
       {showSlotModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-5/6 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Select a Slot</h3>
+                <h3 className="text-lg font-medium text-gray-900">Select a Batch</h3>
                 <button
                   onClick={() => setShowSlotModal(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -758,28 +880,225 @@ const Readmissions = () => {
                 </button>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
-                {slots.filter(slot => slot.isActive).map((slot) => (
-                  <div
-                    key={slot._id}
-                    onClick={() => handleSlotSelect(slot)}
-                    className="p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors"
-                  >
-                    <h4 className="font-medium text-gray-900">{slot.name}</h4>
-                    <p className="text-sm text-gray-600">{slot.course}</p>
-                    <p className="text-sm text-gray-600">{slot.subject} - {slot.class}</p>
-                    <p className="text-sm text-gray-600">{slot.startTime} - {slot.endTime}</p>
-                    <p className="text-sm text-gray-600">{slot.days.join(', ')}</p>
-                    <p className="text-sm text-gray-600">Capacity: {slot.enrolledStudents}/{slot.capacity}</p>
-                    <p className="text-sm text-gray-600">Instructor: {slot.instructor}</p>
-                    <p className="text-sm text-gray-600">Type: {slot.type}</p>
-                    <p className="text-sm text-gray-600">Location: {slot.location}</p>
-                  </div>
-                ))}
+              <div className="overflow-x-auto max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Batch Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Course</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Subject - Class</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Time</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Days</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Capacity</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Instructor</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Type</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Location</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {slots.filter(slot => slot.isActive).map((slot) => (
+                      <tr
+                        key={slot._id}
+                        onClick={() => handleSlotSelect(slot)}
+                        className="cursor-pointer hover:bg-blue-50 transition-colors duration-150"
+                      >
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">{slot.name}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.course}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.subject} - {slot.class}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.startTime} - {slot.endTime}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.days.join(', ')}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.enrolledStudents}/{slot.capacity}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.instructor}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.type}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.location}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
               
               {slots.filter(slot => slot.isActive).length === 0 && (
-                <p className="text-center text-gray-500 py-4">No active slots available</p>
+                <p className="text-center text-gray-500 py-4">No active batches available</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Readmission Modal */}
+      {showEditModal && selectedReadmission && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Edit Readmission</h3>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Student Name *</label>
+                    <input
+                      type="text"
+                      name="studentName"
+                      value={editFormData.studentName}
+                      onChange={(e) => {
+                        setEditFormData(prev => ({ ...prev, studentName: e.target.value }))
+                        if (editFormErrors.studentName) {
+                          setEditFormErrors(prev => ({ ...prev, studentName: '' }))
+                        }
+                      }}
+                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${editFormErrors.studentName ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                      placeholder="Enter student name"
+                    />
+                    {editFormErrors.studentName && <p className="mt-1 text-sm text-red-600">{editFormErrors.studentName}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Course *</label>
+                    <input
+                      type="text"
+                      name="course"
+                      value={editFormData.course}
+                      onChange={(e) => {
+                        setEditFormData(prev => ({ ...prev, course: e.target.value }))
+                        if (editFormErrors.course) {
+                          setEditFormErrors(prev => ({ ...prev, course: '' }))
+                        }
+                      }}
+                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${editFormErrors.course ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                      placeholder="Enter course name"
+                    />
+                    {editFormErrors.course && <p className="mt-1 text-sm text-red-600">{editFormErrors.course}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Contact *</label>
+                    <input
+                      type="tel"
+                      name="contact"
+                      value={editFormData.contact}
+                      onChange={(e) => {
+                        setEditFormData(prev => ({ ...prev, contact: e.target.value }))
+                        if (editFormErrors.contact) {
+                          setEditFormErrors(prev => ({ ...prev, contact: '' }))
+                        }
+                      }}
+                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${editFormErrors.contact ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                      placeholder="Enter phone number"
+                    />
+                    {editFormErrors.contact && <p className="mt-1 text-sm text-red-600">{editFormErrors.contact}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Batch *</label>
+                    <div className="mt-1 flex">
+                      <input
+                        type="text"
+                        name="slotName"
+                        value={editFormData.slotName}
+                        readOnly
+                        className="block w-full border border-gray-300 rounded-l-md px-3 py-2 bg-gray-50"
+                        placeholder="Select a batch"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEditSlotModal(true)}
+                        className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        Select
+                      </button>
+                    </div>
+                    {editFormErrors.slotName && <p className="mt-1 text-sm text-red-600">{editFormErrors.slotName}</p>}
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Updating...' : 'Update Readmission'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Batch Selection Modal */}
+      {showEditSlotModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-5/6 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Select a Batch</h3>
+                <button
+                  onClick={() => setShowEditSlotModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="overflow-x-auto max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Batch Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Course</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Subject - Class</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Time</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Days</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Capacity</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Instructor</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Type</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Location</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {slots.filter(slot => slot.isActive).map((slot) => (
+                      <tr
+                        key={slot._id}
+                        onClick={() => handleEditSlotSelect(slot)}
+                        className="cursor-pointer hover:bg-blue-50 transition-colors duration-150"
+                      >
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">{slot.name}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.course}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.subject} - {slot.class}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.startTime} - {slot.endTime}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.days.join(', ')}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.enrolledStudents}/{slot.capacity}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.instructor}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.type}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.location}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {slots.filter(slot => slot.isActive).length === 0 && (
+                <p className="text-center text-gray-500 py-4">No active batches available</p>
               )}
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { cmsAPI, coursesAPI, slotsAPI } from '../../utils/api'
+import { cmsAPI, coursesAPI, slotsAPI, merchandiseAPI } from '../../utils/api'
 import ImageUploader from '../../components/common/ImageUploader'
 
 const CMS = () => {
@@ -7,6 +7,7 @@ const CMS = () => {
   const [cmsData, setCmsData] = useState({
     carousel: { carouselItems: [] },
     courses: { courses: [] },
+    merchandise: { merchandise: [] },
     offers: { offers: [] }
   })
   const [loading, setLoading] = useState(false)
@@ -35,14 +36,18 @@ const CMS = () => {
       // Fetch courses from the courses collection
       const coursesPromise = coursesAPI.getCourses({ limit: 100 })
       
+      // Fetch merchandise from the merchandise collection
+      const merchandisePromise = merchandiseAPI.getMerchandise({ limit: 100 })
+      
       // Fetch slots from the slots collection
       const slotsPromise = slotsAPI.getSlots({ limit: 100 })
 
-      const allResults = await Promise.allSettled([...cmsPromises, coursesPromise, slotsPromise])
+      const allResults = await Promise.allSettled([...cmsPromises, coursesPromise, merchandisePromise, slotsPromise])
 
       const newData = {
         carousel: { carouselItems: [] },
         courses: { courses: [] },
+        merchandise: { merchandise: [] },
         offers: { offers: [] }
       }
 
@@ -115,8 +120,24 @@ const CMS = () => {
         setAvailableCourses(coursesData.filter(course => course.id))
       }
 
+      // Process merchandise from the merchandise collection
+      const merchandiseResult = allResults[sections.length + 1]
+      if (merchandiseResult.status === 'fulfilled' && merchandiseResult.value.success) {
+        // Convert merchandise from merchandise collection to CMS format
+        const merchandiseData = merchandiseResult.value.data.map(item => ({
+          id: item._id,
+          title: item.title,
+          description: item.description,
+          price: item.price,
+          category: item.category,
+          image: item.image,
+          stock: item.stock
+        }))
+        newData.merchandise = { merchandise: merchandiseData }
+      }
+
       // Process slots from the slots collection
-      const slotsResult = allResults[sections.length + 1]
+      const slotsResult = allResults[sections.length + 2]
       if (slotsResult.status === 'fulfilled' && slotsResult.value.success) {
         // Set available slots for ongoing courses dropdown
         setAvailableSlots(slotsResult.value.data.filter(slot => slot.isActive))
@@ -175,6 +196,11 @@ const CMS = () => {
         if (!formData.instructor?.trim()) errors.instructor = 'Instructor is required'
         if (!formData.price || formData.price <= 0) errors.price = 'Valid price is required'
         if (!formData.class || formData.class < 1 || formData.class > 12) errors.class = 'Class must be a number between 1 and 12'
+        break
+      case 'merchandise':
+        if (!formData.title?.trim()) errors.title = 'Merchandise title is required'
+        if (!formData.description?.trim()) errors.description = 'Description is required'
+        if (!formData.price || formData.price <= 0) errors.price = 'Valid price is required'
         break
       case 'offers':
         if (!formData.name?.trim()) errors.name = 'Batch name is required'
@@ -277,6 +303,32 @@ const CMS = () => {
           // Create new course
           result = await coursesAPI.createCourse(submitData)
         }
+      } else if (activeTab === 'merchandise') {
+        // Convert price to number if it's a string
+        if (submitData.price && typeof submitData.price === 'string') {
+          submitData.price = parseFloat(submitData.price)
+        }
+
+        // Convert stock to number if it's a string
+        if (submitData.stock && typeof submitData.stock === 'string') {
+          submitData.stock = parseInt(submitData.stock)
+        }
+
+        // Set default image if not provided
+        if (!submitData.image || submitData.image.trim() === '') {
+          submitData.image = 'https://via.placeholder.com/400x300?text=Merchandise'
+        }
+
+        // For merchandise, use the merchandise API directly
+        if (selectedItem) {
+          // Update existing merchandise - remove id from the update data
+          const { id, ...updateData } = submitData
+
+          result = await merchandiseAPI.updateMerchandise(selectedItem.id, updateData)
+        } else {
+          // Create new merchandise
+          result = await merchandiseAPI.createMerchandise(submitData)
+        }
       } else {
         // For other tabs, use CMS API
         let apiMethod
@@ -334,6 +386,9 @@ const CMS = () => {
       if (activeTab === 'courses') {
         // Delete course from the courses API
         result = await coursesAPI.deleteCourse(itemId);
+      } else if (activeTab === 'merchandise') {
+        // Delete merchandise from the merchandise API
+        result = await merchandiseAPI.deleteMerchandise(itemId);
       } else if (activeTab === 'offers') {
         // Delete offer from CMS API
         result = await cmsAPI.deleteOffer(itemId);
@@ -519,6 +574,87 @@ const CMS = () => {
           </div>
         )
 
+      case 'merchandise':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Title *</label>
+              <input
+                type="text"
+                name="title"
+                value={formData.title || ''}
+                onChange={handleInputChange}
+                className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.title ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                placeholder="Enter merchandise title"
+              />
+              {formErrors.title && <p className="mt-1 text-sm text-red-600">{formErrors.title}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Description *</label>
+              <textarea
+                name="description"
+                value={formData.description || ''}
+                onChange={handleInputChange}
+                rows={3}
+                className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.description ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                placeholder="Enter merchandise description"
+              />
+              {formErrors.description && <p className="mt-1 text-sm text-red-600">{formErrors.description}</p>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Price *</label>
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price || ''}
+                  onChange={handleInputChange}
+                  className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.price ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                  placeholder="Enter price"
+                />
+                {formErrors.price && <p className="mt-1 text-sm text-red-600">{formErrors.price}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Stock</label>
+                <input
+                  type="number"
+                  name="stock"
+                  value={formData.stock || ''}
+                  onChange={handleInputChange}
+                  min="0"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter stock quantity"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Category</label>
+              <input
+                type="text"
+                name="category"
+                value={formData.category || ''}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter category (e.g., Books, Apparel, etc.)"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Merchandise Image</label>
+              <ImageUploader
+                value={formData.image || ''}
+                onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
+                buttonText="Upload merchandise image"
+                bucketType="course"
+              />
+            </div>
+          </div>
+        )
+
       case 'offers':
         return (
           <div className="space-y-4">
@@ -614,7 +750,8 @@ const CMS = () => {
   const renderContent = () => {
     const items = activeTab === 'carousel' ? cmsData.carousel.carouselItems :
       activeTab === 'courses' ? cmsData.courses.courses :
-        cmsData.offers.offers
+        activeTab === 'merchandise' ? cmsData.merchandise.merchandise :
+          cmsData.offers.offers
 
     if (loading) {
       return (
@@ -630,7 +767,8 @@ const CMS = () => {
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium leading-6 text-gray-900">
               {activeTab === 'carousel' ? 'Carousel Items' :
-                activeTab === 'courses' ? 'Courses' : 'Ongoing Courses'}
+                activeTab === 'courses' ? 'Courses' :
+                  activeTab === 'merchandise' ? 'Merchandise' : 'Ongoing Courses'}
             </h3>
             <button
               onClick={handleAdd}
@@ -681,6 +819,22 @@ const CMS = () => {
                         <div>
                           <h4 className="text-md font-medium text-gray-900">{item.title}</h4>
                           <p className="text-sm text-gray-500 mt-1">{item.description}</p>
+                        </div>
+                      )}
+
+                      {activeTab === 'merchandise' && (
+                        <div>
+                          <h4 className="text-md font-medium text-gray-900">{item.title}</h4>
+                          <p className="text-sm text-gray-500 mt-1">{item.description}</p>
+                          <div className="mt-2 flex items-center space-x-4">
+                            <span className="text-sm font-medium text-blue-600">₹{item.price}</span>
+                            {item.stock !== undefined && (
+                              <span className="text-sm text-gray-600">Stock: {item.stock}</span>
+                            )}
+                            {item.category && (
+                              <span className="text-sm text-gray-600">Category: {item.category}</span>
+                            )}
+                          </div>
                         </div>
                       )}
 
@@ -772,6 +926,7 @@ const CMS = () => {
           >
             <option value="carousel">Carousel & Teachers</option>
             <option value="courses">Courses</option>
+            <option value="merchandise">Merchandise</option>
             <option value="offers">Ongoing Courses</option>
           </select>
         </div>
@@ -795,6 +950,15 @@ const CMS = () => {
                   } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
               >
                 Courses
+              </button>
+              <button
+                onClick={() => setActiveTab('merchandise')}
+                className={`${activeTab === 'merchandise'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+              >
+                Merchandise
               </button>
               <button
                 onClick={() => setActiveTab('offers')}
@@ -823,7 +987,8 @@ const CMS = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">
                   Add New {activeTab === 'carousel' ? 'Carousel Item' :
-                    activeTab === 'courses' ? 'Course' : 'Offer'}
+                    activeTab === 'courses' ? 'Course' :
+                      activeTab === 'merchandise' ? 'Merchandise Item' : 'Offer'}
                 </h3>
                 <button
                   onClick={() => setShowAddModal(false)}
@@ -868,7 +1033,8 @@ const CMS = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">
                   Edit {activeTab === 'carousel' ? 'Carousel Item' :
-                    activeTab === 'courses' ? 'Course' : 'Offer'}
+                    activeTab === 'courses' ? 'Course' :
+                      activeTab === 'merchandise' ? 'Merchandise Item' : 'Offer'}
                 </h3>
                 <button
                   onClick={() => setShowEditModal(false)}

@@ -70,152 +70,159 @@ const Dashboard = () => {
   const { statistics, recent } = dashboardData || {}
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Page Header */}
+      <div className="mb-8">
+        <div className="flex items-center space-x-3 mb-2">
+          <div className="p-3 bg-gray-100 rounded-lg">
+            <svg className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="mt-1 text-sm text-gray-600">Overview of your academy management system</p>
+          </div>
+        </div>
+      </div>
       
       {/* Stats */}
-      <div className="mt-6">
-        <dl className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Total Readmissions */}
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 bg-blue-500 rounded-md p-3">
-                  <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Readmissions</dt>
-                  <dd className="flex items-baseline">
-                    <div className="text-2xl font-semibold text-gray-900">{statistics?.readmissions?.total || 0}</div>
-                  </dd>
-                </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* Total Readmissions */}
+        <div className="bg-white overflow-hidden shadow-md rounded-lg border border-gray-200">
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{statistics?.readmissions?.total || 0}</p>
+                <p className="text-xs text-gray-500 mt-1">Readmissions</p>
+              </div>
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Pending Readmissions */}
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 bg-yellow-500 rounded-md p-3">
-                  <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dt className="text-sm font-medium text-gray-500 truncate">Pending Readmissions</dt>
-                  <dd className="flex items-baseline">
-                    <div className="text-2xl font-semibold text-gray-900">{statistics?.readmissions?.pending || 0}</div>
-                  </dd>
-                </div>
+        {/* Pending Readmissions */}
+        <div className="bg-white overflow-hidden shadow-md rounded-lg border border-gray-200">
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Pending</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{statistics?.readmissions?.pending || 0}</p>
+                <p className="text-xs text-gray-500 mt-1">Readmissions</p>
+              </div>
+              <div className="p-3 bg-yellow-50 rounded-lg">
+                <svg className="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Active Batches */}
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 bg-green-500 rounded-md p-3">
-                  <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dt className="text-sm font-medium text-gray-500 truncate">Active Batches</dt>
-                  <dd className="flex items-baseline">
-                    <div className="text-2xl font-semibold text-gray-900">{statistics?.slots?.active || 0}</div>
-                  </dd>
-                </div>
+        {/* Active Batches */}
+        <div className="bg-white overflow-hidden shadow-md rounded-lg border border-gray-200">
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Active</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{statistics?.slots?.active || 0}</p>
+                <p className="text-xs text-gray-500 mt-1">Batches</p>
+              </div>
+              <div className="p-3 bg-green-50 rounded-lg">
+                <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Total Contacts */}
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 bg-purple-500 rounded-md p-3">
-                  <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Contacts</dt>
-                  <dd className="flex items-baseline">
-                    <div className="text-2xl font-semibold text-gray-900">{statistics?.contacts?.total || 0}</div>
-                  </dd>
-                </div>
+        {/* Total Contacts */}
+        <div className="bg-white overflow-hidden shadow-md rounded-lg border border-gray-200">
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{statistics?.contacts?.total || 0}</p>
+                <p className="text-xs text-gray-500 mt-1">Contacts</p>
+              </div>
+              <div className="p-3 bg-purple-50 rounded-lg">
+                <svg className="h-8 w-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
               </div>
             </div>
           </div>
-        </dl>
+        </div>
       </div>
 
       {/* Analytics Charts */}
-      <div className="mt-8">
-        <h2 className="text-lg font-medium text-gray-900">Analytics Overview</h2>
-        <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mb-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-6">Analytics Overview</h2>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {/* Readmissions Status */}
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-base font-medium text-gray-900">Readmissions Status</h3>
+          <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-200">
+            <div className="px-6 py-5">
+              <h3 className="text-base font-bold text-gray-900">Readmissions Status</h3>
               <div className="mt-4 space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Approved</span>
-                  <span className="text-sm font-medium text-green-600">{statistics?.readmissions?.approved || 0}</span>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-700">Approved</span>
+                  <span className="text-lg font-bold text-green-600">{statistics?.readmissions?.approved || 0}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Pending</span>
-                  <span className="text-sm font-medium text-yellow-600">{statistics?.readmissions?.pending || 0}</span>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-700">Pending</span>
+                  <span className="text-lg font-bold text-yellow-600">{statistics?.readmissions?.pending || 0}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Rejected</span>
-                  <span className="text-sm font-medium text-red-600">{statistics?.readmissions?.rejected || 0}</span>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-sm font-medium text-gray-700">Rejected</span>
+                  <span className="text-lg font-bold text-red-600">{statistics?.readmissions?.rejected || 0}</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Batches Overview */}
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-base font-medium text-gray-900">Batches Overview</h3>
+          <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-200">
+            <div className="px-6 py-5">
+              <h3 className="text-base font-bold text-gray-900">Batches Overview</h3>
               <div className="mt-4 space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Active</span>
-                  <span className="text-sm font-medium text-green-600">{statistics?.slots?.active || 0}</span>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-700">Online Batches</span>
+                  <span className="text-lg font-bold text-purple-600">{statistics?.slots?.online || 0}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Inactive</span>
-                  <span className="text-sm font-medium text-gray-600">{statistics?.slots?.inactive || 0}</span>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-700">Offline Batches</span>
+                  <span className="text-lg font-bold text-orange-600">{statistics?.slots?.offline || 0}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Total</span>
-                  <span className="text-sm font-medium text-blue-600">{statistics?.slots?.total || 0}</span>
+                <div className="flex justify-between items-center py-2 pt-3 border-t-2 border-gray-300">
+                  <span className="text-sm font-bold text-gray-900">Total</span>
+                  <span className="text-lg font-bold text-blue-600">{statistics?.slots?.total || 0}</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Contacts Status */}
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-base font-medium text-gray-900">Contacts Status</h3>
+          <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-200">
+            <div className="px-6 py-5">
+              <h3 className="text-base font-bold text-gray-900">Contacts Status</h3>
               <div className="mt-4 space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">New</span>
-                  <span className="text-sm font-medium text-blue-600">{statistics?.contacts?.new || 0}</span>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-700">New</span>
+                  <span className="text-lg font-bold text-blue-600">{statistics?.contacts?.new || 0}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">In Progress</span>
-                  <span className="text-sm font-medium text-yellow-600">{statistics?.contacts?.inProgress || 0}</span>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-700">In Progress</span>
+                  <span className="text-lg font-bold text-yellow-600">{statistics?.contacts?.inProgress || 0}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Resolved</span>
-                  <span className="text-sm font-medium text-green-600">{statistics?.contacts?.resolved || 0}</span>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-sm font-medium text-gray-700">Resolved</span>
+                  <span className="text-lg font-bold text-green-600">{statistics?.contacts?.resolved || 0}</span>
                 </div>
               </div>
             </div>
@@ -224,47 +231,47 @@ const Dashboard = () => {
       </div>
 
       {/* Quick Links */}
-      <div className="mt-8">
-        <h2 className="text-lg font-medium text-gray-900">Quick Links</h2>
-        <div className="mt-2 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <Link to="/admin/readmissions" className="bg-white overflow-hidden shadow rounded-lg p-6 hover:bg-gray-50">
+      <div className="mb-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-6">Quick Links</h2>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <Link to="/admin/readmissions" className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-200 p-6 hover:shadow-xl transition-all duration-200 group">
             <div className="flex items-center">
-              <div className="flex-shrink-0 bg-blue-500 rounded-md p-3">
-                <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex-shrink-0 bg-blue-50 rounded-lg p-3 group-hover:bg-blue-600 transition-colors">
+                <svg className="h-6 w-6 text-blue-600 group-hover:text-white transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Manage Readmissions</h3>
-                <p className="mt-1 text-sm text-gray-500">View and manage student readmission requests</p>
+                <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">Manage Readmissions</h3>
+                <p className="mt-1 text-sm text-gray-600">View and manage student readmission requests</p>
               </div>
             </div>
           </Link>
           
-          <Link to="/admin/slots" className="bg-white overflow-hidden shadow rounded-lg p-6 hover:bg-gray-50">
+          <Link to="/admin/slots" className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-200 p-6 hover:shadow-xl transition-all duration-200 group">
             <div className="flex items-center">
-              <div className="flex-shrink-0 bg-blue-500 rounded-md p-3">
-                <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex-shrink-0 bg-green-50 rounded-lg p-3 group-hover:bg-green-600 transition-colors">
+                <svg className="h-6 w-6 text-green-600 group-hover:text-white transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Batch Management</h3>
-                <p className="mt-1 text-sm text-gray-500">Manage batches and bookings</p>
+                <h3 className="text-lg font-bold text-gray-900 group-hover:text-green-600 transition-colors">Batch Management</h3>
+                <p className="mt-1 text-sm text-gray-600">Manage batches and bookings</p>
               </div>
             </div>
           </Link>
           
-          <Link to="/admin/cms" className="bg-white overflow-hidden shadow rounded-lg p-6 hover:bg-gray-50">
+          <Link to="/admin/cms" className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-200 p-6 hover:shadow-xl transition-all duration-200 group">
             <div className="flex items-center">
-              <div className="flex-shrink-0 bg-blue-500 rounded-md p-3">
-                <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex-shrink-0 bg-purple-50 rounded-lg p-3 group-hover:bg-purple-600 transition-colors">
+                <svg className="h-6 w-6 text-purple-600 group-hover:text-white transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                 </svg>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Website CMS</h3>
-                <p className="mt-1 text-sm text-gray-500">Manage website content</p>
+                <h3 className="text-lg font-bold text-gray-900 group-hover:text-purple-600 transition-colors">Website CMS</h3>
+                <p className="mt-1 text-sm text-gray-600">Manage website content</p>
               </div>
             </div>
           </Link>
@@ -272,9 +279,9 @@ const Dashboard = () => {
       </div>
 
       {/* Recent Activity */}
-      <div className="mt-8">
-        <h2 className="text-lg font-medium text-gray-900">Recent Activity</h2>
-        <div className="mt-2 bg-white shadow overflow-hidden sm:rounded-md">
+      <div className="mb-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-6">Recent Activity</h2>
+        <div className="bg-white shadow-xl overflow-hidden sm:rounded-xl border border-gray-200">
           <ul className="divide-y divide-gray-200">
             {/* Recent Readmissions */}
             {recent?.readmissions?.slice(0, 3).map((readmission) => (

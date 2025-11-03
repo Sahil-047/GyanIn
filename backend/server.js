@@ -31,6 +31,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gyanin', 
 // Routes
 app.use('/api/contact', require('./routes/contact'));
 app.use('/api/courses', require('./routes/courses'));
+app.use('/api/merchandise', require('./routes/merchandise'));
 app.use('/api/teachers', require('./routes/teachers'));
 app.use('/api/public/slots', require('./routes/slots'));
 app.use('/api/public/readmissions', require('./routes/readmissions'));

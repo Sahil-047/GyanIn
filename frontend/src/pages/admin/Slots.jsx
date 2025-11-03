@@ -282,191 +282,106 @@ const Slots = () => {
     setCurrentPage(1) // Reset to first page when searching
   }
 
-  const renderSlotCard = (slot) => (
-    <div key={slot._id} className={`bg-white rounded-lg shadow-md p-6 ${!slot.isActive ? 'opacity-60' : ''}`}>
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">{slot.name}</h3>
-          <p className="text-sm text-gray-600">{slot.course} - {slot.subject}</p>
-          <p className="text-sm text-gray-500">Class {slot.class}</p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${slot.type === 'online'
-              ? 'bg-blue-100 text-blue-800'
-              : 'bg-green-100 text-green-800'
-            }`}>
-            {slot.type.toUpperCase()}
-          </span>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${slot.isActive
-              ? 'bg-green-100 text-green-800'
-              : 'bg-red-100 text-red-800'
-            }`}>
-            {slot.isActive ? 'ACTIVE' : 'INACTIVE'}
-          </span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <p className="text-sm font-medium text-gray-700">Time</p>
-          <p className="text-sm text-gray-600">{slot.startTime} - {slot.endTime}</p>
-        </div>
-        <div>
-          <p className="text-sm font-medium text-gray-700">Days</p>
-          <p className="text-sm text-gray-600">{slot.days.join(', ')}</p>
-        </div>
-        <div>
-          <p className="text-sm font-medium text-gray-700">Instructor</p>
-          <p className="text-sm text-gray-600">{slot.instructor}</p>
-        </div>
-        <div>
-          <p className="text-sm font-medium text-gray-700">Location</p>
-          <p className="text-sm text-gray-600">{slot.location}</p>
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-gray-700">Enrollment</span>
-          <span className="text-sm text-gray-600">{slot.enrolledStudents}/{slot.capacity}</span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className={`h-2 rounded-full ${slot.enrolledStudents / slot.capacity > 0.8
-                ? 'bg-red-500'
-                : slot.enrolledStudents / slot.capacity > 0.6
-                  ? 'bg-yellow-500'
-                  : 'bg-green-500'
-              }`}
-            style={{ width: `${(slot.enrolledStudents / slot.capacity) * 100}%` }}
-          ></div>
-        </div>
-      </div>
-
-      <div className="flex space-x-2">
-        <button
-          onClick={() => handleView(slot)}
-          className="flex-1 bg-gray-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
-        >
-          View
-        </button>
-        <button
-          onClick={() => handleEdit(slot)}
-          className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
-        >
-          Edit
-        </button>
-        <button
-          onClick={() => handleToggleStatus(slot._id)}
-          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium ${slot.isActive
-              ? 'bg-yellow-600 text-white hover:bg-yellow-700'
-              : 'bg-green-600 text-white hover:bg-green-700'
-            }`}
-        >
-          {slot.isActive ? 'Deactivate' : 'Activate'}
-        </button>
-        <button
-          onClick={() => handleDelete(slot._id)}
-          className="flex-1 bg-red-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-red-700"
-        >
-          Delete
-        </button>
-      </div>
-    </div>
-  )
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-semibold text-gray-900">Batch Management</h1>
-      <p className="mt-1 text-sm text-gray-500">Manage batches for online and offline classes.</p>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Page Header */}
+      <div className="mb-8">
+        <div className="flex items-center space-x-3 mb-2">
+          <div className="p-3 bg-gray-100 rounded-lg">
+            <svg className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Batch Management</h1>
+            <p className="mt-1 text-sm text-gray-600">Manage batches for online and offline classes</p>
+          </div>
+        </div>
+      </div>
 
       {/* Stats Cards */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-5 gap-4">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+        <div className="bg-white overflow-hidden shadow-md rounded-lg border border-gray-200">
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.total}</p>
+                <p className="text-xs text-gray-500 mt-1">Batches</p>
+              </div>
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Batches</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.total}</dd>
-                </dl>
-              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="bg-white overflow-hidden shadow-md rounded-lg border border-gray-200">
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Active</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.active}</p>
+                <p className="text-xs text-gray-500 mt-1">Batches</p>
+              </div>
+              <div className="p-3 bg-green-50 rounded-lg">
+                <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Active Batches</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.active}</dd>
-                </dl>
-              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="bg-white overflow-hidden shadow-md rounded-lg border border-gray-200">
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Inactive</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.inactive}</p>
+                <p className="text-xs text-gray-500 mt-1">Batches</p>
+              </div>
+              <div className="p-3 bg-red-50 rounded-lg">
+                <svg className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Inactive Batches</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.inactive}</dd>
-                </dl>
-              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-6 w-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="bg-white overflow-hidden shadow-md rounded-lg border border-gray-200">
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Capacity</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalCapacity}</p>
+                <p className="text-xs text-gray-500 mt-1">Total Seats</p>
+              </div>
+              <div className="p-3 bg-purple-50 rounded-lg">
+                <svg className="h-8 w-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Capacity</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.totalCapacity}</dd>
-                </dl>
-              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-6 w-6 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="bg-white overflow-hidden shadow-md rounded-lg border border-gray-200">
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Enrolled</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalEnrolled}</p>
+                <p className="text-xs text-gray-500 mt-1">Students</p>
+              </div>
+              <div className="p-3 bg-orange-50 rounded-lg">
+                <svg className="h-8 w-8 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Enrolled Students</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.totalEnrolled}</dd>
-                </dl>
               </div>
             </div>
           </div>
@@ -478,98 +393,67 @@ const Slots = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
             {/* Filter Tabs */}
-            <div className="flex space-x-2">
+            <div className="flex space-x-3 bg-white p-2 rounded-xl shadow-md border border-gray-200">
               <button
                 onClick={() => setFilterStatus('All')}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${filterStatus === 'All'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-500 hover:text-gray-700 bg-white'
-                  }`}
+                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                  filterStatus === 'All'
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md transform scale-105'
+                    : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                }`}
               >
                 All ({stats.total})
               </button>
               <button
                 onClick={() => setFilterStatus('Active')}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${filterStatus === 'Active'
-                    ? 'bg-green-100 text-green-700'
-                    : 'text-gray-500 hover:text-gray-700 bg-white'
-                  }`}
+                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                  filterStatus === 'Active'
+                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md transform scale-105'
+                    : 'text-gray-600 hover:text-green-600 hover:bg-green-50'
+                }`}
               >
                 Active ({stats.active})
               </button>
               <button
                 onClick={() => setFilterStatus('Inactive')}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${filterStatus === 'Inactive'
-                    ? 'bg-red-100 text-red-700'
-                    : 'text-gray-500 hover:text-gray-700 bg-white'
-                  }`}
+                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                  filterStatus === 'Inactive'
+                    ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md transform scale-105'
+                    : 'text-gray-600 hover:text-red-600 hover:bg-red-50'
+                }`}
               >
                 Inactive ({stats.inactive})
               </button>
             </div>
-
-            {/* Course Filter */}
-            <select
-              value={filterCourse}
-              onChange={(e) => setFilterCourse(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="All">All Courses</option>
-              {Array.from(new Set(slots.map(slot => slot.course))).map(course => (
-                <option key={course} value={course}>{course}</option>
-              ))}
-            </select>
-
-            {/* Type Filter */}
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="All">All Types</option>
-              <option value="online">Online</option>
-              <option value="offline">Offline</option>
-            </select>
           </div>
 
-          <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
             {/* Search */}
-            <div className="relative rounded-md shadow-sm">
+            <div className="relative flex-1">
               <input
                 type="text"
-                className="focus:ring-blue-500 focus:border-blue-500 block w-full pr-10 sm:text-sm border-gray-300 rounded-md"
-                placeholder="Search by name, course, or instructor"
+                className="focus:ring-2 focus:ring-gray-500 focus:border-gray-500 block w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg bg-white placeholder-gray-400"
+                placeholder="Search by name, course, or instructor..."
                 value={searchTerm}
                 onChange={handleSearch}
               />
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
             </div>
 
-            {/* Export */}
-            <button
-              type="button"
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-            >
-              <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Export
-            </button>
-
             {/* Add New */}
             <button
               type="button"
               onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="inline-flex items-center justify-center px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
             >
-              <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Add New
+              Add New Batch
             </button>
           </div>
         </div>
@@ -603,20 +487,162 @@ const Slots = () => {
         {/* Tab Content */}
         {activeTab === 'manage' && (
           <div>
-            {loading ? (
-              <div className="flex justify-center items-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span className="ml-2 text-gray-500">Loading...</span>
+            {/* Table */}
+            <div className="flex flex-col">
+              <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+                  <div className="shadow-xl overflow-hidden border border-gray-200 sm:rounded-xl bg-white">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                        <tr>
+                          <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Batch Name
+                          </th>
+                          <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Subject - Class
+                          </th>
+                          <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Instructor
+                          </th>
+                          <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Type & Status
+                          </th>
+                          <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Enrollment
+                          </th>
+                          <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Location
+                          </th>
+                          <th scope="col" className="relative px-6 py-4">
+                            <span className="sr-only">Actions</span>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {loading ? (
+                          <tr>
+                            <td colSpan="7" className="px-6 py-4 text-center">
+                              <div className="flex justify-center items-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                <span className="ml-2 text-gray-500">Loading...</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : slots.length === 0 ? (
+                          <tr>
+                            <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
+                              No batches found
+                            </td>
+                          </tr>
+                        ) : (
+                          slots.map((slot) => (
+                            <tr key={slot._id} className="hover:bg-gray-50 transition-colors duration-150">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-900">{slot.name}</div>
+                                  <div className="text-sm text-gray-500">{slot.course}</div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-semibold text-gray-900">{slot.subject}</div>
+                                <div className="text-sm text-gray-500">Class {slot.class}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-semibold text-gray-900">{slot.instructor}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex flex-col space-y-1">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${slot.type === 'online'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-green-100 text-green-800'
+                                    }`}>
+                                    {slot.type.toUpperCase()}
+                                  </span>
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${slot.isActive
+                                      ? 'bg-green-100 text-green-800'
+                                      : 'bg-red-100 text-red-800'
+                                    }`}>
+                                    {slot.isActive ? 'ACTIVE' : 'INACTIVE'}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-900">{slot.enrolledStudents}/{slot.capacity}</div>
+                                  <div className="w-20 bg-gray-200 rounded-full h-2 mt-1">
+                                    <div
+                                      className={`h-2 rounded-full ${slot.enrolledStudents / slot.capacity > 0.8
+                                          ? 'bg-red-500'
+                                          : slot.enrolledStudents / slot.capacity > 0.6
+                                            ? 'bg-yellow-500'
+                                            : 'bg-green-500'
+                                        }`}
+                                      style={{ width: `${(slot.enrolledStudents / slot.capacity) * 100}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-semibold text-gray-900">{slot.location}</div>
+                                <div className="text-sm text-gray-500">{slot.days.join(', ')}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div className="flex items-center space-x-1 justify-end">
+                                  <button 
+                                    onClick={() => handleView(slot)}
+                                    className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all duration-150"
+                                    title="View details"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                  </button>
+                                  <button 
+                                    onClick={() => handleEdit(slot)}
+                                    className="p-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-all duration-150"
+                                    title="Edit batch"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                  </button>
+                                  <button 
+                                    onClick={() => handleToggleStatus(slot._id)}
+                                    className={`p-2 rounded-lg transition-all duration-150 ${slot.isActive
+                                        ? 'text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50'
+                                        : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                      }`}
+                                    title={slot.isActive ? 'Deactivate batch' : 'Activate batch'}
+                                  >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      {slot.isActive ? (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      ) : (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                      )}
+                                    </svg>
+                                  </button>
+                                  <button 
+                                    onClick={() => handleDelete(slot._id)}
+                                    className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-150"
+                                    title="Delete batch"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
-            ) : slots.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                No batches found
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {slots.map(renderSlotCard)}
-              </div>
-            )}
+            </div>
 
             {/* Pagination */}
             <div className="flex items-center justify-between mt-6">
@@ -676,34 +702,123 @@ const Slots = () => {
         )}
 
         {activeTab === 'overview' && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Batch Overview</h3>
-            <div className="space-y-4">
-              {Array.from(new Set(slots.map(slot => slot.course))).map(course => {
-                const courseSlots = slots.filter(slot => slot.course === course)
-                const onlineSlots = courseSlots.filter(slot => slot.type === 'online')
-                const offlineSlots = courseSlots.filter(slot => slot.type === 'offline')
-
-                return (
-                  <div key={course} className="border rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-2">{course}</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-blue-50 p-3 rounded">
-                        <h5 className="font-medium text-blue-900">Online Batches</h5>
-                        <p className="text-sm text-blue-700">
-                          {onlineSlots.length} batches, {onlineSlots.reduce((sum, slot) => sum + slot.enrolledStudents, 0)}/{onlineSlots.reduce((sum, slot) => sum + slot.capacity, 0)} enrolled
-                        </p>
+          <div className="space-y-6">
+            {/* Online Batches Section */}
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="bg-purple-600 px-6 py-4">
+                <h3 className="text-lg font-semibold text-white">
+                  Online Batches
+                  <span className="ml-3 text-purple-200 font-normal">
+                    ({slots.filter(slot => slot.type === 'online').length} total)
+                  </span>
+                </h3>
+              </div>
+              <div className="p-6">
+                {slots.filter(slot => slot.type === 'online').length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No online batches found</p>
+                ) : (
+                  <div className="space-y-4">
+                    {slots.filter(slot => slot.type === 'online').map(slot => (
+                      <div key={slot._id} className="border border-purple-200 rounded-lg p-4 hover:bg-purple-50 transition-colors">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <h4 className="text-lg font-semibold text-gray-900">{slot.name}</h4>
+                            <p className="text-sm text-gray-600 mt-1">{slot.subject} - Class {slot.class}</p>
+                            <div className="flex items-center space-x-4 mt-2">
+                              <span className="text-sm text-gray-700">
+                                <strong>Instructor:</strong> {slot.instructor}
+                              </span>
+                              <span className="text-sm text-gray-700">
+                                <strong>Location:</strong> {slot.location}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-4 mt-2">
+                              <span className="text-sm text-gray-700">
+                                <strong>Days:</strong> {slot.days.join(', ')}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="ml-4 text-right">
+                            <div className={`px-3 py-1 rounded-full text-xs font-medium ${slot.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                              {slot.isActive ? 'ACTIVE' : 'INACTIVE'}
+                            </div>
+                            <div className="mt-2">
+                              <p className="text-sm font-medium text-purple-700">
+                                {slot.enrolledStudents}/{slot.capacity} enrolled
+                              </p>
+                              <div className="w-32 bg-gray-200 rounded-full h-2 mt-1">
+                                <div
+                                  className={`h-2 rounded-full ${slot.enrolledStudents / slot.capacity > 0.8 ? 'bg-red-500' : slot.enrolledStudents / slot.capacity > 0.6 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                                  style={{ width: `${(slot.enrolledStudents / slot.capacity) * 100}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="bg-green-50 p-3 rounded">
-                        <h5 className="font-medium text-green-900">Offline Batches</h5>
-                        <p className="text-sm text-green-700">
-                          {offlineSlots.length} batches, {offlineSlots.reduce((sum, slot) => sum + slot.enrolledStudents, 0)}/{offlineSlots.reduce((sum, slot) => sum + slot.capacity, 0)} enrolled
-                        </p>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                )
-              })}
+                )}
+              </div>
+            </div>
+
+            {/* Offline Batches Section */}
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="bg-orange-600 px-6 py-4">
+                <h3 className="text-lg font-semibold text-white">
+                  Offline Batches
+                  <span className="ml-3 text-orange-200 font-normal">
+                    ({slots.filter(slot => slot.type === 'offline').length} total)
+                  </span>
+                </h3>
+              </div>
+              <div className="p-6">
+                {slots.filter(slot => slot.type === 'offline').length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No offline batches found</p>
+                ) : (
+                  <div className="space-y-4">
+                    {slots.filter(slot => slot.type === 'offline').map(slot => (
+                      <div key={slot._id} className="border border-orange-200 rounded-lg p-4 hover:bg-orange-50 transition-colors">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <h4 className="text-lg font-semibold text-gray-900">{slot.name}</h4>
+                            <p className="text-sm text-gray-600 mt-1">{slot.subject} - Class {slot.class}</p>
+                            <div className="flex items-center space-x-4 mt-2">
+                              <span className="text-sm text-gray-700">
+                                <strong>Instructor:</strong> {slot.instructor}
+                              </span>
+                              <span className="text-sm text-gray-700">
+                                <strong>Location:</strong> {slot.location}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-4 mt-2">
+                              <span className="text-sm text-gray-700">
+                                <strong>Days:</strong> {slot.days.join(', ')}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="ml-4 text-right">
+                            <div className={`px-3 py-1 rounded-full text-xs font-medium ${slot.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                              {slot.isActive ? 'ACTIVE' : 'INACTIVE'}
+                            </div>
+                            <div className="mt-2">
+                              <p className="text-sm font-medium text-orange-700">
+                                {slot.enrolledStudents}/{slot.capacity} enrolled
+                              </p>
+                              <div className="w-32 bg-gray-200 rounded-full h-2 mt-1">
+                                <div
+                                  className={`h-2 rounded-full ${slot.enrolledStudents / slot.capacity > 0.8 ? 'bg-red-500' : slot.enrolledStudents / slot.capacity > 0.6 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                                  style={{ width: `${(slot.enrolledStudents / slot.capacity) * 100}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

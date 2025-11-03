@@ -9,7 +9,7 @@ const AdminLayout = () => {
   
   const handleLogout = () => {
     logout()
-    navigate('/admin/login', { replace: true })
+    navigate('/', { replace: true })
   }
 
   const navigation = [
@@ -36,7 +36,7 @@ const AdminLayout = () => {
           ></div>
 
           {/* Sidebar */}
-          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
+          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white shadow-xl">
             <div className="absolute top-0 right-0 -mr-12 pt-2">
               <button
                 type="button"
@@ -50,79 +50,24 @@ const AdminLayout = () => {
               </button>
             </div>
 
-            <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-              <div className="flex-shrink-0 flex items-center px-4">
-                <span className="text-xl font-bold text-blue-600">GyanIN Admin</span>
+            <div className="flex-1 h-0 pt-8 pb-4 overflow-y-auto">
+              <div className="flex-shrink-0 flex items-center px-6 pb-8 border-b border-gray-200">
+                <img src="/logo.png" alt="GyanIN Logo" className="h-10 w-auto" />
               </div>
-              <nav className="mt-5 px-2 space-y-1">
+              <nav className="mt-8 px-4 space-y-2">
                 {navigation.map((item) => (
                   <Link
                     key={item.name}
                     to={item.href}
                     className={`${
                       isActive(item.href)
-                        ? 'bg-blue-50 text-blue-600'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    } group flex items-center px-2 py-2 text-base font-medium rounded-md`}
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    } group flex items-center px-4 py-3 text-base font-semibold rounded-lg transition-all duration-200`}
                   >
                     <svg
                       className={`${
-                        isActive(item.href) ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
-                      } mr-4 flex-shrink-0 h-6 w-6`}
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={item.icon} />
-                    </svg>
-                    {item.name}
-                  </Link>
-                ))}
-              </nav>
-            </div>
-            <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
-              <Link to="/" className="flex-shrink-0 group block">
-                <div className="flex items-center">
-                  <div>
-                    <svg className="inline-block h-10 w-10 rounded-full text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-base font-medium text-gray-700 group-hover:text-gray-900">Admin User</p>
-                    <p className="text-sm font-medium text-gray-500 group-hover:text-gray-700">View public site</p>
-                  </div>
-                </div>
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Static sidebar for desktop */}
-      <div className="hidden md:flex md:flex-shrink-0">
-        <div className="flex flex-col w-64">
-          <div className="flex-1 flex flex-col min-h-0 border-r border-gray-200 bg-white">
-            <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-              <div className="flex items-center flex-shrink-0 px-4">
-                <span className="text-xl font-bold text-blue-600">GyanIN Admin</span>
-              </div>
-              <nav className="mt-5 flex-1 px-2 bg-white space-y-1">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`${
-                      isActive(item.href)
-                        ? 'bg-blue-50 text-blue-600'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    } group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
-                  >
-                    <svg
-                      className={`${
-                        isActive(item.href) ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
+                        isActive(item.href) ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
                       } mr-3 flex-shrink-0 h-6 w-6`}
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
@@ -137,17 +82,72 @@ const AdminLayout = () => {
                 ))}
               </nav>
             </div>
-            <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
-              <Link to="/" className="flex-shrink-0 w-full group block">
-                <div className="flex items-center">
-                  <div>
-                    <svg className="inline-block h-9 w-9 rounded-full text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
+            <div className="flex-shrink-0 flex border-t border-gray-200 p-6">
+              <Link to="/" className="flex-shrink-0 group block w-full">
+                <div className="flex items-center px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex-shrink-0">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                      <span className="text-white font-semibold text-sm">A</span>
+                    </div>
                   </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Admin User</p>
-                    <p className="text-xs font-medium text-gray-500 group-hover:text-gray-700">View public site</p>
+                  <div className="ml-3 flex-1">
+                    <p className="text-sm font-semibold text-gray-900">Admin User</p>
+                    <p className="text-xs text-gray-500">View public site</p>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Static sidebar for desktop */}
+      <div className="hidden md:flex md:flex-shrink-0">
+        <div className="flex flex-col w-64">
+          <div className="flex-1 flex flex-col min-h-0 bg-white shadow-lg">
+            <div className="flex-1 flex flex-col pt-8 pb-4 overflow-y-auto">
+              <div className="flex items-center flex-shrink-0 px-6 pb-8 border-b border-gray-200">
+                <img src="/logo.png" alt="GyanIN Logo" className="h-10 w-auto" />
+              </div>
+              <nav className="mt-8 flex-1 px-4 bg-white space-y-2">
+                {navigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`${
+                      isActive(item.href)
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    } group flex items-center px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-200`}
+                  >
+                    <svg
+                      className={`${
+                        isActive(item.href) ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                      } mr-3 flex-shrink-0 h-6 w-6`}
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={item.icon} />
+                    </svg>
+                    {item.name}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+            <div className="flex-shrink-0 flex border-t border-gray-200 p-6">
+              <Link to="/" className="flex-shrink-0 w-full group block">
+                <div className="flex items-center px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex-shrink-0">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                      <span className="text-white font-semibold text-sm">A</span>
+                    </div>
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <p className="text-sm font-semibold text-gray-900">Admin User</p>
+                    <p className="text-xs text-gray-500">View public site</p>
                   </div>
                 </div>
               </Link>
@@ -156,12 +156,12 @@ const AdminLayout = () => {
         </div>
       </div>
 
-      <div className="flex flex-col w-0 flex-1 overflow-hidden">
+      <div className="flex flex-col w-0 flex-1 overflow-hidden bg-gray-50">
         {/* Header with logout */}
-        <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow">
+        <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow-sm border-b border-gray-200">
           <button
             type="button"
-            className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 md:hidden"
+            className="px-4 border-r border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-colors md:hidden"
             onClick={() => setSidebarOpen(true)}
           >
             <span className="sr-only">Open sidebar</span>
@@ -169,14 +169,14 @@ const AdminLayout = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <div className="flex-1 px-4 flex justify-between">
+          <div className="flex-1 px-6 flex justify-between items-center">
             <div className="flex-1 flex">
               {/* Search or title can go here */}
             </div>
             <div className="ml-4 flex items-center md:ml-6">
               <button
                 onClick={handleLogout}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-sm hover:shadow-md transition-all duration-200"
               >
                 <svg className="-ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -188,9 +188,7 @@ const AdminLayout = () => {
         </div>
 
         <main className="flex-1 relative overflow-y-auto focus:outline-none">
-          <div className="py-6">
-            <Outlet />
-          </div>
+          <Outlet />
         </main>
       </div>
     </div>

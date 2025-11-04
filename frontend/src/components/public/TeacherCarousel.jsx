@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import TeacherModal from './TeacherModal';
 import { cmsAPI } from '../../utils/api';
 
 const TeacherCarousel = () => {
+    const navigate = useNavigate();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [selectedTeacher, setSelectedTeacher] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -76,13 +78,24 @@ const TeacherCarousel = () => {
         setCurrentIndex((prevIndex) => (prevIndex - 1 + carouselItems.length) % carouselItems.length);
     };
 
+    const handleViewSchedule = () => {
+        // Redirect to Teachers page
+        navigate('/teachers');
+    };
+
     const handleTeacherClick = (teacherData) => {
-        // Ensure we pass the full teacher object including scheduleImage
+        // Ensure we pass the full teacher object including schedule images
         // Support both nested teacher structure and flat structure
         const teacher = teacherData?.teacher || teacherData;
         setSelectedTeacher({
             ...teacher,
-            scheduleImage: teacher?.scheduleImage || teacherData?.teacher?.scheduleImage || ''
+            name: teacher?.name || teacherData?.subtitle || teacherData?.title,
+            description: teacher?.description || teacherData?.description,
+            image: teacher?.image || teacherData?.image,
+            role: teacher?.role || 'Professional Instructor',
+            scheduleImage: teacher?.scheduleImage || '',
+            schedule1Image: teacher?.schedule1Image || '',
+            schedule2Image: teacher?.schedule2Image || ''
         });
         setIsModalOpen(true);
     };
@@ -147,14 +160,14 @@ const TeacherCarousel = () => {
                         </p>
 
                         <button
-                            onClick={() => handleTeacherClick(activeItem.teacher || activeItem)}
+                            onClick={handleViewSchedule}
                             className="inline-flex items-center px-4 sm:px-5 md:px-6 py-1.5 sm:py-2 bg-[#0061FF] text-white rounded-lg text-xs sm:text-sm md:text-base font-semibold hover:bg-blue-700 transition-colors duration-200"
                         >
                             <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <span className="hidden sm:inline">View Profile</span>
-                            <span className="sm:hidden">Profile</span>
+                            <span className="hidden sm:inline">View Schedule</span>
+                            <span className="sm:hidden">Schedule</span>
                         </button>
                     </div>
 
@@ -175,16 +188,18 @@ const TeacherCarousel = () => {
             </div>
 
             {/* Navigation Dots and Buttons */}
-            <div className="flex items-center justify-between mt-3 sm:mt-4 bg-white px-3 sm:px-4 py-2">
-                <button
-                    onClick={handleBack}
-                    className="flex items-center text-xs sm:text-sm text-gray-600 hover:text-[#0061FF] transition-colors duration-200"
-                >
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                    <span className="hidden sm:inline">Back</span>
-                </button>
+            <div className="flex items-center justify-between mt-3 sm:mt-4 bg-transparent px-3 sm:px-4 py-2">
+                <div className="group">
+                    <button
+                        onClick={handleBack}
+                        className="flex items-center text-xs sm:text-sm text-white transition-colors duration-200 bg-[#0061FF] group-hover:bg-black px-3 py-2 rounded-lg"
+                    >
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        <span className="hidden sm:inline">Back</span>
+                    </button>
+                </div>
 
                 <div className="flex gap-1.5 sm:gap-2">
                     {carouselItems.map((_, index) => (
@@ -196,15 +211,17 @@ const TeacherCarousel = () => {
                     ))}
                 </div>
 
-                <button
-                    onClick={handleNext}
-                    className="flex items-center text-xs sm:text-sm text-gray-600 hover:text-[#0061FF] transition-colors duration-200"
-                >
-                    <span className="hidden sm:inline">Next</span>
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                </button>
+                <div className="group">
+                    <button
+                        onClick={handleNext}
+                        className="flex items-center text-xs sm:text-sm text-white transition-colors duration-200 bg-[#0061FF] group-hover:bg-black px-3 py-2 rounded-lg"
+                    >
+                        <span className="hidden sm:inline">Next</span>
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             {/* Teacher Modal */}

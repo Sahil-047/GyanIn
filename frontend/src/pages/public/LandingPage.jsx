@@ -10,7 +10,7 @@ const LandingPage = () => {
   const [loading, setLoading] = useState(true);
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
-  const fullText = 'Unlock Your Potential With New Skills';
+  const fullText = 'Welcome to Gyanin academy, your journey to mastery begins here.';
 
   // Fetch CMS data
   useEffect(() => {
@@ -106,8 +106,9 @@ const LandingPage = () => {
   return (
     <div className="w-full overflow-x-hidden">
       {/* Hero Section with Teacher Carousel */}
-      <section className="w-full bg-white py-8 sm:py-10 md:py-12 lg:py-16">
-        <div className="w-full mt-6 sm:mt-8 md:mt-10 max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8">
+      <section className="w-full bg-white py-8 sm:py-10 md:py-12 lg:py-16 relative bg-cover bg-center bg-no-repeat" style={{ backgroundImage: 'url(/bg-hero.png)' }}>
+        <div className="absolute inset-0 bg-white/90"></div>
+        <div className="w-full mt-6 sm:mt-8 md:mt-10 max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center">
             {/* Left Column - Text Content */}
             <div className="flex flex-col justify-center space-y-4 sm:space-y-5 md:space-y-6 text-center md:text-left md:pr-8 order-2 md:order-1">
@@ -118,7 +119,7 @@ const LandingPage = () => {
                 )}
               </h1>
               <p className="text-gray-600 text-base sm:text-lg md:text-xl">
-                Unlock a world of opportunities and take control of your future by mastering new skills that empower you to achieve your goals.
+                Join us and start your journey to mastery.
               </p>
               <div className="flex justify-center md:justify-start">
                 <Link 
@@ -270,7 +271,7 @@ const LandingPage = () => {
               courses.map((course, index) => (
                 <div
                   key={course._id || course.id || index}
-                  className="bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                  className="bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col"
                 >
                   <div className="h-[180px] sm:h-[200px] bg-slate-200 relative">
                     {course.image ? (
@@ -289,11 +290,43 @@ const LandingPage = () => {
                     </span>
                   </div>
 
-                  <div className="p-4 sm:p-5 md:p-6">
-                    <div className="flex justify-end mb-2">
-                      <span className="text-[#0061FF] text-lg sm:text-xl font-bold">
-                        ₹{course.price || '299.99'}
-                      </span>
+                  <div className="p-4 sm:p-5 md:p-6 flex flex-col flex-1">
+                    {/* Price - Fixed height container */}
+                    <div className="flex flex-col items-end mb-2 gap-1 min-h-[3.5rem] sm:min-h-[4rem] justify-start">
+                      {course.monthlyPrice && course.yearlyPrice ? (
+                        <>
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-[#0061FF] text-base sm:text-lg font-bold">
+                              ₹{course.monthlyPrice}
+                            </span>
+                            <span className="text-gray-500 text-xs">/month</span>
+                          </div>
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-[#0061FF] text-base sm:text-lg font-bold">
+                              ₹{course.yearlyPrice}
+                            </span>
+                            <span className="text-gray-500 text-xs">/year</span>
+                          </div>
+                        </>
+                      ) : course.monthlyPrice ? (
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-[#0061FF] text-lg sm:text-xl font-bold">
+                            ₹{course.monthlyPrice}
+                          </span>
+                          <span className="text-gray-500 text-xs">/month</span>
+                        </div>
+                      ) : course.yearlyPrice ? (
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-[#0061FF] text-lg sm:text-xl font-bold">
+                            ₹{course.yearlyPrice}
+                          </span>
+                          <span className="text-gray-500 text-xs">/year</span>
+                        </div>
+                      ) : (
+                        <span className="text-[#0061FF] text-lg sm:text-xl font-bold">
+                          ₹{course.price || '299.99'}
+                        </span>
+                      )}
                     </div>
 
                     <h3 className="text-lg sm:text-xl font-bold mb-2 line-clamp-2">{course.title}</h3>
@@ -323,23 +356,26 @@ const LandingPage = () => {
                       </div>
                     )}
 
-                    {course.enrollmentUrl ? (
-                      <a
-                        href={course.enrollmentUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full mt-6 py-2.5 sm:py-3 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 text-sm sm:text-base inline-block text-center"
-                      >
-                        Enroll Now
-                      </a>
-                    ) : (
-                      <Link
-                        to="/admissions"
-                        className="w-full mt-6 py-2.5 sm:py-3 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 text-sm sm:text-base inline-block text-center"
-                      >
-                        Enroll Now
-                      </Link>
-                    )}
+                    {/* Action Button - Push to bottom */}
+                    <div className="mt-auto pt-4">
+                      {course.enrollmentUrl ? (
+                        <a
+                          href={course.enrollmentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full py-2.5 sm:py-3 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 text-sm sm:text-base inline-block text-center"
+                        >
+                          Enroll Now
+                        </a>
+                      ) : (
+                        <Link
+                          to="/admissions"
+                          className="w-full py-2.5 sm:py-3 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 text-sm sm:text-base inline-block text-center"
+                        >
+                          Enroll Now
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))

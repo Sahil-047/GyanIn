@@ -6,6 +6,7 @@ const Teachers = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedTeacher, setSelectedTeacher] = useState(null)
+  const [selectedSchedule, setSelectedSchedule] = useState('schedule1') // 'schedule1' or 'schedule2'
   const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
@@ -26,7 +27,9 @@ const Teachers = () => {
               image: teacher.image || item.image || 'https://via.placeholder.com/96',
               role: teacher.role || 'Instructor',
               subject: teacher.subject || teacher.role || 'Instructor',
-              scheduleImage: teacher.scheduleImage || ''
+              scheduleImage: teacher.scheduleImage || '', // Keep for backward compatibility
+              schedule1Image: teacher.schedule1Image || '',
+              schedule2Image: teacher.schedule2Image || ''
             }
           })
           setTeachers(teachersList)
@@ -42,14 +45,16 @@ const Teachers = () => {
     fetchTeachers()
   }, [])
 
-  const handleViewMore = (teacher) => {
+  const handleViewMore = (teacher, schedule = 'schedule1') => {
     setSelectedTeacher(teacher)
+    setSelectedSchedule(schedule)
     setShowModal(true)
   }
 
   const closeModal = () => {
     setShowModal(false)
     setSelectedTeacher(null)
+    setSelectedSchedule('schedule1')
   }
 
   // Close modal on ESC key
@@ -116,16 +121,18 @@ const Teachers = () => {
                     </p>
                   )}
 
-                  <button
-                    onClick={() => handleViewMore(t)}
-                    className="w-full px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-xs sm:text-sm md:text-base font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
-                  >
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    View Schedule
-                  </button>
+                  {(t.schedule1Image || t.schedule2Image || t.scheduleImage) && (
+                    <button
+                      onClick={() => handleViewMore(t, 'schedule1')}
+                      className="w-full px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-xs sm:text-sm md:text-base font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      View Schedule
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -186,30 +193,63 @@ const Teachers = () => {
 
                   {/* Right Side - Schedule Image */}
                   <div className="w-full lg:w-2/3">
-                    {selectedTeacher.scheduleImage ? (
-                      <div>
-                        <h4 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-                          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          Schedule
-                        </h4>
-                        <div className="bg-gray-50 rounded-lg sm:rounded-xl p-2 sm:p-3 md:p-4 border-2 border-gray-200">
-                          <img
-                            src={selectedTeacher.scheduleImage}
-                            alt={`${selectedTeacher.name} Schedule`}
-                            className="w-full rounded-lg shadow-lg object-contain"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center min-h-[200px] sm:min-h-[250px] bg-gray-50 rounded-lg sm:rounded-xl p-6 sm:p-8 border-2 border-dashed border-gray-300">
-                        <svg className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mb-3 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <p className="text-gray-500 text-sm sm:text-base md:text-lg">No schedule available</p>
+                    {/* Schedule Selection Buttons */}
+                    {(selectedTeacher.schedule1Image || selectedTeacher.schedule2Image) && (
+                      <div className="flex gap-2 mb-4">
+                        <button
+                          onClick={() => setSelectedSchedule('schedule1')}
+                          className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
+                            selectedSchedule === 'schedule1'
+                              ? 'bg-blue-600 text-white shadow-md'
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          Schedule 1
+                        </button>
+                        <button
+                          onClick={() => setSelectedSchedule('schedule2')}
+                          className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
+                            selectedSchedule === 'schedule2'
+                              ? 'bg-blue-600 text-white shadow-md'
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          Schedule 2
+                        </button>
                       </div>
                     )}
+
+                    {/* Display Selected Schedule */}
+                    {(() => {
+                      const scheduleImage = selectedSchedule === 'schedule1' 
+                        ? (selectedTeacher.schedule1Image || selectedTeacher.scheduleImage)
+                        : selectedTeacher.schedule2Image;
+
+                      return scheduleImage ? (
+                        <div>
+                          <h4 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
+                            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Schedule {selectedSchedule === 'schedule1' ? '1' : '2'}
+                          </h4>
+                          <div className="bg-gray-50 rounded-lg sm:rounded-xl p-2 sm:p-3 md:p-4 border-2 border-gray-200">
+                            <img
+                              src={scheduleImage}
+                              alt={`${selectedTeacher.name} Schedule ${selectedSchedule === 'schedule1' ? '1' : '2'}`}
+                              className="w-full rounded-lg shadow-lg object-contain"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center min-h-[200px] sm:min-h-[250px] bg-gray-50 rounded-lg sm:rounded-xl p-6 sm:p-8 border-2 border-dashed border-gray-300">
+                          <svg className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mb-3 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <p className="text-gray-500 text-sm sm:text-base md:text-lg">No schedule available</p>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

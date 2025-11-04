@@ -33,8 +33,10 @@ const CMS = () => {
         })
       )
 
-      // Fetch courses from the courses collection
-      const coursesPromise = coursesAPI.getCourses({ limit: 100 })
+      // Fetch courses from the courses collection (admin should see all courses, including inactive)
+      // Note: The public API filters by isActive, but we need all courses for admin
+      // We'll fetch with a high limit and then filter client-side if needed
+      const coursesPromise = coursesAPI.getCourses({ limit: 1000 })
       
       // Fetch merchandise from the merchandise collection
       const merchandisePromise = merchandiseAPI.getMerchandise({ limit: 100 })
@@ -111,13 +113,44 @@ const CMS = () => {
           description: course.description,
           instructor: course.instructor,
           price: course.price,
+          monthlyPrice: course.monthlyPrice,
+          yearlyPrice: course.yearlyPrice,
           class: course.class,
           image: course.image,
-          enrollmentUrl: course.enrollmentUrl
+          enrollmentUrl: course.enrollmentUrl,
+          rating: course.rating,
+          students: course.students,
+          category: course.category,
+          duration: course.duration,
+          tags: course.tags,
+          isActive: course.isActive
         }))
-        newData.courses = { courses: coursesData }
+        
+        // Merge with existing courses to prevent duplicates and preserve any immediately added courses
+        // Use a Map to deduplicate by ID, with server data taking precedence
+        const existingCourses = cmsData.courses.courses || []
+        const courseMap = new Map()
+        
+        // First add existing courses (from immediate state updates)
+        existingCourses.forEach(course => {
+          if (course.id) {
+            courseMap.set(course.id, course)
+          }
+        })
+        
+        // Then add/update with server data (server data takes precedence)
+        coursesData.forEach(course => {
+          if (course.id) {
+            courseMap.set(course.id, course)
+          }
+        })
+        
+        // Convert back to array
+        const mergedCourses = Array.from(courseMap.values())
+        
+        newData.courses = { courses: mergedCourses }
         // Set available courses for offers dropdown (only active/live courses)
-        setAvailableCourses(coursesData.filter(course => course.id))
+        setAvailableCourses(mergedCourses.filter(course => course.id))
       }
 
       // Process merchandise from the merchandise collection
@@ -194,7 +227,12 @@ const CMS = () => {
         if (!formData.title?.trim()) errors.title = 'Course title is required'
         if (!formData.description?.trim()) errors.description = 'Description is required'
         if (!formData.instructor?.trim()) errors.instructor = 'Instructor is required'
-        if (!formData.price || formData.price <= 0) errors.price = 'Valid price is required'
+        // Require at least one of monthly or yearly price (legacy price not considered)
+        if (!formData.monthlyPrice && !formData.yearlyPrice) {
+          errors.monthlyPrice = 'Provide monthly and/or yearly price'
+        }
+        if (formData.monthlyPrice && formData.monthlyPrice < 0) errors.monthlyPrice = 'Monthly price must be a positive number'
+        if (formData.yearlyPrice && formData.yearlyPrice < 0) errors.yearlyPrice = 'Yearly price must be a positive number'
         if (!formData.class || formData.class < 1 || formData.class > 12) errors.class = 'Class must be a number between 1 and 12'
         break
       case 'merchandise':
@@ -236,7 +274,9 @@ const CMS = () => {
           teacherName: item.teacher?.name || item.title || '',
           description: item.teacher?.description || item.description || '',
           teacherImage: item.teacher?.image || item.image || '',
-          scheduleImage: item.teacher?.scheduleImage || ''
+          scheduleImage: item.teacher?.scheduleImage || '', // Keep for backward compatibility
+          schedule1Image: item.teacher?.schedule1Image || '',
+          schedule2Image: item.teacher?.schedule2Image || ''
         };
       } else {
         // New structure
@@ -245,7 +285,8 @@ const CMS = () => {
           teacherName: item.teacherName || '',
           description: item.description || '',
           teacherImage: item.teacherImage || '',
-          scheduleImage: item.scheduleImage || ''
+          schedule1Image: item.teacher?.schedule1Image || item.schedule1Image || '',
+          schedule2Image: item.teacher?.schedule2Image || item.schedule2Image || ''
         };
       }
     } else if (activeTab === 'merchandise') {
@@ -258,6 +299,26 @@ const CMS = () => {
         category: item.category || '',
         image: item.image || '',
         stock: item.stock !== undefined ? item.stock : ''
+      };
+    } else if (activeTab === 'courses') {
+      // Ensure proper ID and structure for courses
+      formDataToSet = {
+        id: item.id || item._id, // Use id if available, fallback to _id
+        title: item.title || '',
+        description: item.description || '',
+        instructor: item.instructor || '',
+        price: item.price || '',
+        monthlyPrice: item.monthlyPrice || '',
+        yearlyPrice: item.yearlyPrice || '',
+        class: item.class || '',
+        category: item.category || '',
+        enrollmentUrl: item.enrollmentUrl || '',
+        image: item.image || '',
+        duration: item.duration || '',
+        rating: item.rating || 0,
+        students: item.students || 0,
+        tags: item.tags || [],
+        isActive: item.isActive !== undefined ? item.isActive : true
       };
     } else if (activeTab === 'offers') {
       // Ensure slotId is included for ongoing courses
@@ -290,9 +351,34 @@ const CMS = () => {
       let submitData = { ...formData }
 
       if (activeTab === 'courses') {
-        // Convert price to number if it's a string
-        if (submitData.price && typeof submitData.price === 'string') {
-          submitData.price = parseFloat(submitData.price)
+        // Convert prices to numbers if they're strings, and remove if empty or invalid
+        if (submitData.monthlyPrice !== undefined && submitData.monthlyPrice !== null && submitData.monthlyPrice !== '') {
+          if (typeof submitData.monthlyPrice === 'string') {
+            const parsed = parseFloat(submitData.monthlyPrice)
+            if (isNaN(parsed) || parsed <= 0) {
+              delete submitData.monthlyPrice
+            } else {
+              submitData.monthlyPrice = parsed
+            }
+          } else if (submitData.monthlyPrice <= 0) {
+            delete submitData.monthlyPrice
+          }
+        } else {
+          delete submitData.monthlyPrice
+        }
+        if (submitData.yearlyPrice !== undefined && submitData.yearlyPrice !== null && submitData.yearlyPrice !== '') {
+          if (typeof submitData.yearlyPrice === 'string') {
+            const parsed = parseFloat(submitData.yearlyPrice)
+            if (isNaN(parsed) || parsed <= 0) {
+              delete submitData.yearlyPrice
+            } else {
+              submitData.yearlyPrice = parsed
+            }
+          } else if (submitData.yearlyPrice <= 0) {
+            delete submitData.yearlyPrice
+          }
+        } else {
+          delete submitData.yearlyPrice
         }
 
         // Convert class to number if it's a string
@@ -305,12 +391,28 @@ const CMS = () => {
           submitData.image = 'https://via.placeholder.com/400x300?text=Course'
         }
 
+        // Ensure isActive is set (default to true for new courses)
+        if (submitData.isActive === undefined) {
+          submitData.isActive = true
+        }
+
         // For courses, use the courses API directly
         if (selectedItem) {
           // Update existing course - remove id from the update data
           const { id, ...updateData } = submitData
 
-          result = await coursesAPI.updateCourse(selectedItem.id, updateData)
+          // Ensure we use the correct ID from selectedItem (prefer id, fallback to _id)
+          const courseId = selectedItem.id || selectedItem._id
+          if (!courseId) {
+            throw new Error('Course ID is missing. Please refresh and try again.')
+          }
+
+          // Validate ID format - MongoDB ObjectId should be 24 hex characters
+          if (typeof courseId !== 'string' || !/^[0-9a-fA-F]{24}$/.test(courseId)) {
+            throw new Error('Invalid course ID format. Please refresh the page and try again.')
+          }
+
+          result = await coursesAPI.updateCourse(courseId, updateData)
         } else {
           // Create new course
           result = await coursesAPI.createCourse(submitData)
@@ -392,6 +494,58 @@ const CMS = () => {
         setShowEditModal(false)
         setFormData({})
         setFormErrors({})
+        
+        // For courses, immediately add/update the course in local state
+        // This ensures it's available right away without waiting for refetch
+        if (activeTab === 'courses' && result.data) {
+          const courseData = {
+            id: result.data._id || result.data.id,
+            title: result.data.title,
+            description: result.data.description,
+            instructor: result.data.instructor,
+            price: result.data.price,
+            monthlyPrice: result.data.monthlyPrice,
+            yearlyPrice: result.data.yearlyPrice,
+            class: result.data.class,
+            image: result.data.image,
+            enrollmentUrl: result.data.enrollmentUrl,
+            rating: result.data.rating,
+            students: result.data.students,
+            category: result.data.category,
+            duration: result.data.duration,
+            tags: result.data.tags,
+            isActive: result.data.isActive !== undefined ? result.data.isActive : true
+          }
+          
+          // Update local state immediately
+          if (selectedItem) {
+            // Update existing course
+            setCmsData(prev => ({
+              ...prev,
+              courses: {
+                courses: prev.courses.courses.map(course => 
+                  course.id === courseData.id ? courseData : course
+                )
+              }
+            }))
+            // Update in available courses
+            setAvailableCourses(prev => 
+              prev.map(course => course.id === courseData.id ? courseData : course)
+            )
+          } else {
+            // Add new course to the beginning of the list
+            setCmsData(prev => ({
+              ...prev,
+              courses: {
+                courses: [courseData, ...prev.courses.courses]
+              }
+            }))
+            // Add to available courses
+            setAvailableCourses(prev => [courseData, ...prev])
+          }
+        }
+        
+        // Still refresh to ensure everything is in sync (will deduplicate if needed)
         fetchCMSData()
       }
     } catch (error) {
@@ -487,11 +641,21 @@ const CMS = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Schedule Image</label>
+              <label className="block text-sm font-medium text-gray-700">Schedule 1 Image</label>
               <ImageUploader
-                value={formData.scheduleImage || ''}
-                onChange={(url) => setFormData(prev => ({ ...prev, scheduleImage: url }))}
-                buttonText="Upload schedule image"
+                value={formData.schedule1Image || ''}
+                onChange={(url) => setFormData(prev => ({ ...prev, schedule1Image: url }))}
+                buttonText="Upload schedule 1 image"
+                bucketType="teacher"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Schedule 2 Image</label>
+              <ImageUploader
+                value={formData.schedule2Image || ''}
+                onChange={(url) => setFormData(prev => ({ ...prev, schedule2Image: url }))}
+                buttonText="Upload schedule 2 image"
                 bucketType="teacher"
               />
             </div>
@@ -558,16 +722,33 @@ const CMS = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Price *</label>
+                <label className="block text-sm font-medium text-gray-700">Monthly Price</label>
                 <input
                   type="number"
-                  name="price"
-                  value={formData.price || ''}
+                  name="monthlyPrice"
+                  value={formData.monthlyPrice || ''}
                   onChange={handleInputChange}
-                  className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.price ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                  placeholder="Enter price"
+                  className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.monthlyPrice ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                  placeholder="Enter monthly price"
+                  min="0"
+                  step="0.01"
                 />
-                {formErrors.price && <p className="mt-1 text-sm text-red-600">{formErrors.price}</p>}
+                {formErrors.monthlyPrice && <p className="mt-1 text-sm text-red-600">{formErrors.monthlyPrice}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Yearly Price</label>
+                <input
+                  type="number"
+                  name="yearlyPrice"
+                  value={formData.yearlyPrice || ''}
+                  onChange={handleInputChange}
+                  className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.yearlyPrice ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                  placeholder="Enter yearly price"
+                  min="0"
+                  step="0.01"
+                />
+                {formErrors.yearlyPrice && <p className="mt-1 text-sm text-red-600">{formErrors.yearlyPrice}</p>}
               </div>
 
               <div>
@@ -866,6 +1047,17 @@ const CMS = () => {
                         <div>
                           <h4 className="text-md font-medium text-gray-900">{item.title}</h4>
                           <p className="text-sm text-gray-500 mt-1">{item.description}</p>
+                          <div className="mt-2 flex items-center gap-3 text-xs text-gray-600">
+                            {item.monthlyPrice && item.monthlyPrice > 0 && (
+                              <span className="font-semibold text-blue-600">₹{item.monthlyPrice}/month</span>
+                            )}
+                            {item.yearlyPrice && item.yearlyPrice > 0 && (
+                              <span className="font-semibold text-blue-600">₹{item.yearlyPrice}/year</span>
+                            )}
+                            {(!item.monthlyPrice || item.monthlyPrice <= 0) && (!item.yearlyPrice || item.yearlyPrice <= 0) && item.price && item.price > 0 && (
+                              <span className="font-semibold text-blue-600">₹{item.price}</span>
+                            )}
+                          </div>
                         </div>
                       )}
 

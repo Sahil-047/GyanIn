@@ -56,9 +56,15 @@ const Courses = () => {
   const sortedCourses = [...filteredCourses].sort((a, b) => {
     switch (sortBy) {
       case 'price-low':
-        return parseFloat(a.price) - parseFloat(b.price);
+        // Use monthly price if available, otherwise yearly, otherwise legacy price
+        const priceA = a.monthlyPrice || a.yearlyPrice || a.price || 0;
+        const priceB = b.monthlyPrice || b.yearlyPrice || b.price || 0;
+        return parseFloat(priceA) - parseFloat(priceB);
       case 'price-high':
-        return parseFloat(b.price) - parseFloat(a.price);
+        // Use monthly price if available, otherwise yearly, otherwise legacy price
+        const priceAHigh = a.monthlyPrice || a.yearlyPrice || a.price || 0;
+        const priceBHigh = b.monthlyPrice || b.yearlyPrice || b.price || 0;
+        return parseFloat(priceBHigh) - parseFloat(priceAHigh);
       case 'rating':
         return b.rating - a.rating;
       case 'students':
@@ -165,7 +171,7 @@ const Courses = () => {
                 {sortedCourses.map((course) => (
                   <div
                     key={course._id || course.id}
-                    className="bg-gray-100 rounded-xl sm:rounded-2xl shadow-md sm:shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 overflow-hidden"
+                    className="bg-gray-100 rounded-xl sm:rounded-2xl shadow-md sm:shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 overflow-hidden flex flex-col"
                   >
                     {/* Course Image */}
                     <div className="relative h-40 sm:h-44 md:h-48 overflow-hidden bg-gray-200">
@@ -192,12 +198,43 @@ const Courses = () => {
                     </div>
 
                     {/* Course Content */}
-                    <div className="p-4 sm:p-5 md:p-6">
-                      {/* Price */}
-                      <div className="flex justify-end mb-2">
-                        <span className="text-[#0061FF] text-xl sm:text-2xl font-bold">
-                          ₹{course.price}
-                        </span>
+                    <div className="p-4 sm:p-5 md:p-6 flex flex-col flex-1">
+                      {/* Price - Fixed height container */}
+                      <div className="flex flex-col items-end mb-2 gap-1 min-h-[3.5rem] sm:min-h-[4rem] justify-start">
+                        {course.monthlyPrice && course.yearlyPrice ? (
+                          <>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-[#0061FF] text-lg sm:text-xl font-bold">
+                                ₹{course.monthlyPrice}
+                              </span>
+                              <span className="text-gray-500 text-xs sm:text-sm">/month</span>
+                            </div>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-[#0061FF] text-lg sm:text-xl font-bold">
+                                ₹{course.yearlyPrice}
+                              </span>
+                              <span className="text-gray-500 text-xs sm:text-sm">/year</span>
+                            </div>
+                          </>
+                        ) : course.monthlyPrice ? (
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-[#0061FF] text-xl sm:text-2xl font-bold">
+                              ₹{course.monthlyPrice}
+                            </span>
+                            <span className="text-gray-500 text-xs sm:text-sm">/month</span>
+                          </div>
+                        ) : course.yearlyPrice ? (
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-[#0061FF] text-xl sm:text-2xl font-bold">
+                              ₹{course.yearlyPrice}
+                            </span>
+                            <span className="text-gray-500 text-xs sm:text-sm">/year</span>
+                          </div>
+                        ) : (
+                          <span className="text-[#0061FF] text-xl sm:text-2xl font-bold">
+                            ₹{course.price || '0'}
+                          </span>
+                        )}
                       </div>
 
                       {/* Title and Instructor */}
@@ -256,24 +293,26 @@ const Courses = () => {
                         )}
                       </div>
 
-                      {/* Action Button */}
-                      {course.enrollmentUrl ? (
-                        <a
-                          href={course.enrollmentUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full py-2.5 sm:py-3 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 inline-block text-center text-sm sm:text-base"
-                        >
-                          Enroll Now
-                        </a>
-                      ) : (
-                        <Link
-                          to="/admissions"
-                          className="w-full py-2.5 sm:py-3 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 inline-block text-center text-sm sm:text-base"
-                        >
-                          Enroll Now
-                        </Link>
-                      )}
+                      {/* Action Button - Push to bottom */}
+                      <div className="mt-auto pt-2">
+                        {course.enrollmentUrl ? (
+                          <a
+                            href={course.enrollmentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full py-2.5 sm:py-3 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 inline-block text-center text-sm sm:text-base"
+                          >
+                            Enroll Now
+                          </a>
+                        ) : (
+                          <Link
+                            to="/admissions"
+                            className="w-full py-2.5 sm:py-3 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 inline-block text-center text-sm sm:text-base"
+                          >
+                            Enroll Now
+                          </Link>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

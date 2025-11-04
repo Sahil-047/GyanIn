@@ -18,7 +18,18 @@ const courseSchema = new mongoose.Schema({
   },
   price: {
     type: Number,
-    required: true,
+    required: false,
+    min: 0,
+    default: 0
+  },
+  monthlyPrice: {
+    type: Number,
+    required: false,
+    min: 0
+  },
+  yearlyPrice: {
+    type: Number,
+    required: false,
     min: 0
   },
   duration: {

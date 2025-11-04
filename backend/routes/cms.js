@@ -349,7 +349,7 @@ router.post('/courses', async (req, res) => {
 router.post('/carousel', async (req, res) => {
     try {
         
-        const { teacherName, description, teacherImage, scheduleImage } = req.body;
+        const { teacherName, description, teacherImage, scheduleImage, schedule1Image, schedule2Image } = req.body;
 
         if (!teacherName || !description) {
             return res.status(400).json({
@@ -381,7 +381,9 @@ router.post('/carousel', async (req, res) => {
                 name: teacherName,
                 description: description,
                 image: teacherImage || 'https://via.placeholder.com/300x300?text=Teacher',
-                scheduleImage: scheduleImage || ''
+                scheduleImage: scheduleImage || '', // Keep for backward compatibility
+                schedule1Image: schedule1Image || '',
+                schedule2Image: schedule2Image || ''
             }
         };
 
@@ -433,7 +435,7 @@ router.post('/carousel', async (req, res) => {
 router.put('/carousel/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { teacherName, description, teacherImage, scheduleImage } = req.body;
+        const { teacherName, description, teacherImage, scheduleImage, schedule1Image, schedule2Image } = req.body;
 
         if (!teacherName || !description) {
             return res.status(400).json({
@@ -466,7 +468,9 @@ router.put('/carousel/:id', async (req, res) => {
                 name: teacherName,
                 description: description,
                 image: teacherImage || 'https://via.placeholder.com/300x300?text=Teacher',
-                scheduleImage: scheduleImage || ''
+                scheduleImage: scheduleImage || '', // Keep for backward compatibility
+                schedule1Image: schedule1Image || '',
+                schedule2Image: schedule2Image || ''
             }
         };
 
@@ -524,15 +528,23 @@ router.delete('/carousel/:id', async (req, res) => {
         // Delete images from EdgeStore
         const teacherImage = itemToDelete?.teacher?.image;
         const scheduleImage = itemToDelete?.teacher?.scheduleImage;
+        const schedule1Image = itemToDelete?.teacher?.schedule1Image;
+        const schedule2Image = itemToDelete?.teacher?.schedule2Image;
         
         // Delete teacher image from EdgeStore if it exists and is from EdgeStore
         if (teacherImage && (teacherImage.includes('edgestore') || teacherImage.includes('publicFiles'))) {
             await deleteImageFromEdgeStore(teacherImage);
         }
         
-        // Delete schedule image from EdgeStore if it exists and is from EdgeStore
+        // Delete schedule images from EdgeStore if they exist and are from EdgeStore
         if (scheduleImage && (scheduleImage.includes('edgestore') || scheduleImage.includes('publicFiles'))) {
             await deleteImageFromEdgeStore(scheduleImage);
+        }
+        if (schedule1Image && (schedule1Image.includes('edgestore') || schedule1Image.includes('publicFiles'))) {
+            await deleteImageFromEdgeStore(schedule1Image);
+        }
+        if (schedule2Image && (schedule2Image.includes('edgestore') || schedule2Image.includes('publicFiles'))) {
+            await deleteImageFromEdgeStore(schedule2Image);
         }
 
         carouselSection.data.carouselItems.splice(itemIndex, 1);

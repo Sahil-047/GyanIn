@@ -338,6 +338,15 @@ export const publicSlotsAPI = {
   getSlot: (id) => publicApiCall(`/public/slots/${id}`)
 }
 
+// Contact API (for contact form submissions)
+export const contactAPI = {
+  // Submit contact form
+  submitContact: (data) => publicApiCall('/contact', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  })
+}
+
 // Export publicApiCall for direct use in components
 export { publicApiCall }
 
@@ -350,5 +359,6 @@ export default {
   merchandiseAPI,
   uploadsAPI,
   publicReadmissionsAPI,
-  publicSlotsAPI
+  publicSlotsAPI,
+  contactAPI
 }

@@ -49,27 +49,111 @@ router.post('/', contactValidation, async (req, res) => {
 
     await contact.save();
 
-    // Send email notification (optional)
+    // Send email notifications (optional)
     if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       try {
+        // Email to admin
         await transporter.sendMail({
-          from: process.env.EMAIL_USER,
-          to: process.env.ADMIN_EMAIL || 'admin@gyanin.com',
+          from: `"GyanIN Contact Form" <${process.env.EMAIL_USER}>`,
+          to: process.env.ADMIN_EMAIL || process.env.EMAIL_USER,
           subject: `New Contact Form Submission: ${subject}`,
           html: `
-            <h3>New Contact Form Submission</h3>
-            <p><strong>Name:</strong> ${name}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Query Type:</strong> ${queryType}</p>
-            <p><strong>Subject:</strong> ${subject}</p>
-            <p><strong>Message:</strong></p>
-            <p>${message}</p>
-            <hr>
-            <p><em>Submitted on: ${new Date().toLocaleString()}</em></p>
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #0061FF 0%, #4F46E5 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+                .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; }
+                .info-box { background: white; padding: 15px; margin: 10px 0; border-radius: 6px; border-left: 4px solid #0061FF; }
+                .label { font-weight: bold; color: #0061FF; }
+                .message-box { background: white; padding: 15px; margin: 10px 0; border-radius: 6px; border: 1px solid #e5e7eb; }
+                .footer { background: #f3f4f6; padding: 15px; text-align: center; color: #6b7280; font-size: 12px; border-radius: 0 0 8px 8px; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h2 style="margin: 0;">New Contact Form Submission</h2>
+                </div>
+                <div class="content">
+                  <div class="info-box">
+                    <p style="margin: 5px 0;"><span class="label">Name:</span> ${name}</p>
+                    <p style="margin: 5px 0;"><span class="label">Email:</span> <a href="mailto:${email}" style="color: #0061FF;">${email}</a></p>
+                    <p style="margin: 5px 0;"><span class="label">Query Type:</span> ${queryType.charAt(0).toUpperCase() + queryType.slice(1)}</p>
+                    <p style="margin: 5px 0;"><span class="label">Subject:</span> ${subject}</p>
+                  </div>
+                  <div class="message-box">
+                    <p style="margin: 0 0 10px 0;"><strong>Message:</strong></p>
+                    <p style="margin: 0; white-space: pre-wrap;">${message}</p>
+                  </div>
+                </div>
+                <div class="footer">
+                  <p style="margin: 0;">Submitted on: ${new Date().toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}</p>
+                  <p style="margin: 5px 0 0 0;">This is an automated notification from GyanIN Contact Form</p>
+                </div>
+              </div>
+            </body>
+            </html>
+          `
+        });
+
+        // Confirmation email to user
+        await transporter.sendMail({
+          from: `"GyanIN" <${process.env.EMAIL_USER}>`,
+          to: email,
+          subject: `Thank you for contacting GyanIN - We've received your message`,
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #0061FF 0%, #4F46E5 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+                .content { background: #ffffff; padding: 30px 20px; border: 1px solid #e5e7eb; }
+                .message { background: #f0f9ff; padding: 20px; margin: 20px 0; border-radius: 6px; border-left: 4px solid #0061FF; }
+                .details { background: #f9fafb; padding: 15px; margin: 15px 0; border-radius: 6px; }
+                .footer { background: #f3f4f6; padding: 20px; text-align: center; color: #6b7280; font-size: 12px; border-radius: 0 0 8px 8px; }
+                .button { display: inline-block; padding: 12px 24px; background: #0061FF; color: white; text-decoration: none; border-radius: 6px; margin: 15px 0; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1 style="margin: 0;">Thank You for Contacting Us!</h1>
+                </div>
+                <div class="content">
+                  <p>Dear ${name},</p>
+                  
+                  <div class="message">
+                    <p style="margin: 0;"><strong>We've successfully received your message!</strong></p>
+                  </div>
+
+                  <p>Thank you for reaching out to GyanIN. We have received your inquiry and our team will review it shortly.</p>
+
+                  <div class="details">
+                    <p style="margin: 5px 0;"><strong>Your Query Details:</strong></p>
+                    <p style="margin: 5px 0;"><strong>Subject:</strong> ${subject}</p>
+                    <p style="margin: 5px 0;"><strong>Query Type:</strong> ${queryType.charAt(0).toUpperCase() + queryType.slice(1)}</p>
+                  </div>
+
+                  <p>We typically respond within 24-48 hours. If your inquiry is urgent, please feel free to contact us directly.</p>
+
+                  <p>Best regards,<br><strong>The GyanIN Team</strong></p>
+                </div>
+                <div class="footer">
+                  <p style="margin: 0;">This is an automated confirmation email. Please do not reply to this message.</p>
+                  <p style="margin: 5px 0 0 0;">© ${new Date().getFullYear()} GyanIN. All rights reserved.</p>
+                </div>
+              </div>
+            </body>
+            </html>
           `
         });
       } catch (emailError) {
-        
+        console.error('Email sending error:', emailError);
         // Don't fail the request if email fails
       }
     }

@@ -177,7 +177,7 @@ const Merchandise = () => {
                         disabled={item.stock !== undefined && item.stock <= 0}
                         className="w-full py-2 sm:py-2.5 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-[#0061FF] text-xs sm:text-sm"
                       >
-                        {item.stock !== undefined && item.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+                        {item.stock !== undefined && item.stock <= 0 ? 'Out of Stock' : 'Buy Now'}
                       </button>
                     </div>
                   </div>

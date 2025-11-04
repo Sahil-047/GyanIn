@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { contactAPI } from '../../utils/api';
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
@@ -11,35 +12,60 @@ const ContactUs = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+    // Clear errors when user starts typing
+    if (errorMessage) {
+      setErrorMessage('');
+    }
+    if (submitStatus) {
+      setSubmitStatus(null);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrorMessage('');
+    setSubmitStatus(null);
     
-    // Simulate form submission
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSubmitStatus('success');
-      setFormData({
-        name: '',
-        email: '',
-        subject: '',
-        message: '',
-        queryType: 'general'
-      });
+    try {
+      const response = await contactAPI.submitContact(formData);
       
-      // Reset success message after 5 seconds
-      setTimeout(() => {
-        setSubmitStatus(null);
-      }, 5000);
-    }, 2000);
+      if (response.success) {
+        setSubmitStatus('success');
+        setFormData({
+          name: '',
+          email: '',
+          subject: '',
+          message: '',
+          queryType: 'general'
+        });
+        
+        // Reset success message after 5 seconds
+        setTimeout(() => {
+          setSubmitStatus(null);
+        }, 5000);
+      } else {
+        setSubmitStatus('error');
+        setErrorMessage(response.message || 'Failed to send message. Please try again.');
+      }
+    } catch (error) {
+      setSubmitStatus('error');
+      if (error.data && error.data.errors) {
+        const validationErrors = error.data.errors.map(err => err.msg).join(', ');
+        setErrorMessage(validationErrors);
+      } else {
+        setErrorMessage(error.message || 'Failed to send message. Please try again.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const queryTypes = [
@@ -76,6 +102,17 @@ const ContactUs = () => {
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
                 Thank you! Your message has been sent successfully. We'll get back to you soon.
+              </div>
+            </div>
+          )}
+
+          {submitStatus === 'error' && errorMessage && (
+            <div className="mb-4 sm:mb-5 md:mb-6 p-3 sm:p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm sm:text-base">
+              <div className="flex items-center">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                {errorMessage}
               </div>
             </div>
           )}

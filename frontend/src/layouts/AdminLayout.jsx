@@ -6,7 +6,7 @@ const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
-  
+
   const handleLogout = () => {
     logout()
     navigate('/', { replace: true })
@@ -29,14 +29,14 @@ const AdminLayout = () => {
       {sidebarOpen && (
         <div className="fixed inset-0 flex z-40 md:hidden" role="dialog" aria-modal="true">
           {/* Overlay */}
-          <div 
-            className="fixed inset-0 bg-gray-600 bg-opacity-75" 
+          <div
+            className="fixed inset-0 bg-gray-600 bg-opacity-75"
             aria-hidden="true"
             onClick={() => setSidebarOpen(false)}
           ></div>
 
           {/* Sidebar */}
-          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white shadow-xl">
+          <div className="relative flex flex-col max-w-xs w-full bg-white shadow-xl h-screen">
             <div className="absolute top-0 right-0 -mr-12 pt-2">
               <button
                 type="button"
@@ -59,16 +59,14 @@ const AdminLayout = () => {
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`${
-                      isActive(item.href)
+                    className={`${isActive(item.href)
                         ? 'bg-blue-600 text-white shadow-md'
                         : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    } group flex items-center px-4 py-3 text-base font-semibold rounded-lg transition-all duration-200`}
+                      } group flex items-center px-4 py-3 text-base font-semibold rounded-lg transition-all duration-200`}
                   >
                     <svg
-                      className={`${
-                        isActive(item.href) ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
-                      } mr-3 flex-shrink-0 h-6 w-6`}
+                      className={`${isActive(item.href) ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                        } mr-3 flex-shrink-0 h-6 w-6`}
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -103,27 +101,25 @@ const AdminLayout = () => {
 
       {/* Static sidebar for desktop */}
       <div className="hidden md:flex md:flex-shrink-0">
-        <div className="flex flex-col w-64">
+        <div className="flex flex-col w-64 h-screen">
           <div className="flex-1 flex flex-col min-h-0 bg-white shadow-lg">
-            <div className="flex-1 flex flex-col pt-8 pb-4 overflow-y-auto">
-              <div className="flex items-center flex-shrink-0 px-6 pb-8 border-b border-gray-200">
+            <div className="flex-1 flex flex-col pt-8 overflow-y-auto">
+              <div className="flex items-center flex-shrink-0 px-6 pb-6">
                 <img src="/logo.png" alt="GyanIN Logo" className="h-10 w-auto" />
               </div>
-              <nav className="mt-8 flex-1 px-4 bg-white space-y-2">
+              <nav className="mt-4 flex-1 px-4 bg-white space-y-2">
                 {navigation.map((item) => (
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`${
-                      isActive(item.href)
+                    className={`${isActive(item.href)
                         ? 'bg-blue-600 text-white shadow-md'
                         : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    } group flex items-center px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-200`}
+                      } group flex items-center px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-200`}
                   >
                     <svg
-                      className={`${
-                        isActive(item.href) ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
-                      } mr-3 flex-shrink-0 h-6 w-6`}
+                      className={`${isActive(item.href) ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                        } mr-3 flex-shrink-0 h-6 w-6`}
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"

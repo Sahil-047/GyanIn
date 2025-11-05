@@ -8,7 +8,7 @@ const router = express.Router();
 // Validation rules (email, previousCourse, reason removed)
 const readmissionValidation = [
     body('studentName').trim().isLength({ min: 2 }).withMessage('Student name must be at least 2 characters'),
-    body('course').trim().isLength({ min: 2 }).withMessage('Course must be at least 2 characters'),
+    body('subject').trim().isLength({ min: 2 }).withMessage('Subject must be at least 2 characters'),
     body('contact').trim().isLength({ min: 10 }).withMessage('Contact must be at least 10 characters'),
     body('slotName').trim().isLength({ min: 2 }).withMessage('Slot name must be at least 2 characters')
 ];
@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
             page = 1,
             limit = 10,
             status,
-            course,
+            subject,
             search,
             sortBy = 'createdAt',
             sortOrder = 'desc'
@@ -32,14 +32,14 @@ router.get('/', async (req, res) => {
             filter.status = status;
         }
 
-        if (course && course !== 'All') {
-            filter.course = course;
+        if (subject && subject !== 'All') {
+            filter.subject = subject;
         }
 
         if (search) {
             filter.$or = [
                 { studentName: { $regex: search, $options: 'i' } },
-                { course: { $regex: search, $options: 'i' } }
+                { subject: { $regex: search, $options: 'i' } }
             ];
         }
 
@@ -198,8 +198,11 @@ router.post('/', readmissionValidation, async (req, res) => {
         }
 
         // Create the readmission with default pending status
+        // Handle backward compatibility: if 'course' is sent, map it to 'subject'
+        const { course, ...restBody } = req.body
         const readmissionData = {
-            ...req.body,
+            ...restBody,
+            subject: req.body.subject || course || '',
             status: 'pending' // Ensure status is pending for new readmissions
         };
         const readmission = new Readmission(readmissionData);
@@ -269,10 +272,17 @@ router.put('/:id', readmissionValidation, async (req, res) => {
             await newSlot.save();
         }
 
+        // Handle backward compatibility: if 'course' is sent, map it to 'subject'
+        const { course, ...restBody } = req.body
+        const updateData = {
+            ...restBody,
+            ...(course && !req.body.subject ? { subject: course } : {}),
+            ...(req.body.subject ? { subject: req.body.subject } : {})
+        }
         const readmission = await Readmission.findByIdAndUpdate(
             req.params.id,
-            req.body,
-            { new: true }
+            updateData,
+            { new: true, runValidators: true }
         );
 
         res.json({

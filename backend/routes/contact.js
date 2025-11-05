@@ -18,6 +18,7 @@ const transporter = nodemailer.createTransport({
 const contactValidation = [
   body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
+  body('phone').optional().trim().isLength({ min: 10 }).withMessage('Phone number must be at least 10 characters'),
   body('queryType').isIn(['general', 'course', 'other']).withMessage('Invalid query type'),
   body('subject').trim().isLength({ min: 5 }).withMessage('Subject must be at least 5 characters'),
   body('message').trim().isLength({ min: 10 }).withMessage('Message must be at least 10 characters')
@@ -36,12 +37,13 @@ router.post('/', contactValidation, async (req, res) => {
       });
     }
 
-    const { name, email, queryType, subject, message } = req.body;
+    const { name, email, phone, queryType, subject, message } = req.body;
 
     // Create new contact entry
     const contact = new Contact({
       name,
       email,
+      phone: phone || undefined,
       queryType,
       subject,
       message
@@ -81,6 +83,7 @@ router.post('/', contactValidation, async (req, res) => {
                   <div class="info-box">
                     <p style="margin: 5px 0;"><span class="label">Name:</span> ${name}</p>
                     <p style="margin: 5px 0;"><span class="label">Email:</span> <a href="mailto:${email}" style="color: #0061FF;">${email}</a></p>
+                    ${phone ? `<p style="margin: 5px 0;"><span class="label">Phone:</span> <a href="tel:${phone}" style="color: #0061FF;">${phone}</a></p>` : ''}
                     <p style="margin: 5px 0;"><span class="label">Query Type:</span> ${queryType.charAt(0).toUpperCase() + queryType.slice(1)}</p>
                     <p style="margin: 5px 0;"><span class="label">Subject:</span> ${subject}</p>
                   </div>

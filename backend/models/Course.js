@@ -96,4 +96,10 @@ courseSchema.pre('save', function(next) {
   next();
 });
 
+// Indexes for performance optimization
+courseSchema.index({ isActive: 1, class: 1 }); // For filtering active courses by class
+courseSchema.index({ category: 1, isActive: 1 }); // For filtering by category
+courseSchema.index({ createdAt: -1 }); // For sorting by newest
+courseSchema.index({ rating: -1, isActive: 1 }); // For sorting by rating
+
 module.exports = mongoose.model('Course', courseSchema);

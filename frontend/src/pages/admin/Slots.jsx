@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { slotsAPI, cmsAPI } from '../../utils/api'
+import toast from 'react-hot-toast'
+import { confirmToast } from '../../App'
 
 const Slots = () => {
   const [activeTab, setActiveTab] = useState('manage')
@@ -32,6 +34,7 @@ const Slots = () => {
     type: 'online',
     // startTime and endTime removed from form per requirements
     days: [],
+    timings: [],
     instructor: '',
     location: '',
     capacity: 25,
@@ -43,6 +46,7 @@ const Slots = () => {
 
   // Static data for dropdowns
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  const timings = ['Day', 'Noon', 'Evening', 'Night']
   const locations = ['GyanIN-1', 'GyanIN-2']
 
   // Fetch slots
@@ -127,12 +131,28 @@ const Slots = () => {
             ? [...prev.days, value]
             : prev.days.filter(day => day !== value)
         }))
+      } else if (name === 'timings') {
+        setFormData(prev => ({
+          ...prev,
+          timings: checked
+            ? [...prev.timings, value]
+            : prev.timings.filter(timing => timing !== value)
+        }))
       }
     } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }))
+      // If type is being changed to offline, set capacity to 25
+      if (name === 'type' && value === 'offline') {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          capacity: 25
+        }))
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value
+        }))
+      }
     }
 
     // Clear error when user starts typing
@@ -145,19 +165,32 @@ const Slots = () => {
   }
 
   // Validate form
-  const validateForm = () => {
+  const validateForm = (data = formData) => {
     const errors = {}
 
-    if (!formData.name.trim()) errors.name = 'Batch name is required'
+    if (!data.name.trim()) errors.name = 'Batch name is required'
     // Course removed from form
-    if (!formData.subject.trim()) errors.subject = 'Subject is required'
-    if (!formData.class.toString().trim()) errors.class = 'Class is required'
-    if (formData.days.length === 0) errors.days = 'At least one day must be selected'
-    if (!formData.instructor.trim()) errors.instructor = 'Teacher name is required'
-    if (!formData.location.trim()) errors.location = 'Location is required'
-    if (formData.capacity < 1 || formData.capacity > 50) errors.capacity = 'Capacity must be between 1 and 50'
-    if (formData.enrolledStudents < 0) errors.enrolledStudents = 'Enrolled students cannot be negative'
-    if (formData.enrolledStudents > formData.capacity) errors.enrolledStudents = 'Enrolled students cannot exceed capacity'
+    if (!data.subject.trim()) errors.subject = 'Subject is required'
+    if (!data.class.toString().trim()) errors.class = 'Class is required'
+    if (data.days.length === 0) errors.days = 'At least one day must be selected'
+    if (data.timings.length === 0) errors.timings = 'At least one timing must be selected'
+    if (!data.instructor.trim()) errors.instructor = 'Teacher name is required'
+    // Location is only required for offline batches
+    if (data.type === 'offline' && !data.location.trim()) {
+      errors.location = 'Location is required for offline batches'
+    }
+    // Capacity validation - offline batches are fixed at 25
+    if (data.type === 'offline') {
+      if (data.capacity !== 25) {
+        errors.capacity = 'Capacity for offline batches is fixed at 25'
+      }
+    } else {
+      if (data.capacity < 1 || data.capacity > 50) {
+        errors.capacity = 'Capacity must be between 1 and 50'
+      }
+    }
+    if (data.enrolledStudents < 0) errors.enrolledStudents = 'Enrolled students cannot be negative'
+    if (data.enrolledStudents > data.capacity) errors.enrolledStudents = 'Enrolled students cannot exceed capacity'
 
     setFormErrors(errors)
     return Object.keys(errors).length === 0
@@ -167,20 +200,29 @@ const Slots = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (!validateForm()) return
+    // Ensure capacity is 25 for offline batches before validation
+    const submitData = {
+      ...formData,
+      capacity: formData.type === 'offline' ? 25 : formData.capacity
+    }
+
+    if (!validateForm(submitData)) return
+    
+    setFormData(submitData)
 
     setLoading(true)
     try {
       let data
       if (selectedSlot) {
         // Update existing slot
-        data = await slotsAPI.updateSlot(selectedSlot._id, formData)
+        data = await slotsAPI.updateSlot(selectedSlot._id, submitData)
       } else {
         // Create new slot
-        data = await slotsAPI.createSlot(formData)
+        data = await slotsAPI.createSlot(submitData)
       }
 
       if (data.success) {
+        toast.success(selectedSlot ? 'Batch updated successfully!' : 'Batch created successfully!')
         setShowAddModal(false)
         setShowEditModal(false)
         setSelectedSlot(null)
@@ -191,6 +233,7 @@ const Slots = () => {
           class: '',
           type: 'online',
           days: [],
+          timings: [],
           instructor: '',
           location: '',
           capacity: 25,
@@ -200,7 +243,7 @@ const Slots = () => {
         fetchStats()
       }
     } catch (error) {
-
+      toast.error('Failed to save batch. Please check the form and try again.')
       // Handle validation errors from server
       if (error.errors) {
         const serverErrors = {}
@@ -216,7 +259,12 @@ const Slots = () => {
   // Handle edit
   const handleEdit = (slot) => {
     setSelectedSlot(slot)
-    setFormData(slot)
+    // Ensure capacity is 25 for offline batches
+    const editData = {
+      ...slot,
+      capacity: slot.type === 'offline' ? 25 : slot.capacity
+    }
+    setFormData(editData)
     setShowEditModal(true)
   }
 
@@ -228,18 +276,20 @@ const Slots = () => {
 
   // Handle delete
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this batch?')) return
+    const confirmed = await confirmToast('Are you sure you want to delete this batch?')
+    if (!confirmed) return
 
     setLoading(true)
     try {
       const data = await slotsAPI.deleteSlot(id)
 
       if (data.success) {
+        toast.success('Batch deleted successfully!')
         fetchSlots()
         fetchStats()
       }
     } catch (error) {
-
+      toast.error('Failed to delete batch. Please try again.')
     }
     setLoading(false)
   }
@@ -251,11 +301,13 @@ const Slots = () => {
       const data = await slotsAPI.toggleSlot(id)
 
       if (data.success) {
+        const slot = slots.find(s => s._id === id)
+        toast.success(`Batch ${slot?.isActive ? 'deactivated' : 'activated'} successfully!`)
         fetchSlots()
         fetchStats()
       }
     } catch (error) {
-
+      toast.error('Failed to toggle batch status. Please try again.')
     }
     setLoading(false)
   }
@@ -267,11 +319,12 @@ const Slots = () => {
       const data = await slotsAPI.updateEnrolledStudents(id, enrolledStudents)
 
       if (data.success) {
+        toast.success('Enrolled students updated successfully!')
         fetchSlots()
         fetchStats()
       }
     } catch (error) {
-
+      toast.error('Failed to update enrolled students. Please try again.')
     }
     setLoading(false)
   }
@@ -585,6 +638,9 @@ const Slots = () => {
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-semibold text-gray-900">{slot.location}</div>
                                 <div className="text-sm text-gray-500">{slot.days.join(', ')}</div>
+                                {slot.timings && slot.timings.length > 0 && (
+                                  <div className="text-sm text-gray-500 mt-1">Timings: {slot.timings.join(', ')}</div>
+                                )}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div className="flex items-center space-x-1 justify-end">
@@ -736,6 +792,11 @@ const Slots = () => {
                               <span className="text-sm text-gray-700">
                                 <strong>Days:</strong> {slot.days.join(', ')}
                               </span>
+                              {slot.timings && slot.timings.length > 0 && (
+                                <span className="text-sm text-gray-700">
+                                  <strong>Timings:</strong> {slot.timings.join(', ')}
+                                </span>
+                              )}
                             </div>
                           </div>
                           <div className="ml-4 text-right">
@@ -795,6 +856,11 @@ const Slots = () => {
                               <span className="text-sm text-gray-700">
                                 <strong>Days:</strong> {slot.days.join(', ')}
                               </span>
+                              {slot.timings && slot.timings.length > 0 && (
+                                <span className="text-sm text-gray-700">
+                                  <strong>Timings:</strong> {slot.timings.join(', ')}
+                                </span>
+                              )}
                             </div>
                           </div>
                           <div className="ml-4 text-right">
@@ -931,7 +997,9 @@ const Slots = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Location *</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Location {formData.type === 'offline' ? '*' : ''}
+                    </label>
                     {formData.type === 'offline' ? (
                       <select
                         name="location"
@@ -953,7 +1021,7 @@ const Slots = () => {
                         value={formData.location}
                         onChange={handleInputChange}
                         className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.location ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                        placeholder="Online Platform (e.g., Zoom, Google Meet)"
+                        placeholder="Online Platform (e.g., Zoom, Google Meet) - Optional"
                       />
                     )}
                     {formErrors.location && <p className="mt-1 text-sm text-red-600">{formErrors.location}</p>}
@@ -961,16 +1029,30 @@ const Slots = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Capacity *</label>
-                    <input
-                      type="number"
-                      name="capacity"
-                      value={formData.capacity}
-                      onChange={handleInputChange}
-                      min="1"
-                      max="50"
-                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.capacity ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                    />
+                    {formData.type === 'offline' ? (
+                      <input
+                        type="number"
+                        name="capacity"
+                        value={25}
+                        readOnly
+                        disabled
+                        className="mt-1 block w-full border rounded-md px-3 py-2 bg-gray-100 text-gray-600 border-gray-300 cursor-not-allowed"
+                      />
+                    ) : (
+                      <input
+                        type="number"
+                        name="capacity"
+                        value={formData.capacity}
+                        onChange={handleInputChange}
+                        min="1"
+                        max="50"
+                        className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.capacity ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                      />
+                    )}
                     {formErrors.capacity && <p className="mt-1 text-sm text-red-600">{formErrors.capacity}</p>}
+                    {formData.type === 'offline' && (
+                      <p className="mt-1 text-xs text-gray-500">Capacity for offline batches is fixed at 25</p>
+                    )}
                   </div>
 
                   <div>
@@ -1006,6 +1088,26 @@ const Slots = () => {
                     ))}
                   </div>
                   {formErrors.days && <p className="mt-1 text-sm text-red-600">{formErrors.days}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Timings *</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {timings.map(timing => (
+                      <label key={timing} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          name="timings"
+                          value={timing}
+                          checked={formData.timings.includes(timing)}
+                          onChange={handleInputChange}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">{timing}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {formErrors.timings && <p className="mt-1 text-sm text-red-600">{formErrors.timings}</p>}
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">
@@ -1137,7 +1239,9 @@ const Slots = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Location *</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Location {formData.type === 'offline' ? '*' : ''}
+                    </label>
                     {formData.type === 'offline' ? (
                       <select
                         name="location"
@@ -1159,7 +1263,7 @@ const Slots = () => {
                         value={formData.location}
                         onChange={handleInputChange}
                         className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.location ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                        placeholder="Online Platform (e.g., Zoom, Google Meet)"
+                        placeholder="Online Platform (e.g., Zoom, Google Meet) - Optional"
                       />
                     )}
                     {formErrors.location && <p className="mt-1 text-sm text-red-600">{formErrors.location}</p>}
@@ -1167,16 +1271,30 @@ const Slots = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Capacity *</label>
-                    <input
-                      type="number"
-                      name="capacity"
-                      value={formData.capacity}
-                      onChange={handleInputChange}
-                      min="1"
-                      max="50"
-                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.capacity ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                    />
+                    {formData.type === 'offline' ? (
+                      <input
+                        type="number"
+                        name="capacity"
+                        value={25}
+                        readOnly
+                        disabled
+                        className="mt-1 block w-full border rounded-md px-3 py-2 bg-gray-100 text-gray-600 border-gray-300 cursor-not-allowed"
+                      />
+                    ) : (
+                      <input
+                        type="number"
+                        name="capacity"
+                        value={formData.capacity}
+                        onChange={handleInputChange}
+                        min="1"
+                        max="50"
+                        className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.capacity ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                      />
+                    )}
                     {formErrors.capacity && <p className="mt-1 text-sm text-red-600">{formErrors.capacity}</p>}
+                    {formData.type === 'offline' && (
+                      <p className="mt-1 text-xs text-gray-500">Capacity for offline batches is fixed at 25</p>
+                    )}
                   </div>
 
                   <div>
@@ -1212,6 +1330,26 @@ const Slots = () => {
                     ))}
                   </div>
                   {formErrors.days && <p className="mt-1 text-sm text-red-600">{formErrors.days}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Timings *</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {timings.map(timing => (
+                      <label key={timing} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          name="timings"
+                          value={timing}
+                          checked={formData.timings.includes(timing)}
+                          onChange={handleInputChange}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">{timing}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {formErrors.timings && <p className="mt-1 text-sm text-red-600">{formErrors.timings}</p>}
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">
@@ -1297,6 +1435,12 @@ const Slots = () => {
                     <label className="block text-sm font-medium text-gray-700">Days</label>
                     <p className="mt-1 text-sm text-gray-900">{selectedSlot.days.join(', ')}</p>
                   </div>
+                  {selectedSlot.timings && selectedSlot.timings.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Timings</label>
+                      <p className="mt-1 text-sm text-gray-900">{selectedSlot.timings.join(', ')}</p>
+                    </div>
+                  )}
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Instructor</label>
                     <p className="mt-1 text-sm text-gray-900">{selectedSlot.instructor}</p>

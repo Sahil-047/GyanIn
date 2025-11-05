@@ -6,7 +6,7 @@ const readmissionSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  course: {
+  subject: {
     type: String,
     required: true,
     trim: true

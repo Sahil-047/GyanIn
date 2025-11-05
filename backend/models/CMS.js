@@ -4,7 +4,7 @@ const cmsSchema = new mongoose.Schema({
   section: {
     type: String,
     required: true,
-    enum: ['hero', 'about', 'courses', 'carousel', 'offers']
+    enum: ['hero', 'about', 'courses', 'carousel', 'offers', 'testimonials', 'ongoingCourses']
   },
   data: {
     type: mongoose.Schema.Types.Mixed,
@@ -29,5 +29,9 @@ cmsSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();
 });
+
+// Indexes for performance optimization
+cmsSchema.index({ section: 1, isActive: 1 }); // For queries filtering by section and active status
+cmsSchema.index({ updatedAt: -1 }); // For sorting by most recent
 
 module.exports = mongoose.model('CMS', cmsSchema);

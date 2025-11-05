@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import TeacherCarousel from '../../components/public/TeacherCarousel';
+import TestimonialsCarousel from '../../components/public/TestimonialsCarousel';
 import { cmsAPI, coursesAPI, slotsAPI } from '../../utils/api';
 
 const LandingPage = () => {
@@ -17,9 +18,9 @@ const LandingPage = () => {
     const fetchCMSData = async () => {
       try {
         // Fetch courses from courses API instead of CMS
-        const [coursesResponse, offersResponse, slotsResponse] = await Promise.allSettled([
+        const [coursesResponse, ongoingCoursesResponse, slotsResponse] = await Promise.allSettled([
           coursesAPI.getCourses({ limit: 3 }),
-          cmsAPI.getCMSSection('offers'),
+          cmsAPI.getCMSSection('ongoingCourses'),
           slotsAPI.getSlots({ limit: 100 })
         ]);
 
@@ -52,23 +53,44 @@ const LandingPage = () => {
           ]);
         }
 
-        // Set offers
-        if (offersResponse.status === 'fulfilled' && offersResponse.value.success) {
-          setOffers(offersResponse.value.data.data.offers || []);
+        // Set ongoing batches (auto-generated from active slots, filter out hidden ones)
+        if (ongoingCoursesResponse.status === 'fulfilled' && ongoingCoursesResponse.value.success) {
+          const ongoingCoursesData = (ongoingCoursesResponse.value.data.data?.ongoingCourses || [])
+            .filter(course => !course.isHidden && course.isActive !== false);
+          setOffers(ongoingCoursesData);
         } else {
-          // Fallback to mock data
-          setOffers([
-            { name: "TechCorp", offer: "20% Off All Courses", logo: "TC", color: "from-blue-500 to-blue-600" },
-            { name: "EduTech Solutions", offer: "Free Trial Available", logo: "ET", color: "from-green-500 to-green-600" },
-            { name: "LearnPro", offer: "Student Discount 15%", logo: "LP", color: "from-purple-500 to-purple-600" },
-            { name: "SkillMaster", offer: "Bundle Deals Up to 30%", logo: "SM", color: "from-orange-500 to-orange-600" },
-            { name: "CodeAcademy Pro", offer: "Premium Access Free", logo: "CA", color: "from-red-500 to-red-600" },
-            { name: "DataScience Hub", offer: "Certification Included", logo: "DH", color: "from-teal-500 to-teal-600" },
-            { name: "WebDev Masters", offer: "Mentorship Program", logo: "WM", color: "from-indigo-500 to-indigo-600" },
-            { name: "AI Learning Lab", offer: "Project Portfolio", logo: "AL", color: "from-pink-500 to-pink-600" },
-            { name: "CloudTech", offer: "AWS Credits Included", logo: "CT", color: "from-cyan-500 to-cyan-600" },
-            { name: "DevOps Academy", offer: "Industry Certification", logo: "DA", color: "from-emerald-500 to-emerald-600" }
-          ]);
+          // Fallback: If ongoing batches not available, try to generate from slots
+          if (slotsResponse.status === 'fulfilled' && slotsResponse.value.success) {
+            const activeSlots = slotsResponse.value.data.filter(slot => slot.isActive) || [];
+            const generatedOffers = activeSlots.map((slot, index) => {
+              const colors = [
+                'from-blue-500 to-blue-600',
+                'from-green-500 to-green-600',
+                'from-purple-500 to-purple-600',
+                'from-orange-500 to-orange-600',
+                'from-red-500 to-red-600',
+                'from-teal-500 to-teal-600',
+                'from-indigo-500 to-indigo-600',
+                'from-pink-500 to-pink-600',
+                'from-cyan-500 to-cyan-600',
+                'from-emerald-500 to-emerald-600'
+              ];
+              return {
+                id: slot._id,
+                name: slot.name || `${slot.subject} - Class ${slot.class}`,
+                offer: slot.course || `${slot.subject} | ${slot.instructor}`,
+                slotId: slot._id,
+                color: colors[index % colors.length],
+                isActive: slot.isActive,
+                availableSeats: slot.capacity - slot.enrolledStudents,
+                capacity: slot.capacity,
+                enrolledStudents: slot.enrolledStudents
+              };
+            });
+            setOffers(generatedOffers);
+          } else {
+            setOffers([]);
+          }
         }
 
         // Set slots
@@ -158,17 +180,18 @@ const LandingPage = () => {
             {/* Right Column - Teacher Carousel */}
             <div className="w-full order-1 md:order-2">
               <TeacherCarousel />
+             
             </div>
           </div>
         </div>
       </section>
 
-      {/* Ongoing Courses Section */}
+      {/* Ongoing Batches Section */}
       <section className="w-full bg-white py-8 sm:py-12 md:py-16 border-t border-gray-200">
         <div className="w-full">
           <div className="text-center mb-6 sm:mb-8 md:mb-12 px-4">
             <h3 className="text-gray-800 text-xl sm:text-2xl md:text-3xl font-bold mb-2">
-              Ongoing Courses
+              Ongoing Batches
             </h3>
             <p className="text-gray-600 text-xs sm:text-sm md:text-base">
               Currently running batches with available seats
@@ -205,8 +228,13 @@ const LandingPage = () => {
                           <div className="my-4 pb-2">
                             <p className="text-gray-800 font-medium text-base leading-relaxed">{offer.offer || offer.description}</p>
                           </div>
-                          {offer.slotId && slots.find(s => s._id === offer.slotId) && (() => {
-                            const availableSeats = slots.find(s => s._id === offer.slotId).capacity - slots.find(s => s._id === offer.slotId).enrolledStudents;
+                          {(offer.slotId || offer.availableSeats !== undefined) && (() => {
+                            // Use availableSeats from ongoing batches if available, otherwise calculate from slots
+                            const availableSeats = offer.availableSeats !== undefined 
+                              ? offer.availableSeats 
+                              : (slots.find(s => s._id === offer.slotId) 
+                                  ? slots.find(s => s._id === offer.slotId).capacity - slots.find(s => s._id === offer.slotId).enrolledStudents 
+                                  : 0);
                             const isLowAvailability = availableSeats < 10;
                             return (
                               <div className="my-3 pt-3 border-t border-gray-100">
@@ -236,6 +264,15 @@ const LandingPage = () => {
                               <span>Valid until {new Date(offer.validUntil).toLocaleDateString()}</span>
                             </div>
                           )}
+                          {/* Join Batch Button */}
+                          <div className="mt-4 pt-4 border-t border-gray-100">
+                            <Link
+                              to="/admissions"
+                              className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold transition-all duration-200 text-sm sm:text-base inline-block text-center shadow-md hover:shadow-lg transform hover:scale-105"
+                            >
+                              Join Batch Now
+                            </Link>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -330,6 +367,11 @@ const LandingPage = () => {
                     </div>
 
                     <h3 className="text-lg sm:text-xl font-bold mb-2 line-clamp-2">{course.title}</h3>
+                    {course.instructor && (
+                      <p className="text-gray-600 text-sm mb-2 font-medium">
+                        Instructor: <span className="text-[#0061FF]">{course.instructor}</span>
+                      </p>
+                    )}
                     <p className="text-gray-500 text-sm mb-4">
                       {course.description || 'Learn from industry experts with practical projects.'}
                     </p>
@@ -446,6 +488,14 @@ const LandingPage = () => {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="w-full bg-white py-12 sm:py-16 md:py-20">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 sm:mb-12">What Our Students Say</h2>
+          <TestimonialsCarousel />
         </div>
       </section>
 

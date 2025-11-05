@@ -53,5 +53,10 @@ merchandiseSchema.pre('save', function(next) {
   next();
 });
 
+// Indexes for performance optimization
+merchandiseSchema.index({ category: 1, isActive: 1 }); // For filtering by category
+merchandiseSchema.index({ stock: 1, isActive: 1 }); // For filtering available items
+merchandiseSchema.index({ createdAt: -1 }); // For sorting by newest
+
 module.exports = mongoose.model('Merchandise', merchandiseSchema);
 

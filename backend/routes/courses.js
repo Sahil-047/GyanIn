@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Course = require('../models/Course');
+const { cacheMiddleware, clearCache } = require('../middleware/cache');
 
 const router = express.Router();
 
@@ -36,8 +37,8 @@ const courseUpdateValidation = [
   body('isActive').optional({ nullable: true }).isBoolean().withMessage('isActive must be a boolean')
 ];
 
-// GET /api/courses - Get all courses
-router.get('/', async (req, res) => {
+// GET /api/courses - Get all courses (cached for 5 minutes)
+router.get('/', cacheMiddleware(5 * 60 * 1000), async (req, res) => {
   try {
     const { 
       page = 1, 
@@ -96,8 +97,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/courses/categories - Get all course categories
-router.get('/categories', async (req, res) => {
+// GET /api/courses/categories - Get all course categories (cached for 10 minutes)
+router.get('/categories', cacheMiddleware(10 * 60 * 1000), async (req, res) => {
   try {
     const categories = await Course.distinct('category', { isActive: true });
     
@@ -115,8 +116,8 @@ router.get('/categories', async (req, res) => {
   }
 });
 
-// GET /api/courses/:id - Get single course
-router.get('/:id', async (req, res) => {
+// GET /api/courses/:id - Get single course (cached for 5 minutes)
+router.get('/:id', cacheMiddleware(5 * 60 * 1000), async (req, res) => {
   try {
     const course = await Course.findById(req.params.id);
 
@@ -155,6 +156,9 @@ router.post('/', courseValidation, async (req, res) => {
 
     const course = new Course(req.body);
     await course.save();
+
+    // Clear courses cache
+    clearCache('GET:/api/courses');
 
     res.status(201).json({
       success: true,
@@ -197,6 +201,9 @@ router.put('/:id', courseUpdateValidation, async (req, res) => {
       });
     }
 
+    // Clear courses cache
+    clearCache('GET:/api/courses');
+
     res.json({
       success: true,
       message: 'Course updated successfully',
@@ -223,6 +230,9 @@ router.delete('/:id', async (req, res) => {
         message: 'Course not found'
       });
     }
+
+    // Clear courses cache
+    clearCache('GET:/api/courses');
 
     res.json({
       success: true,

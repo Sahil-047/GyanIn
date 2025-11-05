@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const CMS = require('../models/CMS');
 const Course = require('../models/Course');
 const edgestoreHandler = require('./edgestore');
+const { cacheMiddleware, clearCacheBySection } = require('../middleware/cache');
 
 // Initialize EdgeStore backend client for deleting files
 const { initEdgeStoreClient } = require('@edgestore/server/core');
@@ -42,7 +43,7 @@ const deleteImageFromEdgeStore = async (url) => {
 
 // Validation rules
 const cmsValidation = [
-    body('section').isIn(['hero', 'about', 'courses', 'carousel', 'offers']).withMessage('Invalid section'),
+    body('section').isIn(['hero', 'about', 'courses', 'carousel', 'offers', 'testimonials', 'ongoingCourses']).withMessage('Invalid section'),
     body('data').isObject().withMessage('Data must be an object')
 ];
 
@@ -73,12 +74,12 @@ router.get('/', async (req, res) => {
     }
 });
 
-// GET /api/admin/cms/:section - Get specific section content
-router.get('/:section', async (req, res) => {
+// GET /api/admin/cms/:section - Get specific section content (cached for 5 minutes)
+router.get('/:section', cacheMiddleware(5 * 60 * 1000), async (req, res) => {
     try {
         const { section } = req.params;
 
-        if (!['hero', 'about', 'courses', 'carousel', 'offers'].includes(section)) {
+        if (!['hero', 'about', 'courses', 'carousel', 'offers', 'testimonials', 'ongoingCourses'].includes(section)) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid section'
@@ -115,6 +116,48 @@ router.get('/:section', async (req, res) => {
           validUntil: offer.validUntil || '',
           isActive: typeof offer.isActive === 'boolean' ? offer.isActive : true
         }));
+        }
+        
+        // Normalize testimonials shape
+        if (section === 'testimonials') {
+            if (!cmsContent.data.testimonials) cmsContent.data.testimonials = [];
+            cmsContent.data.testimonials = cmsContent.data.testimonials.map(t => ({
+                id: t.id,
+                name: t.name || '',
+                role: t.role || '',
+                quote: t.quote || t.text || '',
+                image: t.image || '',
+                rating: typeof t.rating === 'number' ? t.rating : 5,
+                isActive: typeof t.isActive === 'boolean' ? t.isActive : true
+            }));
+        }
+
+        // Normalize ongoing courses shape
+        if (section === 'ongoingCourses') {
+            if (!cmsContent.data.ongoingCourses) cmsContent.data.ongoingCourses = [];
+            cmsContent.data.ongoingCourses = cmsContent.data.ongoingCourses.map(course => ({
+                id: course.id,
+                name: course.name || course.title || '',
+                title: course.title || course.name || '',
+                offer: course.offer || course.description || '',
+                description: course.description || course.offer || '',
+                slotId: course.slotId || '',
+                courseId: course.courseId || '',
+                color: course.color || 'from-blue-500 to-blue-600',
+                isActive: typeof course.isActive === 'boolean' ? course.isActive : true,
+                isHidden: typeof course.isHidden === 'boolean' ? course.isHidden : false,
+                availableSeats: course.availableSeats || 0,
+                capacity: course.capacity || 0,
+                enrolledStudents: course.enrolledStudents || 0,
+                instructor: course.instructor || '',
+                class: course.class || 0,
+                subject: course.subject || '',
+                type: course.type || '',
+                location: course.location || '',
+                days: course.days || [],
+                startTime: course.startTime || '',
+                endTime: course.endTime || ''
+            }));
         }
 
         
@@ -161,6 +204,9 @@ router.post('/', cmsValidation, async (req, res) => {
             await cmsContent.save();
         }
 
+        // Clear cache for this section
+        clearCacheBySection(section);
+
         res.status(201).json({
             success: true,
             message: 'CMS content saved successfully',
@@ -202,6 +248,9 @@ router.put('/:id', cmsValidation, async (req, res) => {
             });
         }
 
+        // Clear cache for this section
+        clearCacheBySection(cmsContent.section);
+
         res.json({
             success: true,
             message: 'CMS content updated successfully',
@@ -233,6 +282,9 @@ router.put('/:id/toggle', async (req, res) => {
         cmsContent.isActive = !cmsContent.isActive;
         await cmsContent.save();
 
+        // Clear cache for this section
+        clearCacheBySection(cmsContent.section);
+
         res.json({
             success: true,
             message: `CMS content ${cmsContent.isActive ? 'activated' : 'deactivated'} successfully`,
@@ -260,6 +312,9 @@ router.delete('/:id', async (req, res) => {
                 message: 'CMS content not found'
             });
         }
+
+        // Clear cache for this section
+        clearCacheBySection(cmsContent.section);
 
         res.json({
             success: true,
@@ -581,10 +636,10 @@ router.put('/offers/:id', async (req, res) => {
         const { id } = req.params;
         const { name, offer, slotId, courseId, color, discount, validUntil, isActive = true } = req.body;
 
-        if (!name || !offer) {
+        if (!name) {
             return res.status(400).json({
                 success: false,
-                message: 'Offer name and offer description are required'
+                message: 'Offer name is required'
             });
         }
 
@@ -596,14 +651,74 @@ router.put('/offers/:id', async (req, res) => {
             });
         }
 
-        const offerIndex = offersSection.data.offers.findIndex(offerItem => 
-            offerItem.id.toString() === id.toString()
-        );
-        
-        if (offerIndex === -1) {
+        // Ensure data structure exists
+        if (!offersSection.data.offers || !Array.isArray(offersSection.data.offers) || offersSection.data.offers.length === 0) {
             return res.status(404).json({
                 success: false,
-                message: 'Offer not found'
+                message: 'No offers found. The offers list is empty.',
+                debug: process.env.NODE_ENV === 'development' ? {
+                    requestedId: id,
+                    sectionExists: true,
+                    offersCount: 0
+                } : undefined
+            });
+        }
+
+        // Try to parse ID as number (for Date.now() IDs) or keep as string (for MongoDB ObjectIds)
+        let offerId = parseInt(id, 10);
+        const isNumericId = !isNaN(offerId);
+        if (!isNumericId) {
+            offerId = id; // Keep as string for MongoDB ObjectId
+        }
+
+        // Find the offer index - try multiple comparison methods
+        const offerIndex = offersSection.data.offers.findIndex(offerItem => {
+            if (!offerItem || offerItem.id === undefined || offerItem.id === null) {
+                return false;
+            }
+            
+            // Handle different ID formats
+            if (isNumericId) {
+                // Numeric ID comparison (Date.now())
+                const offerIdValue = typeof offerItem.id === 'number' ? offerItem.id : parseInt(offerItem.id, 10);
+                return !isNaN(offerIdValue) && (
+                    offerIdValue === offerId || 
+                    offerItem.id === offerId || 
+                    String(offerItem.id) === String(id) ||
+                    String(offerIdValue) === String(id)
+                );
+            } else {
+                // String/ObjectId comparison
+                return (
+                    String(offerItem.id) === String(id) ||
+                    offerItem.id === id ||
+                    offerItem.id?.toString() === id.toString() ||
+                    offerItem._id?.toString() === id.toString()
+                );
+            }
+        });
+        
+        if (offerIndex === -1) {
+            // Log available offer IDs for debugging
+            const availableIds = offersSection.data.offers
+                .filter(o => o && o.id !== undefined && o.id !== null)
+                .map((o, idx) => ({
+                    index: idx,
+                    id: o.id,
+                    idType: typeof o.id,
+                    idString: String(o.id),
+                    name: o.name || 'Unnamed'
+                }));
+            
+            return res.status(404).json({
+                success: false,
+                message: 'Offer not found',
+                debug: process.env.NODE_ENV === 'development' ? {
+                    requestedId: id,
+                    requestedIdParsed: isNumericId ? offerId : 'string',
+                    totalOffers: offersSection.data.offers.length,
+                    availableOffers: availableIds
+                } : undefined
             });
         }
 
@@ -631,6 +746,9 @@ router.put('/offers/:id', async (req, res) => {
             { new: true }
         );
 
+        // Clear cache
+        clearCacheBySection('offers');
+
         res.json({
             success: true,
             message: 'Offer updated successfully',
@@ -638,6 +756,7 @@ router.put('/offers/:id', async (req, res) => {
         });
 
     } catch (error) {
+        console.error('Error updating offer:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to update offer',
@@ -654,33 +773,85 @@ router.delete('/offers/:id', async (req, res) => {
 
         // Find the offers section
         const offersSection = await CMS.findOne({ section: 'offers' });
-        if (!offersSection || !offersSection.data || !offersSection.data.offers) {
+        if (!offersSection) {
             return res.status(404).json({
                 success: false,
                 message: 'Offers section not found'
             });
         }
 
-        
-        
-        // Find the offer index
-        const offerIndex = offersSection.data.offers.findIndex(offer => {
-            
-            return offer.id.toString() === id.toString()
-        });
-        
-        
-        
-        if (offerIndex === -1) {
+        // Ensure data structure exists
+        if (!offersSection.data) {
+            offersSection.data = { offers: [] };
+        }
+        if (!offersSection.data.offers) {
+            offersSection.data.offers = [];
+        }
+
+        // Check if offers array is empty
+        if (!Array.isArray(offersSection.data.offers) || offersSection.data.offers.length === 0) {
             return res.status(404).json({
                 success: false,
-                message: 'Offer not found'
+                message: 'No offers found. The offers list is empty.',
+                debug: process.env.NODE_ENV === 'development' ? {
+                    requestedId: id,
+                    sectionExists: true,
+                    offersCount: 0
+                } : undefined
+            });
+        }
+        
+        // Convert ID to number for comparison (since offers use Date.now() which returns a number)
+        const offerId = parseInt(id, 10);
+        if (isNaN(offerId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid offer ID format'
+            });
+        }
+
+        // Find the offer index - try multiple comparison methods
+        const offerIndex = offersSection.data.offers.findIndex(offer => {
+            if (!offer || offer.id === undefined || offer.id === null) {
+                return false;
+            }
+            // Handle different ID formats
+            const offerIdValue = typeof offer.id === 'number' ? offer.id : parseInt(offer.id, 10);
+            return !isNaN(offerIdValue) && (
+                offerIdValue === offerId || 
+                offer.id === offerId || 
+                String(offer.id) === String(id) ||
+                String(offerIdValue) === String(id)
+            );
+        });
+        
+        if (offerIndex === -1) {
+            // Log available offer IDs for debugging
+            const availableIds = offersSection.data.offers
+                .filter(o => o && o.id !== undefined && o.id !== null)
+                .map((o, idx) => ({
+                    index: idx,
+                    id: o.id,
+                    idType: typeof o.id,
+                    idString: String(o.id),
+                    name: o.name || 'Unnamed'
+                }));
+            
+            return res.status(404).json({
+                success: false,
+                message: `Offer with ID ${id} not found. The offer may have already been deleted or the ID is incorrect.`,
+                debug: process.env.NODE_ENV === 'development' ? {
+                    requestedId: id,
+                    requestedIdParsed: offerId,
+                    totalOffers: offersSection.data.offers.length,
+                    availableOffers: availableIds
+                } : undefined
             });
         }
 
         // Remove the offer from the array
-        const removedOffer = offersSection.data.offers.splice(offerIndex, 1)[0];
-        
+        const removedOffer = offersSection.data.offers[offerIndex];
+        offersSection.data.offers.splice(offerIndex, 1);
 
         // Use findOneAndUpdate for atomic operation
         const updatedSection = await CMS.findOneAndUpdate(
@@ -693,16 +864,18 @@ router.delete('/offers/:id', async (req, res) => {
             },
             { new: true }
         );
-        
-        
+
+        // Clear cache
+        clearCacheBySection('offers');
 
         res.json({
             success: true,
-            message: 'Offer deleted successfully'
+            message: 'Offer deleted successfully',
+            data: removedOffer
         });
 
     } catch (error) {
-        
+        console.error('Error deleting offer:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to delete offer',
@@ -717,11 +890,10 @@ router.post('/offers', async (req, res) => {
         
         const { name, offer, slotId, courseId, color, discount, validUntil, isActive = true } = req.body;
 
-        if (!name || !offer) {
-        
+        if (!name) {
             return res.status(400).json({
                 success: false,
-                message: 'Offer name and offer description are required'
+                message: 'Offer name is required'
             });
         }
 
@@ -796,6 +968,8 @@ router.post('/offers', async (req, res) => {
             }
         );
         
+        // Clear cache
+        clearCacheBySection('offers');
 
         res.status(201).json({
             success: true,
@@ -809,6 +983,223 @@ router.post('/offers', async (req, res) => {
             success: false,
             message: 'Failed to add offer to CMS',
             error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
+// TESTIMONIALS CRUD
+// POST /api/admin/cms/testimonials - Add testimonial
+router.post('/testimonials', async (req, res) => {
+    try {
+        const { name, role, quote, image, rating = 5, isActive = true } = req.body;
+
+        if (!name || !quote) {
+            return res.status(400).json({ success: false, message: 'Name and quote are required' });
+        }
+
+        let section = await CMS.findOne({ section: 'testimonials' }).lean();
+        if (!section) {
+            section = { section: 'testimonials', data: { testimonials: [] }, isActive: true };
+        } else if (!section.data || !section.data.testimonials) {
+            section.data = { testimonials: [] };
+        }
+
+        const newItem = {
+            id: Date.now(),
+            name,
+            role: role || '',
+            quote,
+            image: image || '',
+            rating: Number(rating) || 5,
+            isActive
+        };
+
+        const existing = (section.data.testimonials || []).map(t => ({
+            id: t.id,
+            name: t.name || '',
+            role: t.role || '',
+            quote: t.quote || t.text || '',
+            image: t.image || '',
+            rating: typeof t.rating === 'number' ? t.rating : 5,
+            isActive: typeof t.isActive === 'boolean' ? t.isActive : true
+        }));
+
+        existing.push(newItem);
+
+        const saved = await CMS.findOneAndUpdate(
+            { section: 'testimonials' },
+            { $set: { section: 'testimonials', 'data.testimonials': existing, isActive: true, updatedAt: new Date() } },
+            { upsert: true, new: true, runValidators: true }
+        );
+
+        res.status(201).json({ success: true, message: 'Testimonial added successfully', data: newItem });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to add testimonial', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+    }
+});
+
+// PUT /api/admin/cms/testimonials/:id - Update testimonial
+router.put('/testimonials/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, role, quote, image, rating = 5, isActive = true } = req.body;
+
+        const section = await CMS.findOne({ section: 'testimonials' });
+        if (!section || !section.data || !section.data.testimonials) {
+            return res.status(404).json({ success: false, message: 'Testimonials section not found' });
+        }
+
+        const idx = section.data.testimonials.findIndex(t => t.id.toString() === id.toString());
+        if (idx === -1) return res.status(404).json({ success: false, message: 'Testimonial not found' });
+
+        section.data.testimonials[idx] = {
+            id: section.data.testimonials[idx].id,
+            name: name || '',
+            role: role || '',
+            quote: quote || '',
+            image: image || section.data.testimonials[idx].image || '',
+            rating: Number(rating) || 5,
+            isActive
+        };
+
+        await CMS.findOneAndUpdate(
+            { section: 'testimonials' },
+            { $set: { 'data.testimonials': section.data.testimonials, updatedAt: new Date() } },
+            { new: true }
+        );
+
+        res.json({ success: true, message: 'Testimonial updated successfully', data: section.data.testimonials[idx] });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to update testimonial', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+    }
+});
+
+// DELETE /api/admin/cms/testimonials/:id - Delete testimonial
+router.delete('/testimonials/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const section = await CMS.findOne({ section: 'testimonials' });
+        if (!section || !section.data || !section.data.testimonials) {
+            return res.status(404).json({ success: false, message: 'Testimonials section not found' });
+        }
+
+        const idx = section.data.testimonials.findIndex(t => t.id.toString() === id.toString());
+        if (idx === -1) return res.status(404).json({ success: false, message: 'Testimonial not found' });
+
+        section.data.testimonials.splice(idx, 1);
+        await CMS.findOneAndUpdate(
+            { section: 'testimonials' },
+            { $set: { 'data.testimonials': section.data.testimonials, updatedAt: new Date() } },
+            { new: true }
+        );
+
+        res.json({ success: true, message: 'Testimonial deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to delete testimonial', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+    }
+});
+
+// PUT /api/admin/cms/ongoingCourses/:id - Update ongoing batch (only affects CMS display, not the actual batch)
+router.put('/ongoingCourses/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, title, offer, description, color, isActive } = req.body;
+
+        const section = await CMS.findOne({ section: 'ongoingCourses' });
+        if (!section || !section.data || !section.data.ongoingCourses) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Ongoing batches section not found' 
+            });
+        }
+
+        const courseIndex = section.data.ongoingCourses.findIndex(c => c.id === id || c.slotId === id);
+        if (courseIndex === -1) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Ongoing batch not found' 
+            });
+        }
+
+        // Update only display fields, preserve slot data
+        const course = section.data.ongoingCourses[courseIndex];
+        section.data.ongoingCourses[courseIndex] = {
+            ...course,
+            name: name !== undefined ? name : course.name,
+            title: title !== undefined ? title : course.title,
+            offer: offer !== undefined ? offer : course.offer,
+            description: description !== undefined ? description : course.description,
+            color: color !== undefined ? color : course.color,
+            isActive: isActive !== undefined ? isActive : course.isActive
+        };
+
+        await CMS.findOneAndUpdate(
+            { section: 'ongoingCourses' },
+            { $set: { 'data.ongoingCourses': section.data.ongoingCourses, updatedAt: new Date() } },
+            { new: true }
+        );
+
+        clearCacheBySection('ongoingCourses');
+
+        res.json({ 
+            success: true, 
+            message: 'Ongoing batch updated successfully', 
+            data: section.data.ongoingCourses[courseIndex] 
+        });
+    } catch (error) {
+        console.error('Error updating ongoing batch:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to update ongoing batch', 
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' 
+        });
+    }
+});
+
+// DELETE /api/admin/cms/ongoingCourses/:id - Hide ongoing batch from carousel (does NOT delete the actual batch)
+router.delete('/ongoingCourses/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const section = await CMS.findOne({ section: 'ongoingCourses' });
+        if (!section || !section.data || !section.data.ongoingCourses) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Ongoing batches section not found' 
+            });
+        }
+
+        const courseIndex = section.data.ongoingCourses.findIndex(c => c.id === id || c.slotId === id);
+        if (courseIndex === -1) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Ongoing batch not found' 
+            });
+        }
+
+        // Mark as hidden instead of deleting (preserves batch, just hides from carousel)
+        section.data.ongoingCourses[courseIndex].isHidden = true;
+        section.data.ongoingCourses[courseIndex].isActive = false;
+
+        await CMS.findOneAndUpdate(
+            { section: 'ongoingCourses' },
+            { $set: { 'data.ongoingCourses': section.data.ongoingCourses, updatedAt: new Date() } },
+            { new: true }
+        );
+
+        clearCacheBySection('ongoingCourses');
+
+        res.json({ 
+            success: true, 
+            message: 'Ongoing batch removed from carousel (batch not deleted)', 
+            data: section.data.ongoingCourses[courseIndex] 
+        });
+    } catch (error) {
+        console.error('Error deleting ongoing batch:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to remove ongoing batch', 
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' 
         });
     }
 });

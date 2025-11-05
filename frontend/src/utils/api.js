@@ -193,6 +193,28 @@ export const cmsAPI = {
   // Delete carousel item from CMS
   deleteCarouselItem: (carouselId) => apiCall(`/cms/carousel/${carouselId}`, {
     method: 'DELETE'
+  }),
+
+  // Testimonials
+  addTestimonial: (data) => apiCall('/cms/testimonials', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  updateTestimonial: (id, data) => apiCall(`/cms/testimonials/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  }),
+  deleteTestimonial: (id) => apiCall(`/cms/testimonials/${id}`, {
+    method: 'DELETE'
+  }),
+
+  // Ongoing Batches (auto-generated from batches)
+  updateOngoingCourse: (id, data) => apiCall(`/cms/ongoingCourses/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  }),
+  deleteOngoingCourse: (id) => apiCall(`/cms/ongoingCourses/${id}`, {
+    method: 'DELETE'
   })
 }
 

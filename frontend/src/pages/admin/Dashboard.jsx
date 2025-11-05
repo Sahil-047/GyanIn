@@ -88,14 +88,14 @@ const Dashboard = () => {
       
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        {/* Total Readmissions */}
+        {/* Total Students */}
         <div className="bg-white overflow-hidden shadow-md rounded-lg border border-gray-200">
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total</p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">{statistics?.readmissions?.total || 0}</p>
-                <p className="text-xs text-gray-500 mt-1">Readmissions</p>
+                <p className="text-xs text-gray-500 mt-1">Students</p>
               </div>
               <div className="p-3 bg-blue-50 rounded-lg">
                 <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -106,14 +106,14 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Pending Readmissions */}
+        {/* Pending Students */}
         <div className="bg-white overflow-hidden shadow-md rounded-lg border border-gray-200">
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Pending</p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">{statistics?.readmissions?.pending || 0}</p>
-                <p className="text-xs text-gray-500 mt-1">Readmissions</p>
+                <p className="text-xs text-gray-500 mt-1">Students</p>
               </div>
               <div className="p-3 bg-yellow-50 rounded-lg">
                 <svg className="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -165,10 +165,10 @@ const Dashboard = () => {
       <div className="mb-8">
         <h2 className="text-xl font-bold text-gray-900 mb-6">Analytics Overview</h2>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {/* Readmissions Status */}
+          {/* Students Status */}
           <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-200">
             <div className="px-6 py-5">
-              <h3 className="text-base font-bold text-gray-900">Readmissions Status</h3>
+              <h3 className="text-base font-bold text-gray-900">Students Status</h3>
               <div className="mt-4 space-y-3">
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <span className="text-sm font-medium text-gray-700">Approved</span>
@@ -242,8 +242,8 @@ const Dashboard = () => {
                 </svg>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">Manage Readmissions</h3>
-                <p className="mt-1 text-sm text-gray-600">View and manage student readmission requests</p>
+                <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">Manage Students</h3>
+                <p className="mt-1 text-sm text-gray-600">View and manage student applications</p>
               </div>
             </div>
           </Link>
@@ -283,7 +283,7 @@ const Dashboard = () => {
         <h2 className="text-xl font-bold text-gray-900 mb-6">Recent Activity</h2>
         <div className="bg-white shadow-xl overflow-hidden sm:rounded-xl border border-gray-200">
           <ul className="divide-y divide-gray-200">
-            {/* Recent Readmissions */}
+            {/* Recent Students */}
             {recent?.readmissions?.slice(0, 3).map((readmission) => (
               <li key={readmission._id}>
                 <div className="px-4 py-4 sm:px-6">

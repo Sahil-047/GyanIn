@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { merchandiseAPI } from '../../utils/api'
+import toast from 'react-hot-toast'
 
 const Merchandise = () => {
   const [merchandise, setMerchandise] = useState([])
@@ -30,7 +31,7 @@ const Merchandise = () => {
           setError('Failed to load merchandise')
         }
       } catch (e) {
-        console.error('Failed to load merchandise:', e)
+        toast.error('Failed to load merchandise. Please try again later.')
         setError('Failed to load merchandise. Please try again later.')
       } finally {
         setLoading(false)
@@ -121,11 +122,11 @@ const Merchandise = () => {
                     className="bg-gray-100 rounded-xl sm:rounded-2xl shadow-md sm:shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 overflow-hidden"
                   >
                     {/* Product Image */}
-                    <div className="relative h-32 sm:h-36 md:h-40 overflow-hidden bg-gray-200">
+                    <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden bg-white flex items-center justify-center p-4">
                       <img
                         src={item.image || 'https://via.placeholder.com/400'}
                         alt={item.title || 'Merchandise item'}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                       />
                       {item.category && (
                         <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 md:top-2.5 md:left-2.5">

@@ -39,6 +39,10 @@ const slotSchema = new mongoose.Schema({
     type: String,
     enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
   }],
+  timings: [{
+    type: String,
+    enum: ['Day', 'Noon', 'Evening', 'Night']
+  }],
   capacity: {
     type: Number,
     required: true,
@@ -58,7 +62,7 @@ const slotSchema = new mongoose.Schema({
   },
   location: {
     type: String,
-    required: true,
+    required: false,
     trim: true
   },
   isActive: {
@@ -80,5 +84,11 @@ slotSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();
 });
+
+// Indexes for performance optimization
+slotSchema.index({ class: 1, isActive: 1 }); // For filtering by class
+slotSchema.index({ subject: 1, isActive: 1 }); // For filtering by subject
+slotSchema.index({ type: 1, isActive: 1 }); // For filtering by type (online/offline)
+slotSchema.index({ createdAt: -1 }); // For sorting by newest
 
 module.exports = mongoose.model('Slot', slotSchema);

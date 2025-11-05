@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { readmissionsAPI, slotsAPI } from '../../utils/api'
 import { Snackbar, Alert } from '@mui/material'
+import { confirmToast } from '../../App'
 
 const Readmissions = () => {
   const [selectedTab, setSelectedTab] = useState('all')
@@ -33,7 +34,7 @@ const Readmissions = () => {
   // Form state for new readmission
   const [formData, setFormData] = useState({
     studentName: '',
-    course: '',
+    subject: '',
     contact: '',
     slotName: '',
     batch: ''
@@ -42,7 +43,7 @@ const Readmissions = () => {
   // Form state for editing readmission
   const [editFormData, setEditFormData] = useState({
     studentName: '',
-    course: '',
+    subject: '',
     contact: '',
     slotName: '',
     batch: ''
@@ -131,7 +132,7 @@ const Readmissions = () => {
     setFormData(prev => ({
       ...prev,
       slotName: slot.name,
-      course: slot.course,
+      subject: slot.subject || slot.course,
       batch: String(slot.class ?? '')
     }))
     setShowSlotModal(false)
@@ -142,7 +143,7 @@ const Readmissions = () => {
     const errors = {}
     
     if (!formData.studentName.trim()) errors.studentName = 'Student name is required'
-    if (!formData.course.trim()) errors.course = 'Course is required'
+    if (!formData.subject.trim()) errors.subject = 'Subject is required'
     if (!formData.contact.trim()) errors.contact = 'Contact is required'
     if (!formData.slotName.trim()) errors.slotName = 'Slot is required'
     
@@ -185,7 +186,7 @@ const Readmissions = () => {
         setShowAddModal(false)
         setFormData({
           studentName: '',
-          course: '',
+          subject: '',
           contact: '',
           slotName: ''
         })
@@ -240,7 +241,7 @@ const Readmissions = () => {
     setSelectedReadmission(readmission)
     setEditFormData({
       studentName: readmission.studentName,
-      course: readmission.course,
+      subject: readmission.subject || readmission.course,
       contact: readmission.contact,
       slotName: readmission.slotName,
       batch: readmission.batch || ''
@@ -254,7 +255,7 @@ const Readmissions = () => {
     setEditFormData(prev => ({
       ...prev,
       slotName: slot.name,
-      course: slot.course,
+      subject: slot.subject || slot.course,
       batch: String(slot.class ?? '')
     }))
     setShowEditSlotModal(false)
@@ -265,7 +266,7 @@ const Readmissions = () => {
     const errors = {}
     
     if (!editFormData.studentName.trim()) errors.studentName = 'Student name is required'
-    if (!editFormData.course.trim()) errors.course = 'Course is required'
+    if (!editFormData.subject.trim()) errors.subject = 'Subject is required'
     if (!editFormData.contact.trim()) errors.contact = 'Contact is required'
     if (!editFormData.slotName.trim()) errors.slotName = 'Slot is required'
     
@@ -296,7 +297,7 @@ const Readmissions = () => {
         setShowEditModal(false)
         setEditFormData({
           studentName: '',
-          course: '',
+          subject: '',
           contact: '',
           slotName: '',
           batch: ''
@@ -324,7 +325,8 @@ const Readmissions = () => {
 
   // Handle delete
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this readmission?')) return
+    const confirmed = await confirmToast('Are you sure you want to delete this readmission?')
+    if (!confirmed) return
     
     setLoading(true)
     try {
@@ -389,8 +391,8 @@ const Readmissions = () => {
             </svg>
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Readmission Management</h1>
-            <p className="mt-1 text-sm text-gray-600">Manage and track student readmission applications</p>
+            <h1 className="text-3xl font-bold text-gray-900">Students Management</h1>
+            <p className="mt-1 text-sm text-gray-600">Manage and track student applications</p>
           </div>
         </div>
       </div>
@@ -521,7 +523,7 @@ const Readmissions = () => {
               <input
                 type="text"
                 className="focus:ring-2 focus:ring-gray-500 focus:border-gray-500 block w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg bg-white placeholder-gray-400"
-                placeholder="Search by name, ID, or course..."
+                placeholder="Search by name, ID, or subject..."
                 value={searchTerm}
                 onChange={handleSearch}
               />
@@ -558,7 +560,7 @@ const Readmissions = () => {
                         Student
                       </th>
                       <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        Course
+                        Subject
                       </th>
                       <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Batch
@@ -607,7 +609,7 @@ const Readmissions = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-semibold text-gray-900">{readmission.course}</div>
+                            <div className="text-sm font-semibold text-gray-900">{readmission.subject || readmission.course}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-semibold text-gray-900">{readmission.slotName}</div>
@@ -789,16 +791,16 @@ const Readmissions = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Course *</label>
+                    <label className="block text-sm font-medium text-gray-700">Subject *</label>
                     <input
                       type="text"
-                      name="course"
-                      value={formData.course}
+                      name="subject"
+                      value={formData.subject}
                       onChange={handleInputChange}
-                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.course ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                      placeholder="Enter course name"
+                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.subject ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                      placeholder="Enter subject name"
                     />
-                    {formErrors.course && <p className="mt-1 text-sm text-red-600">{formErrors.course}</p>}
+                    {formErrors.subject && <p className="mt-1 text-sm text-red-600">{formErrors.subject}</p>}
                   </div>
 
                   <div>
@@ -963,21 +965,21 @@ const Readmissions = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Course *</label>
+                    <label className="block text-sm font-medium text-gray-700">Subject *</label>
                     <input
                       type="text"
-                      name="course"
-                      value={editFormData.course}
+                      name="subject"
+                      value={editFormData.subject}
                       onChange={(e) => {
-                        setEditFormData(prev => ({ ...prev, course: e.target.value }))
-                        if (editFormErrors.course) {
-                          setEditFormErrors(prev => ({ ...prev, course: '' }))
+                        setEditFormData(prev => ({ ...prev, subject: e.target.value }))
+                        if (editFormErrors.subject) {
+                          setEditFormErrors(prev => ({ ...prev, subject: '' }))
                         }
                       }}
-                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${editFormErrors.course ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                      placeholder="Enter course name"
+                      className={`mt-1 block w-full border rounded-md px-3 py-2 ${editFormErrors.subject ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                      placeholder="Enter subject name"
                     />
-                    {editFormErrors.course && <p className="mt-1 text-sm text-red-600">{editFormErrors.course}</p>}
+                    {editFormErrors.subject && <p className="mt-1 text-sm text-red-600">{editFormErrors.subject}</p>}
                   </div>
 
                   <div>
@@ -1129,8 +1131,8 @@ const Readmissions = () => {
                     <p className="mt-1 text-sm text-gray-900">{selectedReadmission.studentName}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Course</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedReadmission.course}</p>
+                    <label className="block text-sm font-medium text-gray-700">Subject</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedReadmission.subject || selectedReadmission.course}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Contact</label>

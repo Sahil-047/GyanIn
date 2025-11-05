@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Slot = require('../models/Slot');
+const { generateOngoingCourses } = require('../utils/generateOngoingCourses');
 
 const router = express.Router();
 
@@ -165,6 +166,14 @@ router.post('/', slotValidation, async (req, res) => {
         const slot = new Slot(req.body);
         await slot.save();
 
+        // Auto-generate ongoing batches from active slots
+        try {
+            await generateOngoingCourses();
+        } catch (error) {
+            console.error('Error auto-generating ongoing batches:', error);
+            // Don't fail the request if ongoing batches generation fails
+        }
+
         res.status(201).json({
             success: true,
             message: 'Slot created successfully',
@@ -205,6 +214,14 @@ router.put('/:id', slotValidation, async (req, res) => {
             });
         }
 
+        // Auto-generate ongoing batches from active slots
+        try {
+            await generateOngoingCourses();
+        } catch (error) {
+            console.error('Error auto-generating ongoing batches:', error);
+            // Don't fail the request if ongoing batches generation fails
+        }
+
         res.json({
             success: true,
             message: 'Slot updated successfully',
@@ -234,6 +251,14 @@ router.put('/:id/toggle', async (req, res) => {
 
         slot.isActive = !slot.isActive;
         await slot.save();
+
+        // Auto-generate ongoing batches from active slots
+        try {
+            await generateOngoingCourses();
+        } catch (error) {
+            console.error('Error auto-generating ongoing batches:', error);
+            // Don't fail the request if ongoing batches generation fails
+        }
 
         res.json({
             success: true,
@@ -281,6 +306,14 @@ router.put('/:id/enroll', async (req, res) => {
         slot.enrolledStudents = enrolledStudents;
         await slot.save();
 
+        // Auto-generate ongoing courses from active slots (seats changed)
+        try {
+            await generateOngoingCourses();
+        } catch (error) {
+            console.error('Error auto-generating ongoing courses:', error);
+            // Don't fail the request if ongoing courses generation fails
+        }
+
         res.json({
             success: true,
             message: 'Enrolled students updated successfully',
@@ -306,6 +339,14 @@ router.delete('/:id', async (req, res) => {
                 success: false,
                 message: 'Slot not found'
             });
+        }
+
+        // Auto-generate ongoing batches from active slots
+        try {
+            await generateOngoingCourses();
+        } catch (error) {
+            console.error('Error auto-generating ongoing batches:', error);
+            // Don't fail the request if ongoing batches generation fails
         }
 
         res.json({

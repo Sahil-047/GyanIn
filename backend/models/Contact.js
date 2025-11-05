@@ -12,6 +12,10 @@ const contactSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   },
+  phone: {
+    type: String,
+    trim: true
+  },
   queryType: {
     type: String,
     required: true,
@@ -47,5 +51,10 @@ contactSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();
 });
+
+// Indexes for performance optimization
+contactSchema.index({ status: 1, createdAt: -1 }); // For filtering by status and sorting
+contactSchema.index({ queryType: 1, createdAt: -1 }); // For filtering by query type
+contactSchema.index({ email: 1 }); // For email lookups
 
 module.exports = mongoose.model('Contact', contactSchema);

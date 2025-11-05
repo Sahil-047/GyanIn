@@ -5,6 +5,7 @@ const ContactUs = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     subject: '',
     message: '',
     queryType: 'general'
@@ -42,6 +43,7 @@ const ContactUs = () => {
         setFormData({
           name: '',
           email: '',
+          phone: '',
           subject: '',
           message: '',
           queryType: 'general'
@@ -149,6 +151,21 @@ const ContactUs = () => {
                   placeholder="Enter your email"
                 />
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number <span className="text-gray-500 text-xs">(Optional - for admin reference)</span>
+              </label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0061FF] focus:border-transparent"
+                placeholder="Enter your phone number"
+              />
             </div>
 
             <div>

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { cmsAPI, coursesAPI, slotsAPI, merchandiseAPI } from '../../utils/api'
 import ImageUploader from '../../components/common/ImageUploader'
+import toast from 'react-hot-toast'
+import { confirmToast } from '../../App'
 
 const CMS = () => {
   const [activeTab, setActiveTab] = useState('carousel')
@@ -8,7 +10,8 @@ const CMS = () => {
     carousel: { carouselItems: [] },
     courses: { courses: [] },
     merchandise: { merchandise: [] },
-    offers: { offers: [] }
+    offers: { offers: [] },
+    testimonials: { testimonials: [] }
   })
   const [loading, setLoading] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -25,7 +28,7 @@ const CMS = () => {
     setLoading(true)
     try {
       // Fetch CMS sections (excluding courses which will be fetched separately)
-      const sections = ['carousel', 'offers']
+      const sections = ['carousel', 'offers', 'ongoingCourses', 'testimonials']
       const cmsPromises = sections.map(section =>
         cmsAPI.getCMSSection(section).catch(err => {
 
@@ -50,7 +53,8 @@ const CMS = () => {
         carousel: { carouselItems: [] },
         courses: { courses: [] },
         merchandise: { merchandise: [] },
-        offers: { offers: [] }
+        offers: { offers: [] },
+        ongoingCourses: { ongoingCourses: [] }
       }
 
       // Process CMS sections (carousel, offers)
@@ -95,6 +99,13 @@ const CMS = () => {
             newData[section] = {
               carouselItems: carouselItems
             };
+          } else if (section === 'testimonials') {
+            const testimonials = cmsDocument.data?.testimonials || []
+            newData[section] = { testimonials }
+          } else if (section === 'ongoingCourses') {
+            // Filter out hidden batches from display
+            const ongoingCourses = (cmsDocument.data?.ongoingCourses || []).filter(c => !c.isHidden)
+            newData[section] = { ongoingCourses }
           } else {
             newData[section] = cmsDocument.data || {}
           }
@@ -242,9 +253,16 @@ const CMS = () => {
         if (!formData.price || formData.price <= 0) errors.price = 'Valid price is required'
         break
       case 'offers':
-        if (!formData.name?.trim()) errors.name = 'Batch name is required'
+        if (!formData.name?.trim()) errors.name = 'Offer name is required'
+        break
+      case 'ongoingCourses':
+        if (!formData.name?.trim()) errors.name = 'Name is required'
         if (!formData.offer?.trim()) errors.offer = 'Description is required'
-        if (!formData.slotId?.trim()) errors.slotId = 'Batch selection is required'
+        break
+      case 'testimonials':
+        if (!formData.name?.trim()) errors.name = 'Name is required'
+        if (!formData.quote?.trim()) errors.quote = 'Testimonial is required'
+        if (formData.rating && (formData.rating < 1 || formData.rating > 5)) errors.rating = 'Rating must be 1-5'
         break
     }
 
@@ -321,14 +339,35 @@ const CMS = () => {
         isActive: item.isActive !== undefined ? item.isActive : true
       };
     } else if (activeTab === 'offers') {
-      // Ensure slotId is included for ongoing courses
       formDataToSet = {
         id: item.id,
         name: item.name || '',
         offer: item.offer || '',
-        slotId: item.slotId || '',
         color: item.color || '',
         validUntil: item.validUntil || '',
+        discount: item.discount || '',
+        isActive: item.isActive !== undefined ? item.isActive : true
+      };
+    } else if (activeTab === 'ongoingCourses') {
+      // Ongoing batches can be edited (display only, not the batch)
+      formDataToSet = {
+        id: item.id,
+        name: item.name || item.title || '',
+        title: item.title || item.name || '',
+        offer: item.offer || item.description || '',
+        description: item.description || item.offer || '',
+        color: item.color || 'from-blue-500 to-blue-600',
+        isActive: item.isActive !== undefined ? item.isActive : true,
+        slotId: item.slotId || '' // Keep slotId for reference
+      };
+    } else if (activeTab === 'testimonials') {
+      formDataToSet = {
+        id: item.id,
+        name: item.name || '',
+        role: item.role || '',
+        quote: item.quote || '',
+        image: item.image || '',
+        rating: item.rating || 5,
         isActive: item.isActive !== undefined ? item.isActive : true
       };
     }
@@ -460,7 +499,7 @@ const CMS = () => {
 
         // For editing carousel items - don't allow editing old structure
         if (activeTab === 'carousel' && selectedItem && (selectedItem.title || selectedItem.subtitle)) {
-          alert('Please delete this old carousel item and create a new one with the simplified structure.');
+          toast.error('Please delete this old carousel item and create a new one with the simplified structure.')
           setLoading(false)
           return
         }
@@ -484,12 +523,33 @@ const CMS = () => {
               result = await cmsAPI.addOffer(submitData)
             }
             break
+          case 'testimonials':
+            if (selectedItem) {
+              result = await cmsAPI.updateTestimonial(selectedItem.id, submitData)
+            } else {
+              result = await cmsAPI.addTestimonial(submitData)
+            }
+            break
+          case 'ongoingCourses':
+            if (selectedItem) {
+              result = await cmsAPI.updateOngoingCourse(selectedItem.id, submitData)
+            }
+            break
           default:
             break
         }
       }
 
       if (result && result.success) {
+        const action = selectedItem ? 'updated' : 'created'
+        const itemName = activeTab === 'carousel' ? 'Carousel item' 
+          : activeTab === 'courses' ? 'Course'
+          : activeTab === 'merchandise' ? 'Merchandise item'
+          : activeTab === 'offers' ? 'Offer'
+          : activeTab === 'ongoingCourses' ? 'Ongoing batch'
+          : activeTab === 'testimonials' ? 'Testimonial'
+          : 'Item'
+        toast.success(`${itemName} ${action} successfully!`)
         setShowAddModal(false)
         setShowEditModal(false)
         setFormData({})
@@ -545,6 +605,41 @@ const CMS = () => {
           }
         }
         
+        // For offers, immediately add/update the offer in local state
+        if (activeTab === 'offers' && result.data) {
+          const offerData = {
+            id: result.data.id,
+            name: result.data.name || result.data.title,
+            offer: result.data.offer || result.data.description,
+            slotId: result.data.slotId || '',
+            courseId: result.data.courseId || '',
+            color: result.data.color || 'from-blue-500 to-blue-600',
+            discount: result.data.discount || '',
+            validUntil: result.data.validUntil || '',
+            isActive: result.data.isActive !== undefined ? result.data.isActive : true
+          }
+          
+          if (selectedItem) {
+            // Update existing offer in local state
+            setCmsData(prev => ({
+              ...prev,
+              offers: {
+                offers: prev.offers.offers.map(o => 
+                  o.id === offerData.id ? offerData : o
+                )
+              }
+            }))
+          } else {
+            // Add new offer to local state
+            setCmsData(prev => ({
+              ...prev,
+              offers: {
+                offers: [offerData, ...prev.offers.offers]
+              }
+            }))
+          }
+        }
+        
         // Still refresh to ensure everything is in sync (will deduplicate if needed)
         fetchCMSData()
       }
@@ -558,9 +653,9 @@ const CMS = () => {
         setFormErrors(backendErrors)
       } else if (error.data && error.data.message) {
         // Show general error message
-        alert(error.data.message || 'Failed to save. Please check the form and try again.')
+        toast.error(error.data.message || 'Failed to save. Please check the form and try again.')
       } else {
-        alert(error.message || 'An error occurred. Please try again.')
+        toast.error(error.message || 'An error occurred. Please try again.')
       }
     }
     setLoading(false)
@@ -568,7 +663,8 @@ const CMS = () => {
 
   // Handle delete item
   const handleDelete = async (itemId) => {
-    if (!window.confirm('Are you sure you want to delete this item?')) return
+    const confirmed = await confirmToast('Are you sure you want to delete this item?')
+    if (!confirmed) return
 
     setLoading(true)
     try {
@@ -583,17 +679,35 @@ const CMS = () => {
       } else if (activeTab === 'offers') {
         // Delete offer from CMS API
         result = await cmsAPI.deleteOffer(itemId);
+      } else if (activeTab === 'ongoingCourses') {
+        // Delete ongoing batch from carousel (doesn't delete the batch)
+        const confirmed = await confirmToast('This will remove the batch from the carousel but will NOT delete the actual batch. Continue?')
+        if (!confirmed) {
+          setLoading(false)
+          return
+        }
+        result = await cmsAPI.deleteOngoingCourse(itemId);
       } else if (activeTab === 'carousel') {
         // Delete carousel item from CMS API
         result = await cmsAPI.deleteCarouselItem(itemId);
+      } else if (activeTab === 'testimonials') {
+        result = await cmsAPI.deleteTestimonial(itemId)
       }
 
       if (result && result.success) {
+        const itemName = activeTab === 'carousel' ? 'Carousel item' 
+          : activeTab === 'courses' ? 'Course'
+          : activeTab === 'merchandise' ? 'Merchandise item'
+          : activeTab === 'offers' ? 'Offer'
+          : activeTab === 'ongoingCourses' ? 'Ongoing batch'
+          : activeTab === 'testimonials' ? 'Testimonial'
+          : 'Item'
+        toast.success(`${itemName} deleted successfully!`)
         // Refresh data from server instead of updating local state
         await fetchCMSData();
       }
     } catch (error) {
-      // Error handled silently
+      toast.error('Failed to delete item. Please try again.')
     }
     setLoading(false)
   }
@@ -887,38 +1001,16 @@ const CMS = () => {
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Batch Name *</label>
+              <label className="block text-sm font-medium text-gray-700">Offer Name *</label>
               <input
                 type="text"
                 name="name"
                 value={formData.name || ''}
                 onChange={handleInputChange}
                 className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.name ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                placeholder="e.g., Weekend Batch A, Evening Batch B"
+                placeholder="e.g., Special Discount, Limited Time Offer"
               />
               {formErrors.name && <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Select Batch *</label>
-              <select
-                name="slotId"
-                value={formData.slotId || ''}
-                onChange={handleInputChange}
-                className={`mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 ${formErrors.slotId ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-              >
-                <option value="">Select a batch</option>
-                {availableSlots.map((slot) => {
-                  const availableSeats = slot.capacity - slot.enrolledStudents;
-                  return (
-                    <option key={slot._id} value={slot._id}>
-                      {slot.name} - {slot.subject} (Class {slot.class}) - {availableSeats} seats available
-                    </option>
-                  );
-                })}
-              </select>
-              {formErrors.slotId && <p className="mt-1 text-sm text-red-600">{formErrors.slotId}</p>}
-              <p className="mt-1 text-xs text-gray-500">Choose an active batch from the slots</p>
             </div>
 
             <div>
@@ -929,9 +1021,32 @@ const CMS = () => {
                 onChange={handleInputChange}
                 rows={3}
                 className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.offer ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                placeholder="e.g., Evening classes with flexible timings"
+                placeholder="e.g., Get 20% off on all courses this month"
               />
               {formErrors.offer && <p className="mt-1 text-sm text-red-600">{formErrors.offer}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Discount</label>
+              <input
+                type="text"
+                name="discount"
+                value={formData.discount || ''}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., 20% Off, Flat ₹500 Discount"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Valid Until</label>
+              <input
+                type="date"
+                name="validUntil"
+                value={formData.validUntil || ''}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
 
             <div>
@@ -969,6 +1084,144 @@ const CMS = () => {
           </div>
         )
 
+      case 'ongoingCourses':
+        return (
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> Editing here only affects how this batch appears in the carousel. The actual batch/slot will not be modified.
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Name *</label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name || ''}
+                onChange={handleInputChange}
+                className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.name ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                placeholder="Batch name"
+              />
+              {formErrors.name && <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Description *</label>
+              <textarea
+                name="offer"
+                value={formData.offer || ''}
+                onChange={handleInputChange}
+                rows={3}
+                className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.offer ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                placeholder="Batch description"
+              />
+              {formErrors.offer && <p className="mt-1 text-sm text-red-600">{formErrors.offer}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Color Theme</label>
+              <select
+                name="color"
+                value={formData.color || ''}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select color</option>
+                <option value="from-blue-500 to-blue-600">Blue</option>
+                <option value="from-green-500 to-green-600">Green</option>
+                <option value="from-purple-500 to-purple-600">Purple</option>
+                <option value="from-orange-500 to-orange-600">Orange</option>
+                <option value="from-red-500 to-red-600">Red</option>
+                <option value="from-teal-500 to-teal-600">Teal</option>
+                <option value="from-indigo-500 to-indigo-600">Indigo</option>
+                <option value="from-pink-500 to-pink-600">Pink</option>
+                <option value="from-cyan-500 to-cyan-600">Cyan</option>
+                <option value="from-emerald-500 to-emerald-600">Emerald</option>
+              </select>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="isActive"
+                checked={formData.isActive !== undefined ? formData.isActive : true}
+                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label className="ml-2 block text-sm text-gray-900">Show in Carousel</label>
+            </div>
+          </div>
+        )
+
+      case 'testimonials':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Name *</label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name || ''}
+                onChange={handleInputChange}
+                className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.name ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                placeholder="Student name"
+              />
+              {formErrors.name && <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Role</label>
+              <input
+                type="text"
+                name="role"
+                value={formData.role || ''}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., Class 10 Student, Parent"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Testimonial *</label>
+              <textarea
+                name="quote"
+                value={formData.quote || ''}
+                onChange={handleInputChange}
+                rows={3}
+                className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.quote ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                placeholder="Write testimonial..."
+              />
+              {formErrors.quote && <p className="mt-1 text-sm text-red-600">{formErrors.quote}</p>}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Rating (1-5)</label>
+                <input
+                  type="number"
+                  name="rating"
+                  min="1"
+                  max="5"
+                  value={formData.rating || 5}
+                  onChange={handleInputChange}
+                  className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.rating ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                />
+                {formErrors.rating && <p className="mt-1 text-sm text-red-600">{formErrors.rating}</p>}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Photo</label>
+              <ImageUploader
+                value={formData.image || ''}
+                onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
+                buttonText="Upload photo"
+                bucketType="teacher"
+              />
+            </div>
+          </div>
+        )
+
       default:
         return null
     }
@@ -976,10 +1229,12 @@ const CMS = () => {
 
   // Render content based on active tab
   const renderContent = () => {
-    const items = activeTab === 'carousel' ? cmsData.carousel.carouselItems :
+      const items = activeTab === 'carousel' ? cmsData.carousel.carouselItems :
       activeTab === 'courses' ? cmsData.courses.courses :
         activeTab === 'merchandise' ? cmsData.merchandise.merchandise :
-          cmsData.offers.offers
+          activeTab === 'offers' ? cmsData.offers.offers :
+            activeTab === 'ongoingCourses' ? cmsData.ongoingCourses.ongoingCourses :
+              cmsData.testimonials.testimonials
 
     if (loading) {
       return (
@@ -996,14 +1251,21 @@ const CMS = () => {
             <h3 className="text-lg font-medium leading-6 text-gray-900">
               {activeTab === 'carousel' ? 'Carousel Items' :
                 activeTab === 'courses' ? 'Courses' :
-                  activeTab === 'merchandise' ? 'Merchandise' : 'Ongoing Courses'}
+                  activeTab === 'merchandise' ? 'Merchandise' : 
+                    activeTab === 'offers' ? 'Manual Offers' : 
+                      activeTab === 'ongoingCourses' ? 'Ongoing Batches (Auto-Generated)' : 'Testimonials'}
             </h3>
-            <button
-              onClick={handleAdd}
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Add New
-            </button>
+            {activeTab !== 'ongoingCourses' && (
+              <button
+                onClick={handleAdd}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Add New
+              </button>
+            )}
+            {activeTab === 'ongoingCourses' && (
+              <p className="text-xs text-gray-500">Auto-generated from active batches. Edit display or hide from carousel.</p>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -1094,21 +1356,68 @@ const CMS = () => {
                             </span>
                           </div>
                           <p className="text-sm text-gray-600 mt-1">{item.offer || item.description}</p>
-                          {item.slotId && (
+                          {item.discount && (
                             <p className="text-xs text-blue-600 mt-1">
-                              Batch: {availableSlots.find(s => s._id === item.slotId)?.name || 'Batch selected'}
+                              Discount: {item.discount}
                             </p>
                           )}
-                          {availableSlots.find(s => s._id === item.slotId) && (() => {
-                            const availableSeats = availableSlots.find(s => s._id === item.slotId).capacity - availableSlots.find(s => s._id === item.slotId).enrolledStudents;
-                            const isLowAvailability = availableSeats < 10;
-                            return (
-                              <p className={`text-xs mt-1 ${isLowAvailability ? 'text-red-600' : 'text-green-600'}`}>
-                                Seats Available: {availableSeats}
-                              </p>
-                            );
-                          })()}
                           {item.validUntil && <p className="text-xs text-gray-400 mt-1">Valid until: {new Date(item.validUntil).toLocaleDateString()}</p>}
+                        </div>
+                      )}
+
+                      {activeTab === 'ongoingCourses' && (
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center">
+                              <div className={`w-10 h-10 bg-gradient-to-r ${item.color || 'from-blue-500 to-blue-600'} rounded-lg flex items-center justify-center mr-3`}>
+                                <span className="text-white font-bold text-sm">
+                                  {(item.name || item.title)?.charAt(0) || 'O'}
+                                </span>
+                              </div>
+                              <div>
+                                <h4 className="text-md font-medium text-gray-900">{item.name || item.title}</h4>
+                                {item.subject && item.class && (
+                                  <p className="text-xs text-gray-500">{item.subject} - Class {item.class}</p>
+                                )}
+                              </div>
+                            </div>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${item.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                              }`}>
+                              {item.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">{item.offer || item.description}</p>
+                          {item.instructor && (
+                            <p className="text-xs text-blue-600 mt-1">Instructor: {item.instructor}</p>
+                          )}
+                          {item.availableSeats !== undefined && (
+                            <p className={`text-xs mt-1 ${item.availableSeats < 10 ? 'text-red-600' : 'text-green-600'}`}>
+                              Seats Available: {item.availableSeats} / {item.capacity}
+                            </p>
+                          )}
+                          {item.slotId && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              Batch ID: {item.slotId.substring(0, 8)}... (Auto-generated)
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {activeTab === 'testimonials' && (
+                        <div>
+                          <div className="flex items-center">
+                            <div className="h-10 w-10 bg-gray-300 rounded-full mr-3 overflow-hidden">
+                              <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                            </div>
+                            <div>
+                              <h4 className="text-md font-medium text-gray-900">{item.name}</h4>
+                              {item.role && <p className="text-xs text-gray-500">{item.role}</p>}
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-2">“{item.quote}”</p>
+                          {item.rating && (
+                            <div className="mt-1 text-yellow-500 text-xs">{'★'.repeat(item.rating)}{'☆'.repeat(Math.max(0,5-item.rating))}</div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1166,7 +1475,9 @@ const CMS = () => {
             <option value="carousel">Carousel & Teachers</option>
             <option value="courses">Courses</option>
             <option value="merchandise">Merchandise</option>
-            <option value="offers">Ongoing Courses</option>
+            <option value="offers">Manual Offers</option>
+            <option value="ongoingCourses">Ongoing Batches</option>
+            <option value="testimonials">Testimonials</option>
           </select>
         </div>
         <div className="hidden sm:block">
@@ -1206,7 +1517,25 @@ const CMS = () => {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
               >
-                Ongoing Courses
+                Manual Offers
+              </button>
+              <button
+                onClick={() => setActiveTab('ongoingCourses')}
+                className={`${activeTab === 'ongoingCourses'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+              >
+                Ongoing Batches
+              </button>
+              <button
+                onClick={() => setActiveTab('testimonials')}
+                className={`${activeTab === 'testimonials'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+              >
+                Testimonials
               </button>
             </nav>
           </div>
@@ -1227,7 +1556,8 @@ const CMS = () => {
                 <h3 className="text-lg font-medium text-gray-900">
                   Add New {activeTab === 'carousel' ? 'Carousel Item' :
                     activeTab === 'courses' ? 'Course' :
-                      activeTab === 'merchandise' ? 'Merchandise Item' : 'Offer'}
+                      activeTab === 'merchandise' ? 'Merchandise Item' : 
+                        activeTab === 'offers' ? 'Offer' : 'Testimonial'}
                 </h3>
                 <button
                   onClick={() => setShowAddModal(false)}
@@ -1273,7 +1603,9 @@ const CMS = () => {
                 <h3 className="text-lg font-medium text-gray-900">
                   Edit {activeTab === 'carousel' ? 'Carousel Item' :
                     activeTab === 'courses' ? 'Course' :
-                      activeTab === 'merchandise' ? 'Merchandise Item' : 'Offer'}
+                      activeTab === 'merchandise' ? 'Merchandise Item' : 
+                        activeTab === 'offers' ? 'Offer' :
+                          activeTab === 'ongoingCourses' ? 'Ongoing Batch' : 'Testimonial'}
                 </h3>
                 <button
                   onClick={() => setShowEditModal(false)}

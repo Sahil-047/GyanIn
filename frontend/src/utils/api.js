@@ -1,5 +1,17 @@
 // API service for centralized API calls
-const API_BASE = 'http://localhost:5000/api/admin'
+import API_CONFIG from '../config'
+
+// Get API base URL from config
+const getApiBaseUrl = () => {
+  if (API_CONFIG.baseURL) {
+    // Production: Use full URL
+    return `${API_CONFIG.baseURL}/api/admin`
+  }
+  // Development: Use relative path (goes through Vite proxy)
+  return '/api/admin'
+}
+
+const API_BASE = getApiBaseUrl()
 
 // Generic API call function
 export const apiCall = async (endpoint, options = {}) => {
@@ -219,7 +231,16 @@ export const cmsAPI = {
 }
 
 // Uploads API (multipart)
-const UPLOADS_BASE = 'http://localhost:5000/api/uploads'
+const getUploadsBaseUrl = () => {
+  if (API_CONFIG.baseURL) {
+    // Production: Use full URL
+    return `${API_CONFIG.baseURL}/api/uploads`
+  }
+  // Development: Use relative path (goes through Vite proxy)
+  return '/api/uploads'
+}
+
+const UPLOADS_BASE = getUploadsBaseUrl()
 
 export const uploadsAPI = {
   uploadImage: async (file, type = 'teacher') => {
@@ -244,7 +265,16 @@ export const uploadsAPI = {
 }
 
 // Courses API (Public API - different base URL)
-const PUBLIC_API_BASE = 'http://localhost:5000/api'
+const getPublicApiBaseUrl = () => {
+  if (API_CONFIG.baseURL) {
+    // Production: Use full URL
+    return `${API_CONFIG.baseURL}/api`
+  }
+  // Development: Use relative path (goes through Vite proxy)
+  return '/api'
+}
+
+const PUBLIC_API_BASE = getPublicApiBaseUrl()
 
 const publicApiCall = async (endpoint, options = {}) => {
   const url = `${PUBLIC_API_BASE}${endpoint}`

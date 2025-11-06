@@ -13,7 +13,48 @@ const cookieParser = require('cookie-parser');
 const edgestoreHandler = require('./routes/edgestore');
 
 // Middleware
-app.use(cors({ origin: true, credentials: true }));
+// CORS configuration: allow all origins in development, restrict in production
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow all origins in development
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    
+    // In production, check against allowed origins
+    const allowedOrigins = process.env.FRONTEND_URL 
+      ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+      : ['https://gyanin.academy'];
+    
+    // Allow requests with no origin (like mobile apps, curl, or same-origin requests)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Check if the origin matches any allowed origin
+    // Also check both HTTP and HTTPS versions if only one is specified
+    const isAllowed = allowedOrigins.some(allowed => {
+      // Exact match
+      if (origin === allowed) return true;
+      
+      // Check HTTP/HTTPS variants
+      const httpVersion = allowed.replace(/^https:/, 'http:');
+      const httpsVersion = allowed.replace(/^http:/, 'https:');
+      return origin === httpVersion || origin === httpsVersion;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+};
+app.use(cors(corsOptions));
 app.use(morgan('combined'));
 app.use(cookieParser());
 app.use(express.json());

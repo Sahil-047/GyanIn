@@ -148,9 +148,9 @@ echo "🚀 Step 7: Deploying to Nginx..."
 # Create directory if it doesn't exist
 mkdir -p "$NGINX_DIR"
 
-# Remove old files (but keep the directory)
-echo "   Removing old files..."
-find "$NGINX_DIR" -mindepth 1 -delete
+# Remove ALL old files (force clean)
+echo "   Removing ALL old files..."
+find "$NGINX_DIR" -mindepth 1 -delete 2>/dev/null || true
 
 # Copy new build
 echo "   Copying new build files..."
@@ -160,6 +160,10 @@ cp -r "$BUILD_DIR"/* "$NGINX_DIR/"
 echo "   Setting permissions..."
 chown -R www-data:www-data "$NGINX_DIR"
 chmod -R 755 "$NGINX_DIR"
+
+# Clear Nginx cache if it exists
+echo "   Clearing Nginx cache..."
+rm -rf /var/cache/nginx/* 2>/dev/null || true
 
 echo -e "${GREEN}✅ Files deployed to $NGINX_DIR${NC}"
 

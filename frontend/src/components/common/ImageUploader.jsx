@@ -4,7 +4,7 @@ import 'react-easy-crop/react-easy-crop.css'
 import { uploadsAPI } from '../../utils/api'
 import { useEdgeStore } from '../../edgestore'
 
-const ImageUploader = ({ value, onChange, buttonText = 'Upload Image', bucketType = 'teacher' }) => {
+const ImageUploader = ({ value, onChange, buttonText = 'Upload Image', bucketType = 'teacher', disableCrop = false }) => {
     const [uploading, setUploading] = useState(false)
     const [error, setError] = useState('')
     const [isDragOver, setIsDragOver] = useState(false)
@@ -163,6 +163,37 @@ const ImageUploader = ({ value, onChange, buttonText = 'Upload Image', bucketTyp
         setImageLoading(true)
 
         try {
+            // If cropping is disabled, upload directly without showing crop modal
+            if (disableCrop) {
+                setUploading(true)
+                try {
+                    // Prefer client-side Edge Store SDK if available
+                    if (edgestore && edgestore[bucketType === 'course' ? 'Courses' : 'Teachers']) {
+                        const result = await edgestore[bucketType === 'course' ? 'Courses' : 'Teachers'].upload({ file })
+                        if (result?.url) {
+                            onChange(result.url)
+                            setImageLoading(false)
+                            setUploading(false)
+                            return
+                        }
+                    }
+
+                    // Fallback to server endpoint
+                    const res = await uploadsAPI.uploadImage(file, bucketType)
+                    if (res.success && res.url) {
+                        onChange(res.url)
+                    } else {
+                        setError(res.message || 'Upload not available')
+                    }
+                } catch (uploadErr) {
+                    setError(uploadErr.message || 'Upload failed')
+                } finally {
+                    setUploading(false)
+                    setImageLoading(false)
+                }
+                return
+            }
+
             // Create image URL for cropping
             const imageUrl = URL.createObjectURL(file)
 
@@ -182,8 +213,9 @@ const ImageUploader = ({ value, onChange, buttonText = 'Upload Image', bucketTyp
         } catch (err) {
             setError('Failed to process image. Please try another file.')
             setImageLoading(false)
+            setUploading(false)
         }
-    }, [])
+    }, [disableCrop, edgestore, bucketType, onChange])
 
     const handleInputChange = (e) => {
         const file = e.target.files?.[0]

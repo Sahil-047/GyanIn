@@ -751,6 +751,7 @@ const CMS = () => {
                 onChange={(url) => setFormData(prev => ({ ...prev, teacherImage: url }))}
                 buttonText="Upload teacher image"
                 bucketType="teacher"
+                disableCrop={true}
               />
             </div>
 
@@ -761,6 +762,7 @@ const CMS = () => {
                 onChange={(url) => setFormData(prev => ({ ...prev, schedule1Image: url }))}
                 buttonText="Upload schedule 1 image"
                 bucketType="teacher"
+                disableCrop={true}
               />
             </div>
 
@@ -771,6 +773,7 @@ const CMS = () => {
                 onChange={(url) => setFormData(prev => ({ ...prev, schedule2Image: url }))}
                 buttonText="Upload schedule 2 image"
                 bucketType="teacher"
+                disableCrop={true}
               />
             </div>
           </div>
@@ -900,6 +903,7 @@ const CMS = () => {
                 value={formData.image || ''}
                 onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
                 buttonText="Upload course image"
+                disableCrop={true}
                 bucketType="course"
               />
             </div>
@@ -991,6 +995,7 @@ const CMS = () => {
                 value={formData.image || ''}
                 onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
                 buttonText="Upload merchandise image"
+                disableCrop={true}
                 bucketType="course"
               />
             </div>
@@ -1217,6 +1222,7 @@ const CMS = () => {
                 onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
                 buttonText="Upload photo"
                 bucketType="teacher"
+                disableCrop={true}
               />
             </div>
           </div>

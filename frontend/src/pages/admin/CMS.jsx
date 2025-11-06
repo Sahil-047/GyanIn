@@ -751,7 +751,7 @@ const CMS = () => {
                 onChange={(url) => setFormData(prev => ({ ...prev, teacherImage: url }))}
                 buttonText="Upload teacher image"
                 bucketType="teacher"
-                disableCrop={true}
+                disableCrop={false}
               />
             </div>
 
@@ -1222,7 +1222,7 @@ const CMS = () => {
                 onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
                 buttonText="Upload photo"
                 bucketType="teacher"
-                disableCrop={true}
+                disableCrop={false}
               />
             </div>
           </div>

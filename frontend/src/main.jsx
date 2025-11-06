@@ -5,6 +5,50 @@ import CssBaseline from '@mui/material/CssBaseline'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import './index.css'
+
+// CRITICAL: Install EdgeStore URL interceptor BEFORE importing EdgeStore
+// This intercepts fetch and XMLHttpRequest to fix cross-origin URL issues
+import API_CONFIG from './config'
+
+if (typeof window !== 'undefined' && API_CONFIG?.baseURL) {
+  const backendURL = `${API_CONFIG.baseURL.replace(/\/+$/, '')}${API_CONFIG.edgestoreBasePath || '/api/edgestore'}`
+  
+  // Store the correct backend URL
+  window.__EDGESTORE_BACKEND_URL__ = backendURL
+  
+  console.log('[Main] Installing EdgeStore URL interceptor')
+  console.log('[Main] Correct backend URL:', backendURL)
+  
+  // Intercept fetch
+  const originalFetch = window.fetch
+  window.fetch = function(...args) {
+    const url = args[0]
+    if (typeof url === 'string' && url.includes('/api/edgestore')) {
+      if (url.includes('gyanin.academy/api/edgestore') && !url.includes('api.gyanin.academy')) {
+        const corrected = url.replace(/https?:\/\/[^/]+\/api\/edgestore/g, backendURL)
+        console.log('[Main] 🔧 Fetch interceptor: Rewriting', url, '→', corrected)
+        args[0] = corrected
+      }
+    }
+    return originalFetch.apply(this, args)
+  }
+  
+  // Intercept XMLHttpRequest (EdgeStore might use this)
+  const originalXHROpen = XMLHttpRequest.prototype.open
+  XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+    if (typeof url === 'string' && url.includes('/api/edgestore')) {
+      if (url.includes('gyanin.academy/api/edgestore') && !url.includes('api.gyanin.academy')) {
+        const corrected = url.replace(/https?:\/\/[^/]+\/api\/edgestore/g, backendURL)
+        console.log('[Main] 🔧 XHR interceptor: Rewriting', url, '→', corrected)
+        url = corrected
+      }
+    }
+    return originalXHROpen.call(this, method, url, ...rest)
+  }
+  
+  console.log('[Main] ✅ EdgeStore interceptors installed (fetch + XHR)')
+}
+
 import { EdgeStoreProvider } from './edgestore'
 
 // Create a custom Material UI theme matching Learnly's color scheme

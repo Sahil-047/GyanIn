@@ -44,30 +44,7 @@ const getEdgeStoreBasePath = () => {
 const basePath = getEdgeStoreBasePath()
 
 console.log('[EdgeStore] FINAL basePath value:', basePath)
-
-// Intercept fetch to rewrite EdgeStore URLs if needed
-if (typeof window !== 'undefined' && window.__EDGESTORE_BACKEND_URL__) {
-  const originalFetch = window.fetch
-  window.fetch = function(...args) {
-    const url = args[0]
-    
-    // If this is an EdgeStore request going to the wrong domain, rewrite it
-    if (typeof url === 'string' && url.includes('/api/edgestore')) {
-      // Check if it's going to gyanin.academy instead of api.gyanin.academy
-      if (url.includes('gyanin.academy/api/edgestore') && !url.includes('api.gyanin.academy')) {
-        const correctUrl = url.replace(/https?:\/\/gyanin\.academy\/api\/edgestore/g, window.__EDGESTORE_BACKEND_URL__)
-        console.log('[EdgeStore] 🔧 INTERCEPTED: Rewriting URL')
-        console.log('[EdgeStore]   From:', url)
-        console.log('[EdgeStore]   To:', correctUrl)
-        args[0] = correctUrl
-      }
-    }
-    
-    return originalFetch.apply(this, args)
-  }
-  
-  console.log('[EdgeStore] ✅ Fetch interceptor installed')
-}
+console.log('[EdgeStore] Note: URL interceptors should already be installed in main.jsx')
 
 // Configure Edge Store
 export const { EdgeStoreProvider, useEdgeStore } = createEdgeStoreProvider({

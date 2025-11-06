@@ -44,27 +44,31 @@ if [ -d "$BUILD_DIR" ]; then
     echo "Searching for EdgeStore URLs in built JS files..."
     JS_FILES=$(find "$BUILD_DIR" -name "*.js" -type f | head -3)
     
-    for file in $JS_FILES; do
-        echo ""
-        echo "File: $(basename $file)"
-        
-        # Check for correct URL
-        if grep -q "api\.gyanin\.academy" "$file" 2>/dev/null; then
-            echo "  ✅ Contains: api.gyanin.academy"
-            grep -o ".{0,80}api\.gyanin\.academy.{0,80}" "$file" 2>/dev/null | head -2 | sed 's/^/    /'
-        fi
-        
-        # Check for wrong URL
-        if grep -q '"https://gyanin\.academy/api/edgestore\|'https://gyanin\.academy/api/edgestore" "$file" 2>/dev/null; then
-            echo "  ❌ Contains WRONG URL: gyanin.academy/api/edgestore"
-            grep -o ".{0,80}gyanin\.academy/api/edgestore.{0,80}" "$file" 2>/dev/null | head -2 | sed 's/^/    /'
-        fi
-        
-        # Check for relative paths
-        if grep -q '"/api/edgestore' "$file" 2>/dev/null; then
-            echo "  ⚠️  Contains relative path: /api/edgestore"
-        fi
-    done
+    if [ -n "$JS_FILES" ]; then
+        for file in $JS_FILES; do
+            echo ""
+            echo "File: $(basename "$file")"
+            
+            # Check for correct URL
+            if grep -q "api\.gyanin\.academy" "$file" 2>/dev/null; then
+                echo "  ✅ Contains: api.gyanin.academy"
+                grep -oE ".{0,80}api\.gyanin\.academy.{0,80}" "$file" 2>/dev/null | head -2 | sed 's/^/    /' || true
+            fi
+            
+            # Check for wrong URL (without api. prefix)
+            if grep -qE 'https://gyanin\.academy/api/edgestore' "$file" 2>/dev/null; then
+                echo "  ❌ Contains WRONG URL: gyanin.academy/api/edgestore"
+                grep -oE ".{0,80}gyanin\.academy/api/edgestore.{0,80}" "$file" 2>/dev/null | head -2 | sed 's/^/    /' || true
+            fi
+            
+            # Check for relative paths
+            if grep -qE '"/api/edgestore|/api/edgestore' "$file" 2>/dev/null; then
+                echo "  ⚠️  Contains relative path: /api/edgestore"
+            fi
+        done
+    else
+        echo "  ⚠️  No JS files found in build directory"
+    fi
 else
     echo "⚠️  Build directory not found - run build first"
 fi
@@ -81,11 +85,14 @@ if [ -d "$NGINX_DIR" ]; then
         for file in $DEPLOYED_JS; do
             if grep -q "api\.gyanin\.academy" "$file" 2>/dev/null; then
                 echo "  ✅ Deployed file contains: api.gyanin.academy"
-            elif grep -q '"https://gyanin\.academy/api/edgestore\|'https://gyanin\.academy/api/edgestore" "$file" 2>/dev/null; then
+                echo "     File: $(basename "$file")"
+            elif grep -qE 'https://gyanin\.academy/api/edgestore' "$file" 2>/dev/null; then
                 echo "  ❌ Deployed file contains WRONG URL: gyanin.academy/api/edgestore"
-                echo "     File: $(basename $file)"
+                echo "     File: $(basename "$file")"
             fi
         done
+    else
+        echo "  ⚠️  No deployed JS files found"
     fi
 fi
 

@@ -3,33 +3,49 @@ import API_CONFIG from './config'
 
 // Get the EdgeStore base path from config
 const getEdgeStoreBasePath = () => {
-  // Check if we have a baseURL configured (production mode)
-  if (API_CONFIG.baseURL && API_CONFIG.baseURL.trim() !== '') {
-    // Production: Use full absolute URL
-    const baseURL = API_CONFIG.baseURL.trim()
-    const edgestorePath = API_CONFIG.edgestoreBasePath || '/api/edgestore'
-    // Ensure proper formatting: baseURL + edgestorePath
-    // baseURL should be like 'https://api.gyanin.academy'
-    // edgestorePath should be like '/api/edgestore'
-    const fullPath = `${baseURL}${edgestorePath}`
-    console.log('[EdgeStore] Production mode - basePath:', fullPath)
+  // Force check: In production, baseURL MUST be set and must be absolute
+  const baseURL = API_CONFIG?.baseURL?.trim() || ''
+  const edgestorePath = API_CONFIG?.edgestoreBasePath || '/api/edgestore'
+  
+  // Production: If baseURL is provided and is a valid absolute URL
+  if (baseURL && (baseURL.startsWith('http://') || baseURL.startsWith('https://'))) {
+    // Ensure no double slashes
+    const cleanBaseURL = baseURL.replace(/\/+$/, '')
+    const cleanPath = edgestorePath.startsWith('/') ? edgestorePath : `/${edgestorePath}`
+    const fullPath = `${cleanBaseURL}${cleanPath}`
+    
+    // Log for debugging
+    console.log('[EdgeStore] Production mode detected')
+    console.log('[EdgeStore] baseURL:', baseURL)
+    console.log('[EdgeStore] Full basePath:', fullPath)
+    
+    // Validate it's absolute
+    if (!fullPath.startsWith('http://') && !fullPath.startsWith('https://')) {
+      console.error('[EdgeStore] ERROR: Expected absolute URL but got:', fullPath)
+      throw new Error('EdgeStore basePath must be absolute URL in production')
+    }
+    
     return fullPath
   }
+  
   // Development: Use relative path (goes through Vite proxy)
-  const relativePath = API_CONFIG.edgestoreBasePath || '/api/edgestore'
-  console.log('[EdgeStore] Development mode - basePath:', relativePath)
+  const relativePath = edgestorePath
+  console.log('[EdgeStore] Development mode - using relative path:', relativePath)
+  console.log('[EdgeStore] baseURL was:', baseURL || '(empty)')
   return relativePath
 }
 
-// Get the configured base path
+// Get the configured base path at module load time
 const basePath = getEdgeStoreBasePath()
 
-// Debug: Log the final basePath being used
-console.log('[EdgeStore] Final basePath configuration:', basePath)
+// Final validation and logging
+console.log('[EdgeStore] === Configuration ===')
+console.log('[EdgeStore] Final basePath:', basePath)
+console.log('[EdgeStore] Is absolute URL?', basePath.startsWith('http://') || basePath.startsWith('https://'))
+console.log('[EdgeStore] ====================')
 
 // Configure Edge Store
 // Note: Stores (Courses, Teachers) are defined in backend/routes/edgestore.js
-// The frontend just needs to connect to the correct basePath
 export const { EdgeStoreProvider, useEdgeStore } = createEdgeStoreProvider({
   basePath: basePath,
 })

@@ -2,50 +2,61 @@ import { createEdgeStoreProvider } from '@edgestore/react'
 import API_CONFIG from './config'
 
 // Get the EdgeStore base path from config
+// CRITICAL: In production, this MUST be an absolute URL to api.gyanin.academy
 const getEdgeStoreBasePath = () => {
-  // Force check: In production, baseURL MUST be set and must be absolute
   const baseURL = API_CONFIG?.baseURL?.trim() || ''
   const edgestorePath = API_CONFIG?.edgestoreBasePath || '/api/edgestore'
   
-  // Production: If baseURL is provided and is a valid absolute URL
+  console.log('[EdgeStore] ===== INITIALIZATION =====')
+  console.log('[EdgeStore] API_CONFIG:', API_CONFIG)
+  console.log('[EdgeStore] baseURL from config:', baseURL)
+  console.log('[EdgeStore] edgestorePath:', edgestorePath)
+  
+  // PRODUCTION: Check if we're in production (has absolute URL)
   if (baseURL && (baseURL.startsWith('http://') || baseURL.startsWith('https://'))) {
-    // Ensure no double slashes
-    const cleanBaseURL = baseURL.replace(/\/+$/, '')
+    // Construct absolute URL
+    const cleanBaseURL = baseURL.replace(/\/+$/, '') // Remove trailing slashes
     const cleanPath = edgestorePath.startsWith('/') ? edgestorePath : `/${edgestorePath}`
     const fullPath = `${cleanBaseURL}${cleanPath}`
     
-    // Log for debugging
-    console.log('[EdgeStore] Production mode detected')
-    console.log('[EdgeStore] baseURL:', baseURL)
-    console.log('[EdgeStore] Full basePath:', fullPath)
+    console.log('[EdgeStore] ✅ PRODUCTION MODE')
+    console.log('[EdgeStore] Cleaned baseURL:', cleanBaseURL)
+    console.log('[EdgeStore] Final absolute path:', fullPath)
     
-    // Validate it's absolute
+    // CRITICAL VALIDATION: Must be absolute
     if (!fullPath.startsWith('http://') && !fullPath.startsWith('https://')) {
-      console.error('[EdgeStore] ERROR: Expected absolute URL but got:', fullPath)
-      throw new Error('EdgeStore basePath must be absolute URL in production')
+      console.error('[EdgeStore] ❌ FATAL: Path is not absolute!', fullPath)
+      throw new Error(`EdgeStore basePath must be absolute URL. Got: ${fullPath}`)
     }
     
+    // Additional check: Must be api.gyanin.academy (not gyanin.academy)
+    if (fullPath.includes('gyanin.academy') && !fullPath.includes('api.gyanin.academy')) {
+      console.error('[EdgeStore] ❌ FATAL: URL points to wrong domain!', fullPath)
+      console.error('[EdgeStore] Should be: https://api.gyanin.academy/api/edgestore')
+      throw new Error(`EdgeStore URL must point to api.gyanin.academy. Got: ${fullPath}`)
+    }
+    
+    console.log('[EdgeStore] ✅ Validation passed')
+    console.log('[EdgeStore] ====================')
     return fullPath
   }
   
-  // Development: Use relative path (goes through Vite proxy)
-  const relativePath = edgestorePath
-  console.log('[EdgeStore] Development mode - using relative path:', relativePath)
-  console.log('[EdgeStore] baseURL was:', baseURL || '(empty)')
-  return relativePath
+  // DEVELOPMENT: Use relative path
+  console.log('[EdgeStore] ⚠️  DEVELOPMENT MODE (relative path)')
+  console.log('[EdgeStore] Using relative path:', edgestorePath)
+  console.log('[EdgeStore] ====================')
+  return edgestorePath
 }
 
-// Get the configured base path at module load time
+// Get base path at module load
 const basePath = getEdgeStoreBasePath()
 
-// Final validation and logging
-console.log('[EdgeStore] === Configuration ===')
-console.log('[EdgeStore] Final basePath:', basePath)
-console.log('[EdgeStore] Is absolute URL?', basePath.startsWith('http://') || basePath.startsWith('https://'))
-console.log('[EdgeStore] ====================')
+// Log final value
+console.log('[EdgeStore] FINAL basePath value:', basePath)
+console.log('[EdgeStore] Type:', typeof basePath)
+console.log('[EdgeStore] Starts with https?:', basePath.startsWith('https://'))
 
 // Configure Edge Store
-// Note: Stores (Courses, Teachers) are defined in backend/routes/edgestore.js
 export const { EdgeStoreProvider, useEdgeStore } = createEdgeStoreProvider({
   basePath: basePath,
 })

@@ -1,8 +1,9 @@
 import { createEdgeStoreProvider } from '@edgestore/react'
 import API_CONFIG from './config'
 
-// Get the EdgeStore base path from config
-// CRITICAL: In production, this MUST be an absolute URL to api.gyanin.academy
+// WORKAROUND: EdgeStore library appears to resolve absolute URLs relative to window.location.origin
+// So we need to intercept fetch calls or use a different approach
+
 const getEdgeStoreBasePath = () => {
   const baseURL = API_CONFIG?.baseURL?.trim() || ''
   const edgestorePath = API_CONFIG?.edgestoreBasePath || '/api/edgestore'
@@ -12,49 +13,61 @@ const getEdgeStoreBasePath = () => {
   console.log('[EdgeStore] baseURL from config:', baseURL)
   console.log('[EdgeStore] edgestorePath:', edgestorePath)
   
-  // PRODUCTION: Check if we're in production (has absolute URL)
+  // PRODUCTION: We have a cross-origin backend
   if (baseURL && (baseURL.startsWith('http://') || baseURL.startsWith('https://'))) {
-    // Construct absolute URL
-    const cleanBaseURL = baseURL.replace(/\/+$/, '') // Remove trailing slashes
+    const cleanBaseURL = baseURL.replace(/\/+$/, '')
     const cleanPath = edgestorePath.startsWith('/') ? edgestorePath : `/${edgestorePath}`
     const fullPath = `${cleanBaseURL}${cleanPath}`
     
-    console.log('[EdgeStore] ✅ PRODUCTION MODE')
-    console.log('[EdgeStore] Cleaned baseURL:', cleanBaseURL)
-    console.log('[EdgeStore] Final absolute path:', fullPath)
+    console.log('[EdgeStore] ✅ PRODUCTION MODE (cross-origin)')
+    console.log('[EdgeStore] Target backend:', fullPath)
     
-    // CRITICAL VALIDATION: Must be absolute
-    if (!fullPath.startsWith('http://') && !fullPath.startsWith('https://')) {
-      console.error('[EdgeStore] ❌ FATAL: Path is not absolute!', fullPath)
-      throw new Error(`EdgeStore basePath must be absolute URL. Got: ${fullPath}`)
-    }
+    // EdgeStore has a bug: it resolves absolute URLs relative to window.location.origin
+    // Workaround: Store the full URL and intercept fetch calls
+    // For now, we'll use the absolute URL and see if EdgeStore respects it
+    // If not, we may need to patch fetch or use a proxy
     
-    // Additional check: Must be api.gyanin.academy (not gyanin.academy)
-    if (fullPath.includes('gyanin.academy') && !fullPath.includes('api.gyanin.academy')) {
-      console.error('[EdgeStore] ❌ FATAL: URL points to wrong domain!', fullPath)
-      console.error('[EdgeStore] Should be: https://api.gyanin.academy/api/edgestore')
-      throw new Error(`EdgeStore URL must point to api.gyanin.academy. Got: ${fullPath}`)
-    }
+    // Store the production backend URL in a way EdgeStore can't mess with
+    window.__EDGESTORE_BACKEND_URL__ = fullPath
     
-    console.log('[EdgeStore] ✅ Validation passed')
-    console.log('[EdgeStore] ====================')
+    console.log('[EdgeStore] Stored backend URL in window.__EDGESTORE_BACKEND_URL__:', fullPath)
+    console.log('[EdgeStore] Attempting to use absolute URL (EdgeStore may override this)')
+    
     return fullPath
   }
   
   // DEVELOPMENT: Use relative path
   console.log('[EdgeStore] ⚠️  DEVELOPMENT MODE (relative path)')
-  console.log('[EdgeStore] Using relative path:', edgestorePath)
-  console.log('[EdgeStore] ====================')
   return edgestorePath
 }
 
-// Get base path at module load
 const basePath = getEdgeStoreBasePath()
 
-// Log final value
 console.log('[EdgeStore] FINAL basePath value:', basePath)
-console.log('[EdgeStore] Type:', typeof basePath)
-console.log('[EdgeStore] Starts with https?:', basePath.startsWith('https://'))
+
+// Intercept fetch to rewrite EdgeStore URLs if needed
+if (typeof window !== 'undefined' && window.__EDGESTORE_BACKEND_URL__) {
+  const originalFetch = window.fetch
+  window.fetch = function(...args) {
+    const url = args[0]
+    
+    // If this is an EdgeStore request going to the wrong domain, rewrite it
+    if (typeof url === 'string' && url.includes('/api/edgestore')) {
+      // Check if it's going to gyanin.academy instead of api.gyanin.academy
+      if (url.includes('gyanin.academy/api/edgestore') && !url.includes('api.gyanin.academy')) {
+        const correctUrl = url.replace(/https?:\/\/gyanin\.academy\/api\/edgestore/g, window.__EDGESTORE_BACKEND_URL__)
+        console.log('[EdgeStore] 🔧 INTERCEPTED: Rewriting URL')
+        console.log('[EdgeStore]   From:', url)
+        console.log('[EdgeStore]   To:', correctUrl)
+        args[0] = correctUrl
+      }
+    }
+    
+    return originalFetch.apply(this, args)
+  }
+  
+  console.log('[EdgeStore] ✅ Fetch interceptor installed')
+}
 
 // Configure Edge Store
 export const { EdgeStoreProvider, useEdgeStore } = createEdgeStoreProvider({

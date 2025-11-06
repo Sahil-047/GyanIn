@@ -56,8 +56,18 @@ const clearCache = (pattern) => {
 
 // Clear cache by section (for CMS updates)
 const clearCacheBySection = (section) => {
+  // Clear both admin and public API paths
   clearCache(`/api/admin/cms/${section}`);
+  clearCache(`/api/cms/${section}`);
   clearCache(`/api/admin/cms`);
+  clearCache(`/api/cms`);
+  
+  // Also clear any cached responses for this section by checking all keys
+  for (const key of cache.keys()) {
+    if (key.includes(`cms/${section}`) || key.includes(`cms?section=${section}`)) {
+      cache.delete(key);
+    }
+  }
 };
 
 // Get cache stats

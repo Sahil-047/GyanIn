@@ -88,11 +88,40 @@ router.get('/:section', cacheMiddleware(5 * 60 * 1000), async (req, res) => {
 
         const cmsContent = await CMS.findOne({ section }).sort({ createdAt: -1 });
 
+        // Return empty structure instead of 404 to prevent caching 404 responses
         if (!cmsContent) {
+            // Return empty data structure based on section type
+            let emptyData = {};
             
-            return res.status(404).json({
-                success: false,
-                message: 'CMS content not found for this section'
+            switch(section) {
+                case 'carousel':
+                    emptyData = { carouselItems: [] };
+                    break;
+                case 'offers':
+                    emptyData = { offers: [] };
+                    break;
+                case 'testimonials':
+                    emptyData = { testimonials: [] };
+                    break;
+                case 'ongoingCourses':
+                    emptyData = { ongoingCourses: [] };
+                    break;
+                case 'courses':
+                    emptyData = { courses: [] };
+                    break;
+                default:
+                    emptyData = {};
+            }
+            
+            return res.json({
+                success: true,
+                data: {
+                    section: section,
+                    data: emptyData,
+                    isActive: true,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                }
             });
         }
 

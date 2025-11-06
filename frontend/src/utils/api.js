@@ -132,8 +132,11 @@ export const cmsAPI = {
     return apiCall(`/cms?${queryParams}`)
   },
 
-  // Get specific section content
-  getCMSSection: (section) => apiCall(`/cms/${section}`),
+  // Get specific section content (with optional cache busting)
+  getCMSSection: (section, bypassCache = false) => {
+    const cacheBuster = bypassCache ? `?t=${Date.now()}` : ''
+    return apiCall(`/cms/${section}${cacheBuster}`)
+  },
 
   // Create or update CMS content
   saveCMSContent: (section, data) => apiCall('/cms', {

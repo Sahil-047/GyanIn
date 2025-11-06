@@ -29,8 +29,9 @@ const API_CONFIG = {
 // Production: Backend API on api.gyanin.academy
 // Frontend: https://gyanin.academy
 // Backend: https://api.gyanin.academy
+// Note: baseURL should be the domain only (without /api)
 const API_CONFIG = {
-  // Production: Use full backend URL
+  // Production: Use full backend URL (domain only, /api will be added in api.js)
   baseURL: 'https://api.gyanin.academy', // Production backend URL
   edgestoreBasePath: '/api/edgestore',
 };

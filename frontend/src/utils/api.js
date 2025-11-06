@@ -1,27 +1,20 @@
-// API service for centralized API calls
+// ✅ Import API config
 import API_CONFIG from '../config'
 
-// Get API base URL from config
-const getApiBaseUrl = () => {
-  if (API_CONFIG.baseURL) {
-    // Production: Use full URL
-    return `${API_CONFIG.baseURL}/api/admin`
-  }
-  // Development: Use relative path (goes through Vite proxy)
-  return '/api/admin'
-}
+// ✅ Ensure base URL is exactly: https://api.gyanin.academy/api
+const API_BASE = API_CONFIG.baseURL
+  ? `${API_CONFIG.baseURL}/api/admin`          // ✅ becomes: https://api.gyanin.academy/api/admin
+  : '/api/admin'                               // ✅ local development
 
-const API_BASE = getApiBaseUrl()
-
-// Generic API call function
+// ✅ Generic API caller
 export const apiCall = async (endpoint, options = {}) => {
   const url = `${API_BASE}${endpoint}`
   const config = {
     headers: {
       'Content-Type': 'application/json',
-      ...options.headers
+      ...options.headers,
     },
-    ...options
+    ...options,
   }
 
   try {
@@ -29,11 +22,9 @@ export const apiCall = async (endpoint, options = {}) => {
     const data = await response.json()
     
     if (!response.ok) {
-      // Create a custom error object that includes the full response data
       const error = new Error(data.message || 'API call failed')
       error.status = response.status
       error.data = data
-      // Include validation errors if they exist
       if (data.errors) {
         error.errors = data.errors
       }
@@ -42,7 +33,6 @@ export const apiCall = async (endpoint, options = {}) => {
     
     return data
   } catch (error) {
-    
     throw error
   }
 }
@@ -230,17 +220,10 @@ export const cmsAPI = {
   })
 }
 
-// Uploads API (multipart)
-const getUploadsBaseUrl = () => {
-  if (API_CONFIG.baseURL) {
-    // Production: Use full URL
-    return `${API_CONFIG.baseURL}/api/uploads`
-  }
-  // Development: Use relative path (goes through Vite proxy)
-  return '/api/uploads'
-}
-
-const UPLOADS_BASE = getUploadsBaseUrl()
+// ✅ Uploads API URL
+const UPLOADS_BASE = API_CONFIG.baseURL
+  ? `${API_CONFIG.baseURL}/api/uploads`        // ✅ https://api.gyanin.academy/api/uploads
+  : '/api/uploads'
 
 export const uploadsAPI = {
   uploadImage: async (file, type = 'teacher') => {
@@ -264,26 +247,20 @@ export const uploadsAPI = {
   }
 }
 
-// Courses API (Public API - different base URL)
-const getPublicApiBaseUrl = () => {
-  if (API_CONFIG.baseURL) {
-    // Production: Use full URL
-    return `${API_CONFIG.baseURL}/api`
-  }
-  // Development: Use relative path (goes through Vite proxy)
-  return '/api'
-}
+// ✅ Public API (no extra /api)
+const PUBLIC_API_BASE = API_CONFIG.baseURL
+  ? `${API_CONFIG.baseURL}/api`            
+  : '/api'
 
-const PUBLIC_API_BASE = getPublicApiBaseUrl()
-
+// ✅ Public API Caller
 const publicApiCall = async (endpoint, options = {}) => {
   const url = `${PUBLIC_API_BASE}${endpoint}`
   const config = {
     headers: {
       'Content-Type': 'application/json',
-      ...options.headers
+      ...options.headers,
     },
-    ...options
+    ...options,
   }
 
   try {
@@ -291,18 +268,14 @@ const publicApiCall = async (endpoint, options = {}) => {
     const data = await response.json()
     
     if (!response.ok) {
-      const error = new Error(data.message || 'API call failed')
+      const error = new Error(data.message || 'API failed')
       error.status = response.status
       error.data = data
-      if (data.errors) {
-        error.errors = data.errors
-      }
       throw error
     }
     
     return data
   } catch (error) {
-    
     throw error
   }
 }

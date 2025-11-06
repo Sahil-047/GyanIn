@@ -12,6 +12,8 @@ const getEdgeStoreBasePath = () => {
 }
 
 // Configure Edge Store
+// Note: Stores (Courses, Teachers) are defined in backend/routes/edgestore.js
+// The frontend just needs to connect to the correct basePath
 export const { EdgeStoreProvider, useEdgeStore } = createEdgeStoreProvider({
   basePath: getEdgeStoreBasePath(),
 })

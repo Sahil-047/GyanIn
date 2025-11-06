@@ -202,11 +202,15 @@ const LandingPage = () => {
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
             </div>
+          ) : offers.length === 0 ? (
+            <div className="flex justify-center items-center h-64">
+              <p className="text-gray-500 text-center">No ongoing batches available at the moment.</p>
+            </div>
           ) : (
             <div className="relative overflow-hidden">
               <div className="flex animate-scroll">
                 {/* Duplicate offers multiple times for continuous scrolling */}
-                {Array.from({ length: Math.max(5, Math.ceil(10 / offers.length)) }).map((_, repeatIndex) => (
+                {Array.from({ length: Math.max(5, Math.ceil(10 / Math.max(1, offers.length))) }).map((_, repeatIndex) => (
                   <div key={`set-${repeatIndex}`} className="flex items-center flex-shrink-0">
                     {offers.map((offer, index) => (
                       <div

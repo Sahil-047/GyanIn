@@ -15,12 +15,14 @@
 // DEVELOPMENT CONFIGURATION
 // ============================================
 // Use this for local development (with Vite proxy)
+// TO USE: Comment out PRODUCTION section below, uncomment this section
 /*
-const API_CONFIG = {
+const API_CONFIG_DEV = {
   // Development: Use relative path (goes through Vite proxy to localhost:5000)
   baseURL: '', // Empty string means relative path
   edgestoreBasePath: '/api/edgestore',
 };
+export default API_CONFIG_DEV;
 */
 
 // ============================================
@@ -30,6 +32,7 @@ const API_CONFIG = {
 // Frontend: https://gyanin.academy
 // Backend: https://api.gyanin.academy
 // Note: baseURL should be the domain only (without /api)
+// TO USE: Comment out DEVELOPMENT section above, keep this section active
 const API_CONFIG = {
   // Production: Use full backend URL (domain only, /api will be added in api.js)
   baseURL: 'https://api.gyanin.academy', // Production backend URL

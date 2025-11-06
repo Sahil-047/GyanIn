@@ -1,8 +1,8 @@
 // Simple authentication utility using localStorage
 
 const ADMIN_CREDENTIALS = {
-    username: 'admin',
-    password: 'admin123'
+    username: 'Gyanin',
+    password: 'Gyanin.academy@123'
 }
 
 // Check if user is authenticated

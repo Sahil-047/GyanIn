@@ -150,15 +150,7 @@ const Login = () => {
             </div>
           </form>
 
-          <div className="mt-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-xs text-blue-800">
-                <strong>Demo Credentials:</strong><br />
-                Username: <code className="bg-blue-100 px-1 rounded">admin</code><br />
-                Password: <code className="bg-blue-100 px-1 rounded">admin123</code>
-              </p>
-            </div>
-          </div>
+          
         </div>
 
         <div className="text-center">

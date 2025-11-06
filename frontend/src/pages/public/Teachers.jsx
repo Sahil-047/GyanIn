@@ -13,10 +13,30 @@ const Teachers = () => {
     const fetchTeachers = async () => {
       try {
         setLoading(true)
-        const response = await cmsAPI.getCMSSection('carousel')
-        if (response.success && response.data.data.carouselItems) {
+        // Bypass cache to get fresh data
+        const response = await cmsAPI.getCMSSection('carousel', true)
+        console.log('[Teachers] Full API response:', response)
+        
+        // Check multiple possible response structures
+        let items = []
+        if (response.success) {
+          if (response.data?.data?.carouselItems) {
+            items = response.data.data.carouselItems
+            console.log('[Teachers] Found carouselItems in response.data.data:', items.length, 'items')
+          } else if (response.data?.carouselItems) {
+            items = response.data.carouselItems
+            console.log('[Teachers] Found carouselItems in response.data:', items.length, 'items')
+          } else if (response.carouselItems) {
+            items = response.carouselItems
+            console.log('[Teachers] Found carouselItems in response root:', items.length, 'items')
+          } else {
+            console.warn('[Teachers] Unexpected response structure:', response)
+          }
+        }
+        
+        if (items && items.length > 0) {
           // Transform carousel items to teacher format
-          const teachersList = response.data.data.carouselItems.map((item) => {
+          const teachersList = items.map((item) => {
             const teacher = item.teacher || {}
             return {
               _id: item.id || item._id,
@@ -32,11 +52,14 @@ const Teachers = () => {
               schedule2Image: teacher.schedule2Image || ''
             }
           })
+          console.log('[Teachers] Setting teachers list:', teachersList.length, 'teachers')
           setTeachers(teachersList)
         } else {
+          console.warn('[Teachers] No carousel items found')
           setTeachers([])
         }
       } catch (e) {
+        console.error('[Teachers] Error fetching teachers:', e)
         setError('Failed to load teachers')
       } finally {
         setLoading(false)

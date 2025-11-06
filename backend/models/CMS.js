@@ -34,4 +34,7 @@ cmsSchema.pre('save', function(next) {
 cmsSchema.index({ section: 1, isActive: 1 }); // For queries filtering by section and active status
 cmsSchema.index({ updatedAt: -1 }); // For sorting by most recent
 
+// ROOT CAUSE FIX: Ensure only ONE document per section (prevent duplicates)
+cmsSchema.index({ section: 1 }, { unique: true, sparse: true });
+
 module.exports = mongoose.model('CMS', cmsSchema);

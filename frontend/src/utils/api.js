@@ -133,9 +133,18 @@ export const cmsAPI = {
   },
 
   // Get specific section content (with optional cache busting)
-  getCMSSection: (section, bypassCache = false) => {
+  getCMSSection: async (section, bypassCache = false) => {
     const cacheBuster = bypassCache ? `?t=${Date.now()}` : ''
-    return apiCall(`/cms/${section}${cacheBuster}`)
+    const url = `/cms/${section}${cacheBuster}`
+    console.log(`[API] Fetching CMS section: ${url}`)
+    try {
+      const response = await apiCall(url)
+      console.log(`[API] ✅ CMS section ${section} response:`, response)
+      return response
+    } catch (error) {
+      console.error(`[API] ❌ CMS section ${section} error:`, error)
+      throw error
+    }
   },
 
   // Create or update CMS content

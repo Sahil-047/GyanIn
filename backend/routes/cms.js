@@ -86,7 +86,94 @@ router.get('/:section', cacheMiddleware(5 * 60 * 1000), async (req, res) => {
             });
         }
 
-        const cmsContent = await CMS.findOne({ section }).sort({ createdAt: -1 });
+        // ROOT CAUSE FIX: ALWAYS get ALL documents and merge ALL items
+        const allDocuments = await CMS.find({ section }).lean();
+        
+        console.log(`[CMS GET ${section}] Found ${allDocuments.length} document(s)`);
+        
+        let cmsContent = null;
+        let allItems = [];
+        
+        if (allDocuments.length === 0) {
+            cmsContent = null;
+        } else {
+            // ALWAYS merge ALL documents - this is the fix
+            cmsContent = allDocuments.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
+            
+            // Merge ALL items from ALL documents
+            if (section === 'carousel') {
+                allDocuments.forEach(doc => {
+                    if (doc.data?.carouselItems && Array.isArray(doc.data.carouselItems)) {
+                        allItems.push(...doc.data.carouselItems);
+                    }
+                });
+                // Remove duplicates by ID, keep latest
+                const itemMap = new Map();
+                allItems.forEach(item => {
+                    if (item.id) {
+                        itemMap.set(item.id, item);
+                    }
+                });
+                cmsContent.data.carouselItems = Array.from(itemMap.values());
+                console.log(`[CMS GET ${section}] Merged ${allItems.length} total items into ${cmsContent.data.carouselItems.length} unique items`);
+            } else if (section === 'offers') {
+                allDocuments.forEach(doc => {
+                    if (doc.data?.offers && Array.isArray(doc.data.offers)) {
+                        allItems.push(...doc.data.offers);
+                    }
+                });
+                const itemMap = new Map();
+                allItems.forEach(item => {
+                    if (item.id) {
+                        itemMap.set(item.id, item);
+                    }
+                });
+                cmsContent.data.offers = Array.from(itemMap.values());
+            } else if (section === 'testimonials') {
+                allDocuments.forEach(doc => {
+                    if (doc.data?.testimonials && Array.isArray(doc.data.testimonials)) {
+                        allItems.push(...doc.data.testimonials);
+                    }
+                });
+                const itemMap = new Map();
+                allItems.forEach(item => {
+                    if (item.id) {
+                        itemMap.set(item.id, item);
+                    }
+                });
+                cmsContent.data.testimonials = Array.from(itemMap.values());
+            } else if (section === 'ongoingCourses') {
+                allDocuments.forEach(doc => {
+                    if (doc.data?.ongoingCourses && Array.isArray(doc.data.ongoingCourses)) {
+                        allItems.push(...doc.data.ongoingCourses);
+                    }
+                });
+                const itemMap = new Map();
+                allItems.forEach(item => {
+                    const id = item.id || item.slotId;
+                    if (id) {
+                        itemMap.set(id, item);
+                    }
+                });
+                cmsContent.data.ongoingCourses = Array.from(itemMap.values());
+            }
+        }
+        
+        // Debug logging
+        if (cmsContent && cmsContent.data) {
+            const count = section === 'carousel' ? cmsContent.data.carouselItems?.length || 0 :
+                         section === 'offers' ? cmsContent.data.offers?.length || 0 :
+                         section === 'testimonials' ? cmsContent.data.testimonials?.length || 0 :
+                         cmsContent.data.ongoingCourses?.length || 0;
+            console.log(`[CMS GET ${section}] RETURNING ${count} items from ${allDocuments.length} document(s)`);
+            if (section === 'carousel' && cmsContent.data.carouselItems) {
+                console.log(`[CMS GET ${section}] Carousel items:`, JSON.stringify(cmsContent.data.carouselItems.map(item => ({
+                    id: item.id,
+                    teacherName: item.teacher?.name,
+                    hasImage: !!item.teacher?.image
+                })), null, 2));
+            }
+        }
 
         // Return empty structure instead of 404 to prevent caching 404 responses
         if (!cmsContent) {
@@ -126,15 +213,12 @@ router.get('/:section', cacheMiddleware(5 * 60 * 1000), async (req, res) => {
         }
 
         if (section === 'offers') {
-            
-
             // Ensure offers array exists and has the correct structure
             if (!cmsContent.data.offers) {
                 cmsContent.data.offers = [];
             }
-
-        // Map each offer to ensure consistent structure
-        cmsContent.data.offers = cmsContent.data.offers.map(offer => ({
+            // Map each offer to ensure consistent structure
+            cmsContent.data.offers = cmsContent.data.offers.map(offer => ({
           id: offer.id,
           name: offer.name || offer.title,
           offer: offer.offer || offer.description,
@@ -442,50 +526,59 @@ router.post('/carousel', async (req, res) => {
             });
         }
 
-        // Find or get carousel section
-        let carouselSection = await CMS.findOne({ section: 'carousel' }).lean();
-
+        // ROOT CAUSE FIX: Get ALL documents, merge items, ensure only ONE document exists
+        clearCacheBySection('carousel');
         
-
-        if (!carouselSection) {
-            carouselSection = {
-                section: 'carousel',
-                data: { carouselItems: [] }
-            };
-        }
-
-        // Ensure data structure exists
-        if (!carouselSection.data || !carouselSection.data.carouselItems) {
-            carouselSection.data = { carouselItems: [] };
-        }
-
+        const allDocs = await CMS.find({ section: 'carousel' }).lean();
+        console.log(`[CMS ADD] Found ${allDocs.length} carousel document(s)`);
+        
+        let mainDoc;
+        let allItems = [];
+        
+        // Collect ALL items from ALL documents
+        allDocs.forEach(doc => {
+            if (doc.data?.carouselItems && Array.isArray(doc.data.carouselItems)) {
+                allItems.push(...doc.data.carouselItems);
+            }
+        });
+        
+        // Remove duplicates by ID
+        const itemMap = new Map();
+        allItems.forEach(item => {
+            if (item.id && !itemMap.has(item.id)) {
+                itemMap.set(item.id, item);
+            }
+        });
+        allItems = Array.from(itemMap.values());
+        
+        // Create new item
         const newCarouselItem = {
-            id: Date.now(), // Simple ID generation
+            id: Date.now(),
             teacher: {
                 name: teacherName,
                 description: description,
                 image: teacherImage || 'https://via.placeholder.com/300x300?text=Teacher',
-                scheduleImage: scheduleImage || '', // Keep for backward compatibility
+                scheduleImage: scheduleImage || '',
                 schedule1Image: schedule1Image || '',
                 schedule2Image: schedule2Image || ''
             }
         };
-
         
-
-        // Get existing items and add new one
-        const existingItems = carouselSection.data.carouselItems || [];
-        existingItems.push(newCarouselItem);
-
+        // Add new item
+        allItems.push(newCarouselItem);
         
-
-        // Use findOneAndUpdate for atomic operation
+        // Get or create main document
+        if (allDocs.length > 0) {
+            mainDoc = allDocs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
+        }
+        
+        // Update or create the ONE document
         const savedSection = await CMS.findOneAndUpdate(
-            { section: 'carousel' },
+            mainDoc ? { _id: mainDoc._id } : { section: 'carousel' },
             {
                 $set: {
                     section: 'carousel',
-                    'data.carouselItems': existingItems,
+                    'data.carouselItems': allItems,
                     isActive: true,
                     updatedAt: new Date()
                 }
@@ -496,8 +589,19 @@ router.post('/carousel', async (req, res) => {
                 runValidators: true
             }
         );
-
         
+        // Delete ALL other documents for this section
+        if (allDocs.length > 1) {
+            const otherIds = allDocs
+                .filter(doc => doc._id.toString() !== savedSection._id.toString())
+                .map(doc => doc._id);
+            if (otherIds.length > 0) {
+                await CMS.deleteMany({ _id: { $in: otherIds } });
+                console.log(`[CMS ADD] Deleted ${otherIds.length} duplicate documents`);
+            }
+        }
+        
+        console.log(`[CMS ADD] Total items: ${allItems.length}, Saved: ${savedSection.data.carouselItems.length}`);
 
         res.status(201).json({
             success: true,
@@ -569,6 +673,9 @@ router.put('/carousel/:id', async (req, res) => {
             { new: true }
         );
 
+        // Clear cache after update
+        clearCacheBySection('carousel');
+
         res.json({
             success: true,
             message: 'Carousel item updated successfully',
@@ -633,6 +740,9 @@ router.delete('/carousel/:id', async (req, res) => {
 
         carouselSection.data.carouselItems.splice(itemIndex, 1);
 
+        // ROOT CAUSE FIX: Clear cache BEFORE delete
+        clearCacheBySection('carousel');
+        
         const updatedSection = await CMS.findOneAndUpdate(
             { section: 'carousel' },
             { 
@@ -643,6 +753,8 @@ router.delete('/carousel/:id', async (req, res) => {
             },
             { new: true }
         );
+
+        console.log(`[CMS DELETE] Carousel item deleted. Remaining items: ${carouselSection.data.carouselItems.length}`);
 
         res.json({
             success: true,

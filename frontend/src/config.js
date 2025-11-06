@@ -1,10 +1,9 @@
 // API Configuration
 // Switch between development and production by commenting/uncommenting the appropriate section
 // 
-// TO SWITCH TO DEVELOPMENT:
-//   1. Comment out the PRODUCTION section below (add /* and */)
-//   2. Uncomment the DEVELOPMENT section below (remove /* and */)
-//   3. For dev: npm run dev (uses Vite proxy)
+// DEVELOPMENT OPTIONS:
+//   1. Local backend (localhost:5000): baseURL: '' (empty string, uses Vite proxy)
+//   2. Hosted backend (api.gyanin.academy): baseURL: 'https://api.gyanin.academy'
 //
 // TO SWITCH TO PRODUCTION:
 //   1. Comment out the DEVELOPMENT section below (add /* and */)
@@ -12,32 +11,31 @@
 //   3. For production: npm run build
 
 // ============================================
-// DEVELOPMENT CONFIGURATION
+// DEVELOPMENT CONFIGURATION (Currently Active)
 // ============================================
-// Use this for local development (with Vite proxy)
-// TO USE: Comment out PRODUCTION section below, uncomment this section
-/*
-const API_CONFIG_DEV = {
-  // Development: Use relative path (goes through Vite proxy to localhost:5000)
-  baseURL: '', // Empty string means relative path
+// Development: Using hosted backend API (api.gyanin.academy)
+// Frontend: http://localhost:3000 (local Vite dev server)
+// Backend: https://api.gyanin.academy (hosted backend)
+// 
+// To use local backend instead, change baseURL to: '' (empty string)
+const API_CONFIG = {
+  baseURL: 'https://api.gyanin.academy', // Hosted backend URL for development
   edgestoreBasePath: '/api/edgestore',
 };
-export default API_CONFIG_DEV;
-*/
 
 // ============================================
-// PRODUCTION CONFIGURATION
+// PRODUCTION CONFIGURATION (commented out)
 // ============================================
 // Production: Backend API on api.gyanin.academy
 // Frontend: https://gyanin.academy
 // Backend: https://api.gyanin.academy
 // Note: baseURL should be the domain only (without /api)
-// TO USE: Comment out DEVELOPMENT section above, keep this section active
+/*
 const API_CONFIG = {
-  // Production: Use full backend URL (domain only, /api will be added in api.js)
   baseURL: 'https://api.gyanin.academy', // Production backend URL
   edgestoreBasePath: '/api/edgestore',
 };
+*/
 
 export default API_CONFIG;
 

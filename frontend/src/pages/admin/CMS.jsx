@@ -26,12 +26,19 @@ const CMS = () => {
   // Fetch CMS data
   const fetchCMSData = async () => {
     setLoading(true)
+    console.log('[CMS] Starting fetchCMSData...')
     try {
       // Fetch CMS sections (excluding courses which will be fetched separately)
       const sections = ['carousel', 'offers', 'ongoingCourses', 'testimonials']
+      
+      console.log('[CMS] Fetching sections:', sections)
+      
       const cmsPromises = sections.map(section =>
-        cmsAPI.getCMSSection(section).catch(err => {
-          console.error(`Error fetching CMS section ${section}:`, err)
+        cmsAPI.getCMSSection(section, true).then(response => {
+          console.log(`[CMS] ✅ Successfully fetched ${section}:`, response)
+          return response
+        }).catch(err => {
+          console.error(`[CMS] ❌ Error fetching CMS section ${section}:`, err)
           // Return empty structure instead of null to prevent errors
           let emptyData = {};
           switch(section) {
@@ -50,7 +57,9 @@ const CMS = () => {
             default:
               emptyData = {};
           }
-          return { success: true, data: { section, data: emptyData } }
+          const fallbackResponse = { success: true, data: { section, data: emptyData } }
+          console.log(`[CMS] ⚠️ Using fallback for ${section}:`, fallbackResponse)
+          return fallbackResponse
         })
       )
 
@@ -78,16 +87,31 @@ const CMS = () => {
       // Process CMS sections (carousel, offers)
       sections.forEach((section, index) => {
         const result = allResults[index]
+        
+        console.log(`[CMS] Processing result for ${section}:`, {
+          status: result.status,
+          hasValue: !!result.value,
+          value: result.value
+        })
 
-        if (result.status === 'fulfilled' && result.value.success) {
+        if (result.status === 'fulfilled' && result.value && result.value.success) {
           const cmsDocument = result.value.data
-
+          
+          // Debug logging
+          console.log(`[CMS] ✅ Processing section ${section}:`, {
+            hasData: !!cmsDocument,
+            cmsDocumentType: typeof cmsDocument,
+            cmsDocumentKeys: cmsDocument ? Object.keys(cmsDocument) : [],
+            hasDataProperty: !!cmsDocument?.data,
+            dataKeys: cmsDocument?.data ? Object.keys(cmsDocument.data) : [],
+            rawData: cmsDocument?.data,
+            fullResponse: result.value
+          })
 
           // Special handling for offers to map old and new data formats
           if (section === 'offers') {
-
             const offers = cmsDocument.data?.offers || [];
-
+            console.log(`[CMS] Offers count: ${offers.length}`, offers)
 
             newData[section] = {
               offers: offers.map(offer => {
@@ -108,28 +132,53 @@ const CMS = () => {
             };
 
           } else if (section === 'carousel') {
-            // Handle carousel data structure
-
-
-            const carouselItems = cmsDocument.data?.carouselItems || [];
-
+            // Handle carousel data structure - check multiple possible locations
+            let carouselItems = [];
+            
+            if (cmsDocument.data?.carouselItems) {
+              carouselItems = cmsDocument.data.carouselItems;
+              console.log(`[CMS] Found carouselItems in cmsDocument.data:`, carouselItems.length, 'items');
+            } else if (cmsDocument.carouselItems) {
+              carouselItems = cmsDocument.carouselItems;
+              console.log(`[CMS] Found carouselItems in cmsDocument root:`, carouselItems.length, 'items');
+            } else {
+              console.warn(`[CMS] No carouselItems found in cmsDocument:`, cmsDocument);
+            }
+            
+            console.log(`[CMS] Carousel items count: ${carouselItems.length}`, carouselItems);
+            console.log(`[CMS] Carousel items details:`, carouselItems.map(item => ({
+              id: item.id,
+              teacherName: item.teacher?.name,
+              hasImage: !!item.teacher?.image
+            })));
 
             newData[section] = {
               carouselItems: carouselItems
             };
           } else if (section === 'testimonials') {
             const testimonials = cmsDocument.data?.testimonials || []
+            console.log(`[CMS] Testimonials count: ${testimonials.length}`, testimonials)
             newData[section] = { testimonials }
           } else if (section === 'ongoingCourses') {
             // Filter out hidden batches from display
             const ongoingCourses = (cmsDocument.data?.ongoingCourses || []).filter(c => !c.isHidden)
+            console.log(`[CMS] Ongoing courses count: ${ongoingCourses.length}`, ongoingCourses)
             newData[section] = { ongoingCourses }
           } else {
             newData[section] = cmsDocument.data || {}
           }
-
-
+        } else {
+          // Log failed fetches
+          console.warn(`[CMS] Failed to fetch section ${section}:`, result.status === 'rejected' ? result.reason : result.value)
         }
+      })
+      
+      // Debug: Log final newData structure
+      console.log('[CMS] Final newData structure:', {
+        carousel: newData.carousel?.carouselItems?.length || 0,
+        offers: newData.offers?.offers?.length || 0,
+        testimonials: newData.testimonials?.testimonials?.length || 0,
+        ongoingCourses: newData.ongoingCourses?.ongoingCourses?.length || 0
       })
 
       // Process courses from the courses collection
@@ -205,11 +254,34 @@ const CMS = () => {
         setAvailableSlots(slotsResult.value.data.filter(slot => slot.isActive))
       }
 
-      setCmsData(newData)
+      // Set CMS data - ensure all sections are properly initialized
+      setCmsData(prevData => {
+        const updatedData = {
+          ...prevData,
+          ...newData,
+          // Ensure all sections exist with proper structure
+          carousel: newData.carousel || { carouselItems: [] },
+          offers: newData.offers || { offers: [] },
+          testimonials: newData.testimonials || { testimonials: [] },
+          ongoingCourses: newData.ongoingCourses || { ongoingCourses: [] },
+          courses: newData.courses || { courses: [] },
+          merchandise: newData.merchandise || { merchandise: [] }
+        }
+        
+        console.log('[CMS] Setting cmsData:', {
+          carousel: updatedData.carousel?.carouselItems?.length || 0,
+          offers: updatedData.offers?.offers?.length || 0,
+          testimonials: updatedData.testimonials?.testimonials?.length || 0,
+          ongoingCourses: updatedData.ongoingCourses?.ongoingCourses?.length || 0
+        })
+        
+        return updatedData
+      })
 
       // Extract instructor names from carousel data
       const instructorNames = new Set()
-      newData.carousel.carouselItems.forEach(item => {
+      const carouselItems = newData.carousel?.carouselItems || []
+      carouselItems.forEach(item => {
         const teacherName = item.teacher?.name || item.title || item.subtitle
         if (teacherName && teacherName.trim()) {
           instructorNames.add(teacherName.trim())
@@ -217,9 +289,11 @@ const CMS = () => {
       })
       setInstructors(Array.from(instructorNames).sort())
     } catch (error) {
-
+      console.error('[CMS] Error fetching CMS data:', error)
+      toast.error('Failed to load CMS data. Please refresh the page.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   useEffect(() => {
@@ -574,81 +648,11 @@ const CMS = () => {
         setFormErrors({})
         setSelectedItem(null)
         
-        // Small delay to ensure backend cache is cleared and data is persisted
-        await new Promise(resolve => setTimeout(resolve, 300))
+        // ROOT CAUSE FIX: Wait for backend, then force refetch with NO cache
+        await new Promise(resolve => setTimeout(resolve, 600))
         
-        // Refresh CMS data after successful save to show updated content (bypass cache)
-        setLoading(true)
-        try {
-          // Force refetch with cache busting
-          const sections = ['carousel', 'offers', 'ongoingCourses', 'testimonials']
-          const refreshPromises = sections.map(section =>
-            cmsAPI.getCMSSection(section, true).catch(err => {
-              console.error(`Error refetching CMS section ${section}:`, err)
-              // Return empty structure on error
-              let emptyData = {};
-              switch(section) {
-                case 'carousel':
-                  emptyData = { carouselItems: [] };
-                  break;
-                case 'offers':
-                  emptyData = { offers: [] };
-                  break;
-                case 'testimonials':
-                  emptyData = { testimonials: [] };
-                  break;
-                case 'ongoingCourses':
-                  emptyData = { ongoingCourses: [] };
-                  break;
-                default:
-                  emptyData = {};
-              }
-              return { success: true, data: { section, data: emptyData } }
-            })
-          )
-          
-          const refreshResults = await Promise.allSettled(refreshPromises)
-          
-          // Update state with fresh data
-          refreshResults.forEach((result, index) => {
-            const section = sections[index]
-            if (result.status === 'fulfilled' && result.value.success) {
-              const cmsDocument = result.value.data
-              
-              if (section === 'offers') {
-                const offers = cmsDocument.data?.offers || []
-                setCmsData(prev => ({
-                  ...prev,
-                  [section]: { offers }
-                }))
-              } else if (section === 'carousel') {
-                const carouselItems = cmsDocument.data?.carouselItems || []
-                setCmsData(prev => ({
-                  ...prev,
-                  [section]: { carouselItems }
-                }))
-              } else if (section === 'testimonials') {
-                const testimonials = cmsDocument.data?.testimonials || []
-                setCmsData(prev => ({
-                  ...prev,
-                  [section]: { testimonials }
-                }))
-              } else if (section === 'ongoingCourses') {
-                const ongoingCourses = cmsDocument.data?.ongoingCourses || []
-                setCmsData(prev => ({
-                  ...prev,
-                  [section]: { ongoingCourses }
-                }))
-              }
-            }
-          })
-        } catch (err) {
-          console.error('Error refreshing CMS data:', err)
-          // Fallback to full refetch
-          await fetchCMSData()
-        } finally {
-          setLoading(false)
-        }
+        // Force complete refetch - bypass ALL caches
+        await fetchCMSData()
         
         // For courses, immediately add/update the course in local state
         // This ensures it's available right away without waiting for refetch
@@ -1330,12 +1334,20 @@ const CMS = () => {
 
   // Render content based on active tab
   const renderContent = () => {
-      const items = activeTab === 'carousel' ? cmsData.carousel.carouselItems :
-      activeTab === 'courses' ? cmsData.courses.courses :
-        activeTab === 'merchandise' ? cmsData.merchandise.merchandise :
-          activeTab === 'offers' ? cmsData.offers.offers :
-            activeTab === 'ongoingCourses' ? cmsData.ongoingCourses.ongoingCourses :
-              cmsData.testimonials.testimonials
+      // Safely get items with fallbacks
+      const items = activeTab === 'carousel' ? (cmsData.carousel?.carouselItems || []) :
+      activeTab === 'courses' ? (cmsData.courses?.courses || []) :
+        activeTab === 'merchandise' ? (cmsData.merchandise?.merchandise || []) :
+          activeTab === 'offers' ? (cmsData.offers?.offers || []) :
+            activeTab === 'ongoingCourses' ? (cmsData.ongoingCourses?.ongoingCourses || []) :
+              (cmsData.testimonials?.testimonials || [])
+      
+      // Debug logging
+      console.log(`[CMS Render] Active tab: ${activeTab}, Items count: ${items.length}`, {
+        cmsDataKeys: Object.keys(cmsData),
+        activeTabData: cmsData[activeTab],
+        items
+      })
 
     if (loading) {
       return (

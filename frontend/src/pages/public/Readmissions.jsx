@@ -52,7 +52,7 @@ const Readmissions = () => {
   useEffect(() => {
     if (showGFormModal) {
       try {
-        window.open('https://forms.gle/ZCuE8XFDgXuQ625s7', '_blank', 'noopener,noreferrer');
+        window.open('https://docs.google.com/forms/d/e/1FAIpQLSe0ulzgPm7zSAQLeASwSbPF4SYMmgw5pRTxxQfmE2HSIGIvBg/viewform?usp=header', '_blank', 'noopener,noreferrer');
       } catch (_) {}
     }
   }, [showGFormModal]);
@@ -379,7 +379,7 @@ const Readmissions = () => {
             <p className="text-sm text-gray-700 mb-4">We opened the Google Form in a new tab. If it didn’t open, click the button below.</p>
             <div className="flex items-center justify-between">
               <a
-                href="https://forms.gle/ZCuE8XFDgXuQ625s7"
+                href="https://docs.google.com/forms/d/e/1FAIpQLSe0ulzgPm7zSAQLeASwSbPF4SYMmgw5pRTxxQfmE2HSIGIvBg/viewform?usp=header"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"

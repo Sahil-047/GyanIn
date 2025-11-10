@@ -6,12 +6,14 @@ const Admission = () => {
   const [showContactModal, setShowContactModal] = useState(true)
 
   const contactDetails = {
-    phone: '+91 98765 43210',
+    phone: '+91 83340 06669',
     email: 'info@gyanin.com',
     emailAdmissions: 'admissions@gyanin.com',
-    address: '123 Education Street, Learning City, LC 12345',
+    address: '8, 2, Mandeville Gardens, Ekdalia, Ballygunge, Kolkata, West Bengal 700019',
     officeHours: 'Monday - Friday: 9:00 AM - 6:00 PM',
-    whatsapp: '+91 98765 43210'
+    whatsapp: '+91 83340 06669',
+    appLink: 'https://clp.page.link/w3Xw',
+    mapLink: 'https://maps.app.goo.gl/rUkr5az2oH69Cty17'
   }
 
   return (
@@ -105,7 +107,7 @@ const Admission = () => {
                       <div className="flex-1">
                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">WhatsApp</h3>
                         <p className="text-xl font-bold text-gray-900 mb-2">{contactDetails.whatsapp}</p>
-                        <a href={`https://wa.me/${contactDetails.whatsapp.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-emerald-600 hover:text-emerald-700 font-medium text-sm transition-colors">
+                        <a href={`https://wa.me/${contactDetails.whatsapp.replace(/\D+/g, '')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-emerald-600 hover:text-emerald-700 font-medium text-sm transition-colors">
                           <FaWhatsapp className="w-3.5 h-3.5 mr-2" />
                           Chat on WhatsApp
                         </a>
@@ -123,7 +125,14 @@ const Admission = () => {
                       </div>
                       <div className="flex-1">
                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Address</h3>
-                        <p className="text-gray-900 leading-relaxed">{contactDetails.address}</p>
+                        <a
+                          href={contactDetails.mapLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-900 leading-relaxed hover:text-blue-600 transition-colors"
+                        >
+                          {contactDetails.address}
+                        </a>
                       </div>
                     </div>
                   </div>

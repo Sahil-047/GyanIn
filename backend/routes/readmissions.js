@@ -8,7 +8,11 @@ const router = express.Router();
 // Validation rules (email, previousCourse, reason removed)
 const readmissionValidation = [
     body('studentName').trim().isLength({ min: 2 }).withMessage('Student name must be at least 2 characters'),
-    body('subject').trim().isLength({ min: 2 }).withMessage('Subject must be at least 2 characters'),
+    body('subject')
+        .optional({ checkFalsy: true })
+        .trim()
+        .isLength({ min: 2 })
+        .withMessage('Subject must be at least 2 characters when provided'),
     body('contact').trim().isLength({ min: 10 }).withMessage('Contact must be at least 10 characters'),
     body('slotName').trim().isLength({ min: 2 }).withMessage('Slot name must be at least 2 characters')
 ];
@@ -202,7 +206,7 @@ router.post('/', readmissionValidation, async (req, res) => {
         const { course, ...restBody } = req.body
         const readmissionData = {
             ...restBody,
-            subject: req.body.subject || course || '',
+            subject: (req.body.subject && req.body.subject.trim()) || (course && course.trim()) || 'General',
             status: 'pending' // Ensure status is pending for new readmissions
         };
         const readmission = new Readmission(readmissionData);

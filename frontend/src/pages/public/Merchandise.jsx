@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { merchandiseAPI } from '../../utils/api'
 import toast from 'react-hot-toast'
 
+const MERCH_FORM_LINK = 'https://docs.google.com/forms/d/e/1FAIpQLSf8TbkqfVMJlnHa7yVdui89FY3zKLphZzCSNNfpsHIeFsZ9Qw/viewform?usp=header'
+
 const Merchandise = () => {
   const [merchandise, setMerchandise] = useState([])
   const [categories, setCategories] = useState([])
@@ -116,7 +118,10 @@ const Merchandise = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-                {filteredMerchandise.map((item) => (
+                {filteredMerchandise.map((item) => {
+                  const isOutOfStock = item.stock !== undefined && item.stock <= 0
+
+                  return (
                   <div
                     key={item._id || item.id}
                     className="bg-gray-100 rounded-xl sm:rounded-2xl shadow-md sm:shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 overflow-hidden"
@@ -174,15 +179,26 @@ const Merchandise = () => {
                       )}
 
                       {/* Action Button */}
-                      <button
-                        disabled={item.stock !== undefined && item.stock <= 0}
-                        className="w-full py-2 sm:py-2.5 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-[#0061FF] text-xs sm:text-sm"
-                      >
-                        {item.stock !== undefined && item.stock <= 0 ? 'Out of Stock' : 'Buy Now'}
-                      </button>
+                      {isOutOfStock ? (
+                        <button
+                          disabled
+                          className="w-full py-2 sm:py-2.5 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-[#0061FF] text-xs sm:text-sm"
+                        >
+                          Out of Stock
+                        </button>
+                      ) : (
+                        <a
+                          href={MERCH_FORM_LINK}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full inline-flex justify-center py-2 sm:py-2.5 border-2 border-[#0061FF] text-[#0061FF] rounded-lg font-semibold hover:bg-[#0061FF] hover:text-white transition-colors duration-200 text-xs sm:text-sm"
+                        >
+                          Buy Now
+                        </a>
+                      )}
                     </div>
                   </div>
-                ))}
+                )})}
               </div>
             )}
           </>

@@ -1,9 +1,12 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
 const CMS = require('../models/CMS');
 const Course = require('../models/Course');
 const edgestoreHandler = require('./edgestore');
 const { cacheMiddleware, clearCacheBySection } = require('../middleware/cache');
+const { CarouselItem, DEFAULT_TEACHER_IMAGE } = require('../models/CarouselItem');
+const { syncCarouselItems, formatCarouselItem } = require('../utils/syncCarouselItems');
 
 // Initialize EdgeStore backend client for deleting files
 const { initEdgeStoreClient } = require('@edgestore/server/core');
@@ -39,6 +42,17 @@ const deleteImageFromEdgeStore = async (url) => {
         console.error('Error deleting image from EdgeStore:', error.message);
         return false;
     }
+};
+
+const resolveCarouselItemById = async (id) => {
+    if (!id) return null;
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+        const doc = await CarouselItem.findById(id);
+        if (doc) return doc;
+    }
+
+    return CarouselItem.findOne({ legacyId: String(id) });
 };
 
 // Validation rules
@@ -99,6 +113,15 @@ router.get('/:section', cacheMiddleware(5 * 60 * 1000), async (req, res) => {
         } else {
             // ALWAYS merge ALL documents - this is the fix
             cmsContent = allDocuments.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
+
+            if (section === 'carousel' && (!cmsContent?.data || !Array.isArray(cmsContent.data.carouselItems))) {
+                await syncCarouselItems();
+                const refreshedDoc = await CMS.findOne({ section }).lean();
+                if (refreshedDoc) {
+                    cmsContent = refreshedDoc;
+                    allDocuments.splice(0, allDocuments.length, refreshedDoc);
+                }
+            }
             
             // Merge ALL items from ALL documents
             if (section === 'carousel') {
@@ -516,7 +539,6 @@ router.post('/courses', async (req, res) => {
 // POST /api/admin/cms/carousel - Add carousel item to CMS
 router.post('/carousel', async (req, res) => {
     try {
-        
         const { teacherName, description, teacherImage, scheduleImage, schedule1Image, schedule2Image } = req.body;
 
         if (!teacherName || !description) {
@@ -526,91 +548,28 @@ router.post('/carousel', async (req, res) => {
             });
         }
 
-        // ROOT CAUSE FIX: Get ALL documents, merge items, ensure only ONE document exists
-        clearCacheBySection('carousel');
-        
-        const allDocs = await CMS.find({ section: 'carousel' }).lean();
-        console.log(`[CMS ADD] Found ${allDocs.length} carousel document(s)`);
-        
-        let mainDoc;
-        let allItems = [];
-        
-        // Collect ALL items from ALL documents
-        allDocs.forEach(doc => {
-            if (doc.data?.carouselItems && Array.isArray(doc.data.carouselItems)) {
-                allItems.push(...doc.data.carouselItems);
-            }
+        const carouselItem = new CarouselItem({
+            teacherName: teacherName.trim(),
+            description: description.trim(),
+            teacherImage: (teacherImage && teacherImage.trim()) || DEFAULT_TEACHER_IMAGE,
+            scheduleImage: scheduleImage || '',
+            schedule1Image: schedule1Image || '',
+            schedule2Image: schedule2Image || ''
         });
-        
-        // Remove duplicates by ID
-        const itemMap = new Map();
-        allItems.forEach(item => {
-            if (item.id && !itemMap.has(item.id)) {
-                itemMap.set(item.id, item);
-            }
-        });
-        allItems = Array.from(itemMap.values());
-        
-        // Create new item
-        const newCarouselItem = {
-            id: Date.now(),
-            teacher: {
-                name: teacherName,
-                description: description,
-                image: teacherImage || 'https://via.placeholder.com/300x300?text=Teacher',
-                scheduleImage: scheduleImage || '',
-                schedule1Image: schedule1Image || '',
-                schedule2Image: schedule2Image || ''
-            }
-        };
-        
-        // Add new item
-        allItems.push(newCarouselItem);
-        
-        // Get or create main document
-        if (allDocs.length > 0) {
-            mainDoc = allDocs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
-        }
-        
-        // Update or create the ONE document
-        const savedSection = await CMS.findOneAndUpdate(
-            mainDoc ? { _id: mainDoc._id } : { section: 'carousel' },
-            {
-                $set: {
-                    section: 'carousel',
-                    'data.carouselItems': allItems,
-                    isActive: true,
-                    updatedAt: new Date()
-                }
-            },
-            {
-                new: true,
-                upsert: true,
-                runValidators: true
-            }
-        );
-        
-        // Delete ALL other documents for this section
-        if (allDocs.length > 1) {
-            const otherIds = allDocs
-                .filter(doc => doc._id.toString() !== savedSection._id.toString())
-                .map(doc => doc._id);
-            if (otherIds.length > 0) {
-                await CMS.deleteMany({ _id: { $in: otherIds } });
-                console.log(`[CMS ADD] Deleted ${otherIds.length} duplicate documents`);
-            }
-        }
-        
-        console.log(`[CMS ADD] Total items: ${allItems.length}, Saved: ${savedSection.data.carouselItems.length}`);
+
+        await carouselItem.save();
+
+        const formattedItem = formatCarouselItem(carouselItem.toObject());
+
+        await syncCarouselItems();
 
         res.status(201).json({
             success: true,
             message: 'Carousel item added successfully',
-            data: newCarouselItem
+            data: formattedItem
         });
 
     } catch (error) {
-        
         res.status(500).json({
             success: false,
             message: 'Failed to add carousel item to CMS',
@@ -632,54 +591,32 @@ router.put('/carousel/:id', async (req, res) => {
             });
         }
 
-        const carouselSection = await CMS.findOne({ section: 'carousel' });
-        if (!carouselSection || !carouselSection.data || !carouselSection.data.carouselItems) {
-            return res.status(404).json({
-                success: false,
-                message: 'Carousel section not found'
-            });
-        }
+        const carouselItem = await resolveCarouselItemById(id);
 
-        const itemIndex = carouselSection.data.carouselItems.findIndex(item => item.id.toString() === id.toString());
-        
-        if (itemIndex === -1) {
+        if (!carouselItem) {
             return res.status(404).json({
                 success: false,
                 message: 'Carousel item not found'
             });
         }
 
-        // Update the carousel item
-        carouselSection.data.carouselItems[itemIndex] = {
-            id: carouselSection.data.carouselItems[itemIndex].id,
-            teacher: {
-                name: teacherName,
-                description: description,
-                image: teacherImage || 'https://via.placeholder.com/300x300?text=Teacher',
-                scheduleImage: scheduleImage || '', // Keep for backward compatibility
-                schedule1Image: schedule1Image || '',
-                schedule2Image: schedule2Image || ''
-            }
-        };
+        carouselItem.teacherName = teacherName.trim();
+        carouselItem.description = description.trim();
+        carouselItem.teacherImage = (teacherImage && teacherImage.trim()) || carouselItem.teacherImage || DEFAULT_TEACHER_IMAGE;
+        carouselItem.scheduleImage = scheduleImage || carouselItem.scheduleImage || '';
+        carouselItem.schedule1Image = schedule1Image || carouselItem.schedule1Image || carouselItem.scheduleImage || '';
+        carouselItem.schedule2Image = schedule2Image || carouselItem.schedule2Image || '';
 
-        const updatedSection = await CMS.findOneAndUpdate(
-            { section: 'carousel' },
-            { 
-                $set: { 
-                    'data.carouselItems': carouselSection.data.carouselItems,
-                    updatedAt: new Date()
-                }
-            },
-            { new: true }
-        );
+        await carouselItem.save();
 
-        // Clear cache after update
-        clearCacheBySection('carousel');
+        const formattedItem = formatCarouselItem(carouselItem.toObject());
+
+        await syncCarouselItems();
 
         res.json({
             success: true,
             message: 'Carousel item updated successfully',
-            data: carouselSection.data.carouselItems[itemIndex]
+            data: formattedItem
         });
 
     } catch (error) {
@@ -696,65 +633,40 @@ router.delete('/carousel/:id', async (req, res) => {
     try {
         const { id } = req.params;
 
-        const carouselSection = await CMS.findOne({ section: 'carousel' });
-        if (!carouselSection || !carouselSection.data || !carouselSection.data.carouselItems) {
-            return res.status(404).json({
-                success: false,
-                message: 'Carousel section not found'
-            });
-        }
+        const carouselItem = await resolveCarouselItemById(id);
 
-        const itemIndex = carouselSection.data.carouselItems.findIndex(item => item.id.toString() === id.toString());
-        
-        if (itemIndex === -1) {
+        if (!carouselItem) {
             return res.status(404).json({
                 success: false,
                 message: 'Carousel item not found'
             });
         }
 
-        // Get the item to be deleted to extract image URLs
-        const itemToDelete = carouselSection.data.carouselItems[itemIndex];
-        
         // Delete images from EdgeStore
-        const teacherImage = itemToDelete?.teacher?.image;
-        const scheduleImage = itemToDelete?.teacher?.scheduleImage;
-        const schedule1Image = itemToDelete?.teacher?.schedule1Image;
-        const schedule2Image = itemToDelete?.teacher?.schedule2Image;
-        
-        // Delete teacher image from EdgeStore if it exists and is from EdgeStore
+        const teacherImage = carouselItem.teacherImage;
+        const scheduleImage = carouselItem.scheduleImage;
+        const schedule1Image = carouselItem.schedule1Image;
+        const schedule2Image = carouselItem.schedule2Image;
+
         if (teacherImage && (teacherImage.includes('edgestore') || teacherImage.includes('publicFiles'))) {
             await deleteImageFromEdgeStore(teacherImage);
         }
-        
-        // Delete schedule images from EdgeStore if they exist and are from EdgeStore
+
         if (scheduleImage && (scheduleImage.includes('edgestore') || scheduleImage.includes('publicFiles'))) {
             await deleteImageFromEdgeStore(scheduleImage);
         }
+
         if (schedule1Image && (schedule1Image.includes('edgestore') || schedule1Image.includes('publicFiles'))) {
             await deleteImageFromEdgeStore(schedule1Image);
         }
+
         if (schedule2Image && (schedule2Image.includes('edgestore') || schedule2Image.includes('publicFiles'))) {
             await deleteImageFromEdgeStore(schedule2Image);
         }
 
-        carouselSection.data.carouselItems.splice(itemIndex, 1);
+        await CarouselItem.deleteOne({ _id: carouselItem._id });
 
-        // ROOT CAUSE FIX: Clear cache BEFORE delete
-        clearCacheBySection('carousel');
-        
-        const updatedSection = await CMS.findOneAndUpdate(
-            { section: 'carousel' },
-            { 
-                $set: { 
-                    'data.carouselItems': carouselSection.data.carouselItems,
-                    updatedAt: new Date()
-                }
-            },
-            { new: true }
-        );
-
-        console.log(`[CMS DELETE] Carousel item deleted. Remaining items: ${carouselSection.data.carouselItems.length}`);
+        await syncCarouselItems();
 
         res.json({
             success: true,
@@ -762,7 +674,6 @@ router.delete('/carousel/:id', async (req, res) => {
         });
 
     } catch (error) {
-        
         res.status(500).json({
             success: false,
             message: 'Failed to delete carousel item',

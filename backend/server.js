@@ -11,6 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const cookieParser = require('cookie-parser');
 const edgestoreHandler = require('./routes/edgestore');
+const { syncCarouselItems } = require('./utils/syncCarouselItems');
 
 // Middleware
 // CORS configuration: flexible handling for development and production
@@ -134,7 +135,13 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gyanin', 
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => {})
+.then(async () => {
+  try {
+    await syncCarouselItems();
+  } catch (error) {
+    console.error('[Carousel Sync] Failed to ensure carousel consistency:', error.message);
+  }
+})
 .catch(err => {});
 
 // Routes

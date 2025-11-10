@@ -1,4 +1,3 @@
-const mongoose = require('mongoose');
 const CMS = require('../models/CMS');
 const { CarouselItem, DEFAULT_TEACHER_IMAGE } = require('../models/CarouselItem');
 const { clearCacheBySection } = require('../middleware/cache');
@@ -23,7 +22,13 @@ const formatCarouselItem = (item) => {
   };
 };
 
-const seedCarouselItemsFromCMS = async () => {
+const bootstrapCarouselItems = async () => {
+  const existingCount = await CarouselItem.countDocuments();
+
+  if (existingCount > 0) {
+    return false;
+  }
+
   const existingDoc = await CMS.findOne({ section: 'carousel' }).lean();
   const items = existingDoc?.data?.carouselItems;
 
@@ -49,19 +54,11 @@ const seedCarouselItemsFromCMS = async () => {
 
     await CarouselItem.findOneAndUpdate(
       filter,
-      {
-        $set: payload,
-        $setOnInsert: {
-          _id: new mongoose.Types.ObjectId(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      },
+      { $set: payload },
       {
         upsert: true,
         new: true,
-        setDefaultsOnInsert: true,
-        timestamps: true
+        setDefaultsOnInsert: true
       }
     );
   }));
@@ -70,10 +67,32 @@ const seedCarouselItemsFromCMS = async () => {
 };
 
 const syncCarouselItems = async () => {
-  await seedCarouselItemsFromCMS();
-
   const items = await CarouselItem.find().sort({ createdAt: -1 }).lean();
-  const carouselItems = items.map(formatCarouselItem);
+
+  const uniqueItems = [];
+  const seenKeys = new Set();
+  const duplicateIds = [];
+
+  items.forEach(item => {
+    const key = [
+      (item.teacherName || '').trim().toLowerCase(),
+      (item.description || '').trim(),
+      (item.schedule1Image || '').trim(),
+      (item.schedule2Image || '').trim()
+    ].join('|');
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      uniqueItems.push(item);
+    } else {
+      duplicateIds.push(item._id);
+    }
+  });
+
+  if (duplicateIds.length > 0) {
+    await CarouselItem.deleteMany({ _id: { $in: duplicateIds } });
+  }
+
+  const carouselItems = uniqueItems.map(formatCarouselItem);
 
   await CMS.findOneAndUpdate(
     { section: 'carousel' },
@@ -100,6 +119,7 @@ const syncCarouselItems = async () => {
 
 module.exports = {
   syncCarouselItems,
-  formatCarouselItem
+  formatCarouselItem,
+  bootstrapCarouselItems
 };
 

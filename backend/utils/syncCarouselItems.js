@@ -69,6 +69,11 @@ const bootstrapCarouselItems = async () => {
 const syncCarouselItems = async () => {
   const items = await CarouselItem.find().sort({ createdAt: -1 }).lean();
 
+  if (!items || items.length === 0) {
+    console.warn('[syncCarouselItems] Skipped — no CarouselItem docs found.');
+    return [];
+  }
+
   const uniqueItems = [];
   const seenKeys = new Set();
   const duplicateIds = [];

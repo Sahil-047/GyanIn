@@ -12,6 +12,8 @@ const PORT = process.env.PORT || 5000;
 const cookieParser = require('cookie-parser');
 const edgestoreHandler = require('./routes/edgestore');
 const { syncCarouselItems, bootstrapCarouselItems } = require('./utils/syncCarouselItems');
+const { CarouselItem } = require('./models/CarouselItem');
+const CMS = require('./models/CMS');
 
 // Middleware
 // CORS configuration: flexible handling for development and production
@@ -137,7 +139,19 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gyanin', 
 })
 .then(async () => {
   try {
-    await bootstrapCarouselItems();
+    const carouselItemCount = await CarouselItem.countDocuments();
+
+    if (carouselItemCount === 0) {
+      const cmsDoc = await CMS.findOne({ section: 'carousel' }).lean();
+      const cmsItems = cmsDoc?.data?.carouselItems;
+
+      if (Array.isArray(cmsItems) && cmsItems.length > 0) {
+        await bootstrapCarouselItems();
+      } else {
+        console.warn('[bootstrapCarouselItems] Skipped — CMS has no carouselItems');
+      }
+    }
+
     await syncCarouselItems();
   } catch (error) {
     console.error('[Carousel Sync] Failed to ensure carousel consistency:', error.message);

@@ -204,31 +204,9 @@ const CMS = () => {
           isActive: course.isActive
         }))
         
-        // Merge with existing courses to prevent duplicates and preserve any immediately added courses
-        // Use a Map to deduplicate by ID, with server data taking precedence
-        const existingCourses = cmsData.courses.courses || []
-        const courseMap = new Map()
-        
-        // First add existing courses (from immediate state updates)
-        existingCourses.forEach(course => {
-          if (course.id) {
-            courseMap.set(course.id, course)
-          }
-        })
-        
-        // Then add/update with server data (server data takes precedence)
-        coursesData.forEach(course => {
-          if (course.id) {
-            courseMap.set(course.id, course)
-          }
-        })
-        
-        // Convert back to array
-        const mergedCourses = Array.from(courseMap.values())
-        
-        newData.courses = { courses: mergedCourses }
+        newData.courses = { courses: coursesData }
         // Set available courses for offers dropdown (only active/live courses)
-        setAvailableCourses(mergedCourses.filter(course => course.id))
+        setAvailableCourses(coursesData.filter(course => course.id))
       }
 
       // Process merchandise from the merchandise collection
@@ -330,12 +308,12 @@ const CMS = () => {
         if (!formData.title?.trim()) errors.title = 'Course title is required'
         if (!formData.description?.trim()) errors.description = 'Description is required'
         if (!formData.instructor?.trim()) errors.instructor = 'Instructor is required'
-        // Require at least one of monthly or yearly price (legacy price not considered)
+        // Require at least one of monthly or one-time price (legacy price not considered)
         if (!formData.monthlyPrice && !formData.yearlyPrice) {
-          errors.monthlyPrice = 'Provide monthly and/or yearly price'
+          errors.monthlyPrice = 'Provide monthly and/or one-time price'
         }
         if (formData.monthlyPrice && formData.monthlyPrice < 0) errors.monthlyPrice = 'Monthly price must be a positive number'
-        if (formData.yearlyPrice && formData.yearlyPrice < 0) errors.yearlyPrice = 'Yearly price must be a positive number'
+        if (formData.yearlyPrice && formData.yearlyPrice < 0) errors.yearlyPrice = 'One-time price must be a positive number'
         if (!formData.class || formData.class < 1 || formData.class > 12) errors.class = 'Class must be a number between 1 and 12'
         break
       case 'merchandise':
@@ -483,6 +461,20 @@ const CMS = () => {
 
       if (activeTab === 'courses') {
         // Convert prices to numbers if they're strings, and remove if empty or invalid
+        if (submitData.price !== undefined && submitData.price !== null && submitData.price !== '') {
+          if (typeof submitData.price === 'string') {
+            const parsed = parseFloat(submitData.price)
+            if (isNaN(parsed) || parsed <= 0) {
+              delete submitData.price
+            } else {
+              submitData.price = parsed
+            }
+          } else if (submitData.price <= 0) {
+            delete submitData.price
+          }
+        } else {
+          delete submitData.price
+        }
         if (submitData.monthlyPrice !== undefined && submitData.monthlyPrice !== null && submitData.monthlyPrice !== '') {
           if (typeof submitData.monthlyPrice === 'string') {
             const parsed = parseFloat(submitData.monthlyPrice)
@@ -653,56 +645,6 @@ const CMS = () => {
         
         // Force complete refetch - bypass ALL caches
         await fetchCMSData()
-        
-        // For courses, immediately add/update the course in local state
-        // This ensures it's available right away without waiting for refetch
-        if (activeTab === 'courses' && result.data) {
-          const courseData = {
-            id: result.data._id || result.data.id,
-            title: result.data.title,
-            description: result.data.description,
-            instructor: result.data.instructor,
-            price: result.data.price,
-            monthlyPrice: result.data.monthlyPrice,
-            yearlyPrice: result.data.yearlyPrice,
-            class: result.data.class,
-            image: result.data.image,
-            enrollmentUrl: result.data.enrollmentUrl,
-            rating: result.data.rating,
-            students: result.data.students,
-            category: result.data.category,
-            duration: result.data.duration,
-            tags: result.data.tags,
-            isActive: result.data.isActive !== undefined ? result.data.isActive : true
-          }
-          
-          // Update local state immediately
-          if (selectedItem) {
-            // Update existing course
-            setCmsData(prev => ({
-              ...prev,
-              courses: {
-                courses: prev.courses.courses.map(course => 
-                  course.id === courseData.id ? courseData : course
-                )
-              }
-            }))
-            // Update in available courses
-            setAvailableCourses(prev => 
-              prev.map(course => course.id === courseData.id ? courseData : course)
-            )
-          } else {
-            // Add new course to the beginning of the list
-            setCmsData(prev => ({
-              ...prev,
-              courses: {
-                courses: [courseData, ...prev.courses.courses]
-              }
-            }))
-            // Add to available courses
-            setAvailableCourses(prev => [courseData, ...prev])
-          }
-        }
         
         // For offers, immediately add/update the offer in local state
         if (activeTab === 'offers' && result.data) {
@@ -953,14 +895,14 @@ const CMS = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Yearly Price</label>
+                <label className="block text-sm font-medium text-gray-700">One-time Price</label>
                 <input
                   type="number"
                   name="yearlyPrice"
                   value={formData.yearlyPrice || ''}
                   onChange={handleInputChange}
                   className={`mt-1 block w-full border rounded-md px-3 py-2 ${formErrors.yearlyPrice ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                  placeholder="Enter yearly price"
+                  placeholder="Enter one-time price"
                   min="0"
                   step="0.01"
                 />
@@ -1427,7 +1369,7 @@ const CMS = () => {
                               <span className="font-semibold text-blue-600">₹{item.monthlyPrice}/month</span>
                             )}
                             {item.yearlyPrice && item.yearlyPrice > 0 && (
-                              <span className="font-semibold text-blue-600">₹{item.yearlyPrice}/year</span>
+                              <span className="font-semibold text-blue-600">₹{item.yearlyPrice} one-time</span>
                             )}
                             {(!item.monthlyPrice || item.monthlyPrice <= 0) && (!item.yearlyPrice || item.yearlyPrice <= 0) && item.price && item.price > 0 && (
                               <span className="font-semibold text-blue-600">₹{item.price}</span>

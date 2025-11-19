@@ -26,22 +26,17 @@ const CMS = () => {
   // Fetch CMS data
   const fetchCMSData = async () => {
     setLoading(true)
-    console.log('[CMS] Starting fetchCMSData...')
     try {
       // Fetch CMS sections (excluding courses which will be fetched separately)
       const sections = ['carousel', 'offers', 'ongoingCourses', 'testimonials']
-      
-      console.log('[CMS] Fetching sections:', sections)
-      
+
       const cmsPromises = sections.map(section =>
         cmsAPI.getCMSSection(section, true).then(response => {
-          console.log(`[CMS] ✅ Successfully fetched ${section}:`, response)
           return response
         }).catch(err => {
-          console.error(`[CMS] ❌ Error fetching CMS section ${section}:`, err)
           // Return empty structure instead of null to prevent errors
           let emptyData = {};
-          switch(section) {
+          switch (section) {
             case 'carousel':
               emptyData = { carouselItems: [] };
               break;
@@ -58,7 +53,6 @@ const CMS = () => {
               emptyData = {};
           }
           const fallbackResponse = { success: true, data: { section, data: emptyData } }
-          console.log(`[CMS] ⚠️ Using fallback for ${section}:`, fallbackResponse)
           return fallbackResponse
         })
       )
@@ -67,10 +61,10 @@ const CMS = () => {
       // Note: The public API filters by isActive, but we need all courses for admin
       // We'll fetch with a high limit and then filter client-side if needed
       const coursesPromise = coursesAPI.getCourses({ limit: 1000 })
-      
+
       // Fetch merchandise from the merchandise collection
       const merchandisePromise = merchandiseAPI.getMerchandise({ limit: 100 })
-      
+
       // Fetch slots from the slots collection
       const slotsPromise = slotsAPI.getSlots({ limit: 100 })
 
@@ -87,31 +81,13 @@ const CMS = () => {
       // Process CMS sections (carousel, offers)
       sections.forEach((section, index) => {
         const result = allResults[index]
-        
-        console.log(`[CMS] Processing result for ${section}:`, {
-          status: result.status,
-          hasValue: !!result.value,
-          value: result.value
-        })
 
-        if (result.status === 'fulfilled' && result.value && result.value.success) {
+        if (result.status === 'fulfilled' && result.value?.success) {
           const cmsDocument = result.value.data
-          
-          // Debug logging
-          console.log(`[CMS] ✅ Processing section ${section}:`, {
-            hasData: !!cmsDocument,
-            cmsDocumentType: typeof cmsDocument,
-            cmsDocumentKeys: cmsDocument ? Object.keys(cmsDocument) : [],
-            hasDataProperty: !!cmsDocument?.data,
-            dataKeys: cmsDocument?.data ? Object.keys(cmsDocument.data) : [],
-            rawData: cmsDocument?.data,
-            fullResponse: result.value
-          })
 
           // Special handling for offers to map old and new data formats
           if (section === 'offers') {
             const offers = cmsDocument.data?.offers || [];
-            console.log(`[CMS] Offers count: ${offers.length}`, offers)
 
             newData[section] = {
               offers: offers.map(offer => {
@@ -134,51 +110,27 @@ const CMS = () => {
           } else if (section === 'carousel') {
             // Handle carousel data structure - check multiple possible locations
             let carouselItems = [];
-            
+
             if (cmsDocument.data?.carouselItems) {
               carouselItems = cmsDocument.data.carouselItems;
-              console.log(`[CMS] Found carouselItems in cmsDocument.data:`, carouselItems.length, 'items');
             } else if (cmsDocument.carouselItems) {
               carouselItems = cmsDocument.carouselItems;
-              console.log(`[CMS] Found carouselItems in cmsDocument root:`, carouselItems.length, 'items');
-            } else {
-              console.warn(`[CMS] No carouselItems found in cmsDocument:`, cmsDocument);
             }
-            
-            console.log(`[CMS] Carousel items count: ${carouselItems.length}`, carouselItems);
-            console.log(`[CMS] Carousel items details:`, carouselItems.map(item => ({
-              id: item.id,
-              teacherName: item.teacher?.name,
-              hasImage: !!item.teacher?.image
-            })));
 
             newData[section] = {
               carouselItems: carouselItems
             };
           } else if (section === 'testimonials') {
             const testimonials = cmsDocument.data?.testimonials || []
-            console.log(`[CMS] Testimonials count: ${testimonials.length}`, testimonials)
             newData[section] = { testimonials }
           } else if (section === 'ongoingCourses') {
             // Filter out hidden batches from display
             const ongoingCourses = (cmsDocument.data?.ongoingCourses || []).filter(c => !c.isHidden)
-            console.log(`[CMS] Ongoing courses count: ${ongoingCourses.length}`, ongoingCourses)
             newData[section] = { ongoingCourses }
           } else {
             newData[section] = cmsDocument.data || {}
           }
-        } else {
-          // Log failed fetches
-          console.warn(`[CMS] Failed to fetch section ${section}:`, result.status === 'rejected' ? result.reason : result.value)
         }
-      })
-      
-      // Debug: Log final newData structure
-      console.log('[CMS] Final newData structure:', {
-        carousel: newData.carousel?.carouselItems?.length || 0,
-        offers: newData.offers?.offers?.length || 0,
-        testimonials: newData.testimonials?.testimonials?.length || 0,
-        ongoingCourses: newData.ongoingCourses?.ongoingCourses?.length || 0
       })
 
       // Process courses from the courses collection
@@ -203,7 +155,7 @@ const CMS = () => {
           tags: course.tags,
           isActive: course.isActive
         }))
-        
+
         newData.courses = { courses: coursesData }
         // Set available courses for offers dropdown (only active/live courses)
         setAvailableCourses(coursesData.filter(course => course.id))
@@ -245,14 +197,7 @@ const CMS = () => {
           courses: newData.courses || { courses: [] },
           merchandise: newData.merchandise || { merchandise: [] }
         }
-        
-        console.log('[CMS] Setting cmsData:', {
-          carousel: updatedData.carousel?.carouselItems?.length || 0,
-          offers: updatedData.offers?.offers?.length || 0,
-          testimonials: updatedData.testimonials?.testimonials?.length || 0,
-          ongoingCourses: updatedData.ongoingCourses?.ongoingCourses?.length || 0
-        })
-        
+
         return updatedData
       })
 
@@ -267,7 +212,6 @@ const CMS = () => {
       })
       setInstructors(Array.from(instructorNames).sort())
     } catch (error) {
-      console.error('[CMS] Error fetching CMS data:', error)
       toast.error('Failed to load CMS data. Please refresh the page.')
     } finally {
       setLoading(false)
@@ -626,26 +570,26 @@ const CMS = () => {
 
       if (result && result.success) {
         const action = selectedItem ? 'updated' : 'created'
-        const itemName = activeTab === 'carousel' ? 'Carousel item' 
+        const itemName = activeTab === 'carousel' ? 'Carousel item'
           : activeTab === 'courses' ? 'Course'
-          : activeTab === 'merchandise' ? 'Merchandise item'
-          : activeTab === 'offers' ? 'Offer'
-          : activeTab === 'ongoingCourses' ? 'Ongoing batch'
-          : activeTab === 'testimonials' ? 'Testimonial'
-          : 'Item'
+            : activeTab === 'merchandise' ? 'Merchandise item'
+              : activeTab === 'offers' ? 'Offer'
+                : activeTab === 'ongoingCourses' ? 'Ongoing batch'
+                  : activeTab === 'testimonials' ? 'Testimonial'
+                    : 'Item'
         toast.success(`${itemName} ${action} successfully!`)
         setShowAddModal(false)
         setShowEditModal(false)
         setFormData({})
         setFormErrors({})
         setSelectedItem(null)
-        
+
         // ROOT CAUSE FIX: Wait for backend, then force refetch with NO cache
         await new Promise(resolve => setTimeout(resolve, 600))
-        
+
         // Force complete refetch - bypass ALL caches
         await fetchCMSData()
-        
+
         // For offers, immediately add/update the offer in local state
         if (activeTab === 'offers' && result.data) {
           const offerData = {
@@ -659,13 +603,13 @@ const CMS = () => {
             validUntil: result.data.validUntil || '',
             isActive: result.data.isActive !== undefined ? result.data.isActive : true
           }
-          
+
           if (selectedItem) {
             // Update existing offer in local state
             setCmsData(prev => ({
               ...prev,
               offers: {
-                offers: prev.offers.offers.map(o => 
+                offers: prev.offers.offers.map(o =>
                   o.id === offerData.id ? offerData : o
                 )
               }
@@ -680,7 +624,7 @@ const CMS = () => {
             }))
           }
         }
-        
+
         // Still refresh to ensure everything is in sync (will deduplicate if needed)
         fetchCMSData()
       }
@@ -736,13 +680,13 @@ const CMS = () => {
       }
 
       if (result && result.success) {
-        const itemName = activeTab === 'carousel' ? 'Carousel item' 
+        const itemName = activeTab === 'carousel' ? 'Carousel item'
           : activeTab === 'courses' ? 'Course'
-          : activeTab === 'merchandise' ? 'Merchandise item'
-          : activeTab === 'offers' ? 'Offer'
-          : activeTab === 'ongoingCourses' ? 'Ongoing batch'
-          : activeTab === 'testimonials' ? 'Testimonial'
-          : 'Item'
+            : activeTab === 'merchandise' ? 'Merchandise item'
+              : activeTab === 'offers' ? 'Offer'
+                : activeTab === 'ongoingCourses' ? 'Ongoing batch'
+                  : activeTab === 'testimonials' ? 'Testimonial'
+                    : 'Item'
         toast.success(`${itemName} deleted successfully!`)
         // Refresh data from server instead of updating local state
         await fetchCMSData();
@@ -1276,20 +1220,13 @@ const CMS = () => {
 
   // Render content based on active tab
   const renderContent = () => {
-      // Safely get items with fallbacks
-      const items = activeTab === 'carousel' ? (cmsData.carousel?.carouselItems || []) :
+    // Safely get items with fallbacks
+    const items = activeTab === 'carousel' ? (cmsData.carousel?.carouselItems || []) :
       activeTab === 'courses' ? (cmsData.courses?.courses || []) :
         activeTab === 'merchandise' ? (cmsData.merchandise?.merchandise || []) :
           activeTab === 'offers' ? (cmsData.offers?.offers || []) :
             activeTab === 'ongoingCourses' ? (cmsData.ongoingCourses?.ongoingCourses || []) :
               (cmsData.testimonials?.testimonials || [])
-      
-      // Debug logging
-      console.log(`[CMS Render] Active tab: ${activeTab}, Items count: ${items.length}`, {
-        cmsDataKeys: Object.keys(cmsData),
-        activeTabData: cmsData[activeTab],
-        items
-      })
 
     if (loading) {
       return (
@@ -1306,8 +1243,8 @@ const CMS = () => {
             <h3 className="text-lg font-medium leading-6 text-gray-900">
               {activeTab === 'carousel' ? 'Carousel Items' :
                 activeTab === 'courses' ? 'Courses' :
-                  activeTab === 'merchandise' ? 'Merchandise' : 
-                    activeTab === 'offers' ? 'Manual Offers' : 
+                  activeTab === 'merchandise' ? 'Merchandise' :
+                    activeTab === 'offers' ? 'Manual Offers' :
                       activeTab === 'ongoingCourses' ? 'Ongoing Batches (Auto-Generated)' : 'Testimonials'}
             </h3>
             {activeTab !== 'ongoingCourses' && (
@@ -1471,7 +1408,7 @@ const CMS = () => {
                           </div>
                           <p className="text-sm text-gray-600 mt-2">“{item.quote}”</p>
                           {item.rating && (
-                            <div className="mt-1 text-yellow-500 text-xs">{'★'.repeat(item.rating)}{'☆'.repeat(Math.max(0,5-item.rating))}</div>
+                            <div className="mt-1 text-yellow-500 text-xs">{'★'.repeat(item.rating)}{'☆'.repeat(Math.max(0, 5 - item.rating))}</div>
                           )}
                         </div>
                       )}
@@ -1611,7 +1548,7 @@ const CMS = () => {
                 <h3 className="text-lg font-medium text-gray-900">
                   Add New {activeTab === 'carousel' ? 'Carousel Item' :
                     activeTab === 'courses' ? 'Course' :
-                      activeTab === 'merchandise' ? 'Merchandise Item' : 
+                      activeTab === 'merchandise' ? 'Merchandise Item' :
                         activeTab === 'offers' ? 'Offer' : 'Testimonial'}
                 </h3>
                 <button
@@ -1658,7 +1595,7 @@ const CMS = () => {
                 <h3 className="text-lg font-medium text-gray-900">
                   Edit {activeTab === 'carousel' ? 'Carousel Item' :
                     activeTab === 'courses' ? 'Course' :
-                      activeTab === 'merchandise' ? 'Merchandise Item' : 
+                      activeTab === 'merchandise' ? 'Merchandise Item' :
                         activeTab === 'offers' ? 'Offer' :
                           activeTab === 'ongoingCourses' ? 'Ongoing Batch' : 'Testimonial'}
                 </h3>

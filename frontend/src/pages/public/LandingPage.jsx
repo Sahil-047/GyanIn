@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import TeacherCarousel from '../../components/public/TeacherCarousel';
 import TestimonialsCarousel from '../../components/public/TestimonialsCarousel';
 import { cmsAPI, coursesAPI, slotsAPI } from '../../utils/api';
@@ -12,6 +12,17 @@ const LandingPage = () => {
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
   const fullText = 'Welcome to Gyanin academy, your journey to mastery begins here.';
+  
+  // Scroll control for ongoing batches
+  const scrollContainerRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
+  const autoScrollRef = useRef(null);
+  const lastManualScrollRef = useRef(0);
+  const manualScrollTimeoutRef = useRef(null);
+  const isAutoScrollingRef = useRef(false);
 
   // Fetch CMS data
   useEffect(() => {
@@ -57,7 +68,37 @@ const LandingPage = () => {
         if (ongoingCoursesResponse.status === 'fulfilled' && ongoingCoursesResponse.value.success) {
           const ongoingCoursesData = (ongoingCoursesResponse.value.data.data?.ongoingCourses || [])
             .filter(course => !course.isHidden && course.isActive !== false);
-          setOffers(ongoingCoursesData);
+          
+          // Enrich CMS offers with slot data if available
+          if (slotsResponse.status === 'fulfilled' && slotsResponse.value.success) {
+            const slotsData = slotsResponse.value.data || [];
+            const enrichedOffers = ongoingCoursesData.map(offer => {
+              // Try to find matching slot by slotId or name
+              const matchingSlot = slotsData.find(slot => 
+                slot._id === offer.slotId || 
+                slot.name === offer.name ||
+                (offer.slotId && slot._id.toString() === offer.slotId.toString())
+              );
+              
+              if (matchingSlot) {
+                return {
+                  ...offer,
+                  type: matchingSlot.type,
+                  startTime: matchingSlot.startTime,
+                  endTime: matchingSlot.endTime,
+                  days: matchingSlot.days || [],
+                  timings: matchingSlot.timings || [],
+                  availableSeats: matchingSlot.capacity - matchingSlot.enrolledStudents,
+                  capacity: matchingSlot.capacity,
+                  enrolledStudents: matchingSlot.enrolledStudents
+                };
+              }
+              return offer;
+            });
+            setOffers(enrichedOffers);
+          } else {
+            setOffers(ongoingCoursesData);
+          }
         } else {
           // Fallback: If ongoing batches not available, try to generate from slots
           if (slotsResponse.status === 'fulfilled' && slotsResponse.value.success) {
@@ -84,7 +125,12 @@ const LandingPage = () => {
                 isActive: slot.isActive,
                 availableSeats: slot.capacity - slot.enrolledStudents,
                 capacity: slot.capacity,
-                enrolledStudents: slot.enrolledStudents
+                enrolledStudents: slot.enrolledStudents,
+                type: slot.type, // 'online' or 'offline'
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                days: slot.days || [],
+                timings: slot.timings || []
               };
             });
             setOffers(generatedOffers);
@@ -125,6 +171,156 @@ const LandingPage = () => {
 
     return () => clearInterval(typingInterval);
   }, []); // Run once on mount
+
+  // Auto-scroll functionality for ongoing batches
+  useEffect(() => {
+    if (!scrollContainerRef.current || !autoScrollEnabled || isDragging || offers.length === 0) {
+      if (autoScrollRef.current) {
+        clearInterval(autoScrollRef.current);
+        autoScrollRef.current = null;
+      }
+      return;
+    }
+
+    const container = scrollContainerRef.current;
+    const scrollSpeed = 2.5; // pixels per frame (faster scroll speed)
+    const fps = 60;
+    const interval = 1000 / fps;
+
+    const autoScroll = () => {
+      if (!container || !autoScrollEnabled || isDragging) {
+        isAutoScrollingRef.current = false;
+        return;
+      }
+      
+      isAutoScrollingRef.current = true;
+      const currentScroll = container.scrollLeft;
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      
+      // Check if we're at the end
+      if (currentScroll >= maxScroll - 1) {
+        // Reset to beginning for infinite scroll
+        container.scrollLeft = 0;
+      } else {
+        container.scrollLeft += scrollSpeed;
+      }
+    };
+
+    autoScrollRef.current = setInterval(autoScroll, interval);
+
+    return () => {
+      if (autoScrollRef.current) {
+        clearInterval(autoScrollRef.current);
+        autoScrollRef.current = null;
+      }
+    };
+  }, [autoScrollEnabled, isDragging, offers.length]);
+
+  // Mouse drag handlers
+  const handleMouseDown = (e) => {
+    if (!scrollContainerRef.current) return;
+    setIsDragging(true);
+    setAutoScrollEnabled(false);
+    setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
+    setScrollLeft(scrollContainerRef.current.scrollLeft);
+    scrollContainerRef.current.style.cursor = 'grabbing';
+    scrollContainerRef.current.style.userSelect = 'none';
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging || !scrollContainerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollContainerRef.current.offsetLeft;
+    const walk = (x - startX) * 2; // Scroll speed multiplier
+    scrollContainerRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  const handleMouseUp = () => {
+    if (!scrollContainerRef.current) return;
+    setIsDragging(false);
+    scrollContainerRef.current.style.cursor = 'grab';
+    scrollContainerRef.current.style.userSelect = '';
+    lastManualScrollRef.current = Date.now();
+    
+    // Clear any existing timeout
+    if (manualScrollTimeoutRef.current) {
+      clearTimeout(manualScrollTimeoutRef.current);
+    }
+    
+    // Resume auto-scroll after 3 seconds of inactivity
+    manualScrollTimeoutRef.current = setTimeout(() => {
+      setAutoScrollEnabled(true);
+    }, 3000);
+  };
+
+  const handleMouseLeave = () => {
+    if (!scrollContainerRef.current) return;
+    setIsDragging(false);
+    scrollContainerRef.current.style.cursor = 'grab';
+    scrollContainerRef.current.style.userSelect = '';
+    lastManualScrollRef.current = Date.now();
+    
+    // Clear any existing timeout
+    if (manualScrollTimeoutRef.current) {
+      clearTimeout(manualScrollTimeoutRef.current);
+    }
+    
+    // Resume auto-scroll after 3 seconds of inactivity
+    manualScrollTimeoutRef.current = setTimeout(() => {
+      setAutoScrollEnabled(true);
+    }, 3000);
+  };
+
+  // Touch drag handlers
+  const handleTouchStart = (e) => {
+    if (!scrollContainerRef.current) return;
+    setIsDragging(true);
+    setAutoScrollEnabled(false);
+    setStartX(e.touches[0].pageX - scrollContainerRef.current.offsetLeft);
+    setScrollLeft(scrollContainerRef.current.scrollLeft);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging || !scrollContainerRef.current) return;
+    const x = e.touches[0].pageX - scrollContainerRef.current.offsetLeft;
+    const walk = (x - startX) * 2;
+    scrollContainerRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    lastManualScrollRef.current = Date.now();
+    
+    // Clear any existing timeout
+    if (manualScrollTimeoutRef.current) {
+      clearTimeout(manualScrollTimeoutRef.current);
+    }
+    
+    // Resume auto-scroll after 3 seconds of inactivity
+    manualScrollTimeoutRef.current = setTimeout(() => {
+      setAutoScrollEnabled(true);
+    }, 3000);
+  };
+  
+  // Handle manual scroll detection (only for wheel/trackpad scroll)
+  const handleWheel = (e) => {
+    // Only handle if there's actual scrolling
+    if (Math.abs(e.deltaX) > 0 || Math.abs(e.deltaY) > 0) {
+      lastManualScrollRef.current = Date.now();
+      setAutoScrollEnabled(false);
+      
+      // Clear any existing timeout
+      if (manualScrollTimeoutRef.current) {
+        clearTimeout(manualScrollTimeoutRef.current);
+      }
+      
+      // Resume auto-scroll after 3 seconds of inactivity
+      manualScrollTimeoutRef.current = setTimeout(() => {
+        setAutoScrollEnabled(true);
+      }, 3000);
+    }
+  };
+
   return (
     <div className="w-full overflow-x-hidden">
       {/* Hero Section with Teacher Carousel */}
@@ -207,8 +403,25 @@ const LandingPage = () => {
               <p className="text-gray-500 text-center">No ongoing batches available at the moment.</p>
             </div>
           ) : (
-            <div className="relative overflow-hidden">
-              <div className="flex animate-scroll">
+            <div className="relative">
+              <div
+                ref={scrollContainerRef}
+                className="flex overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing"
+                style={{
+                  scrollBehavior: 'auto',
+                  WebkitOverflowScrolling: 'touch',
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none'
+                }}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onWheel={handleWheel}
+              >
                 {/* Duplicate offers multiple times for continuous scrolling */}
                 {Array.from({ length: Math.max(5, Math.ceil(10 / Math.max(1, offers.length))) }).map((_, repeatIndex) => (
                   <div key={`set-${repeatIndex}`} className="flex items-center flex-shrink-0">
@@ -232,6 +445,68 @@ const LandingPage = () => {
                           <div className="my-4 pb-2">
                             <p className="text-gray-800 font-medium text-base leading-relaxed">{offer.offer || offer.description}</p>
                           </div>
+                          
+                          {/* Batch Type and Timings */}
+                          {(offer.type || offer.startTime || offer.days?.length > 0) && (
+                            <div className="my-3 pt-3 border-t border-gray-100 space-y-2">
+                              {/* Online/Offline Badge */}
+                              {offer.type && (
+                                <div className="flex items-center">
+                                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                                    offer.type === 'online' 
+                                      ? 'bg-blue-50 text-blue-700 border border-blue-200' 
+                                      : 'bg-purple-50 text-purple-700 border border-purple-200'
+                                  }`}>
+                                    {offer.type === 'online' ? (
+                                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                      </svg>
+                                    ) : (
+                                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      </svg>
+                                    )}
+                                    {offer.type.charAt(0).toUpperCase() + offer.type.slice(1)}
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {/* Timings */}
+                              {(offer.startTime || offer.endTime || offer.days?.length > 0) && (
+                                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                                  {offer.days && offer.days.length > 0 && (
+                                    <div className="flex items-center">
+                                      <svg className="w-3.5 h-3.5 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                      </svg>
+                                      <span className="font-medium">{offer.days.join(', ')}</span>
+                                    </div>
+                                  )}
+                                  {(offer.startTime || offer.endTime) && (
+                                    <div className="flex items-center">
+                                      <svg className="w-3.5 h-3.5 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                      <span className="font-medium">
+                                        {offer.startTime && offer.endTime 
+                                          ? `${offer.startTime} - ${offer.endTime}`
+                                          : offer.startTime || offer.endTime
+                                        }
+                                      </span>
+                                    </div>
+                                  )}
+                                  {offer.timings && offer.timings.length > 0 && (
+                                    <div className="flex items-center">
+                                      <span className="text-gray-500">•</span>
+                                      <span className="ml-1">{offer.timings.join(', ')}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
                           {(offer.slotId || offer.availableSeats !== undefined) && (() => {
                             // Use availableSeats from ongoing batches if available, otherwise calculate from slots
                             const availableSeats = offer.availableSeats !== undefined 
@@ -326,7 +601,7 @@ const LandingPage = () => {
                         <span className="text-blue-600 font-bold text-lg">{course.title?.charAt(0) || 'C'}</span>
                       </div>
                     )}
-                    <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white px-2 sm:px-3 py-0.5 sm:py-1 rounded text-xs font-bold">
+                    <span className="absolute top-2 left-2 sm:top-3 sm:left-3 md:top-4 md:left-4 z-10 bg-white px-3 py-1 sm:px-4 sm:py-1.5 rounded-lg text-sm sm:text-base font-bold shadow-lg">
                       {course.level || course.class ? `Class ${course.class}` : 'Featured'}
                     </span>
                   </div>
@@ -346,7 +621,7 @@ const LandingPage = () => {
                             <span className="text-[#0061FF] text-base sm:text-lg font-bold">
                               ₹{course.yearlyPrice}
                             </span>
-                            <span className="text-gray-500 text-xs">/year</span>
+                            <span className="text-gray-500 text-xs">One time payment</span>
                           </div>
                         </>
                       ) : course.monthlyPrice ? (
@@ -361,7 +636,7 @@ const LandingPage = () => {
                           <span className="text-[#0061FF] text-lg sm:text-xl font-bold">
                             ₹{course.yearlyPrice}
                           </span>
-                          <span className="text-gray-500 text-xs">/year</span>
+                          <span className="text-gray-500 text-xs">One time payment</span>
                         </div>
                       ) : (
                         <span className="text-[#0061FF] text-lg sm:text-xl font-bold">

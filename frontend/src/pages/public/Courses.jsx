@@ -180,8 +180,8 @@ const Courses = () => {
                         alt={course.title}
                         className="w-full h-full object-cover"
                       />
-                      <div className="absolute top-2 left-2 sm:top-3 sm:left-3 md:top-4 md:left-4">
-                        <span className="bg-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-bold shadow-md">
+                      <div className="absolute top-2 left-2 sm:top-3 sm:left-3 md:top-4 md:left-4 z-10">
+                        <span className="bg-white px-3 py-1 sm:px-4 sm:py-1.5 rounded-lg text-sm sm:text-base font-bold shadow-lg">
                           {course.level || course.class ? `Class ${course.class}` : 'Featured'}
                         </span>
                       </div>
@@ -213,7 +213,7 @@ const Courses = () => {
                               <span className="text-[#0061FF] text-lg sm:text-xl font-bold">
                                 ₹{course.yearlyPrice}
                               </span>
-                              <span className="text-gray-500 text-xs sm:text-sm">/year</span>
+                              <span className="text-gray-500 text-xs sm:text-sm">One time payment</span>
                             </div>
                           </>
                         ) : course.monthlyPrice ? (
@@ -228,7 +228,7 @@ const Courses = () => {
                             <span className="text-[#0061FF] text-xl sm:text-2xl font-bold">
                               ₹{course.yearlyPrice}
                             </span>
-                            <span className="text-gray-500 text-xs sm:text-sm">/year</span>
+                            <span className="text-gray-500 text-xs sm:text-sm">One time payment</span>
                           </div>
                         ) : (
                           <span className="text-[#0061FF] text-xl sm:text-2xl font-bold">

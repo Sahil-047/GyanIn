@@ -15,22 +15,16 @@ const Teachers = () => {
         setLoading(true)
         // Bypass cache to get fresh data
         const response = await cmsAPI.getCMSSection('carousel', true)
-        console.log('[Teachers] Full API response:', response)
         
         // Check multiple possible response structures
         let items = []
         if (response.success) {
           if (response.data?.data?.carouselItems) {
             items = response.data.data.carouselItems
-            console.log('[Teachers] Found carouselItems in response.data.data:', items.length, 'items')
           } else if (response.data?.carouselItems) {
             items = response.data.carouselItems
-            console.log('[Teachers] Found carouselItems in response.data:', items.length, 'items')
           } else if (response.carouselItems) {
             items = response.carouselItems
-            console.log('[Teachers] Found carouselItems in response root:', items.length, 'items')
-          } else {
-            console.warn('[Teachers] Unexpected response structure:', response)
           }
         }
         
@@ -52,14 +46,11 @@ const Teachers = () => {
               schedule2Image: teacher.schedule2Image || ''
             }
           })
-          console.log('[Teachers] Setting teachers list:', teachersList.length, 'teachers')
           setTeachers(teachersList)
         } else {
-          console.warn('[Teachers] No carousel items found')
           setTeachers([])
         }
       } catch (e) {
-        console.error('[Teachers] Error fetching teachers:', e)
         setError('Failed to load teachers')
       } finally {
         setLoading(false)

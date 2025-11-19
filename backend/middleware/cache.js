@@ -40,7 +40,6 @@ const cacheMiddleware = (ttl = CACHE_TTL) => {
 
     // If cache-busting parameter is present, skip cache
     if (hasCacheBust) {
-      console.log(`[CACHE] Cache-busting parameter detected, skipping cache for: ${key}`);
       // Still override res.json to cache the response (for future requests without cache-bust)
       const originalJson = res.json.bind(res);
       res.json = function(data) {
@@ -56,7 +55,6 @@ const cacheMiddleware = (ttl = CACHE_TTL) => {
 
     if (cached && (Date.now() - cached.timestamp) < cached.ttl) {
       // Cache hit
-      console.log(`[CACHE] Cache hit for: ${key}`);
       return res.json(cached.data);
     }
 
@@ -92,7 +90,6 @@ const clearCache = (pattern) => {
 
 // Clear cache by section (for CMS updates)
 const clearCacheBySection = (section) => {
-  console.log(`[CACHE] Clearing cache for section: ${section}`);
   
   // Get all cache keys and clear matching ones
   const keysToDelete = [];
@@ -106,13 +103,10 @@ const clearCacheBySection = (section) => {
       key.includes(`cms?section=${section}`)
     ) {
       keysToDelete.push(key);
-      console.log(`[CACHE] Deleting cache key: ${key}`);
     }
   }
   
   keysToDelete.forEach(key => cache.delete(key));
-  
-  console.log(`[CACHE] Cleared ${keysToDelete.length} cache entries for section: ${section}`);
 };
 
 // Get cache stats

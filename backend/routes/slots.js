@@ -170,7 +170,6 @@ router.post('/', slotValidation, async (req, res) => {
         try {
             await generateOngoingCourses();
         } catch (error) {
-            console.error('Error auto-generating ongoing batches:', error);
             // Don't fail the request if ongoing batches generation fails
         }
 
@@ -218,7 +217,6 @@ router.put('/:id', slotValidation, async (req, res) => {
         try {
             await generateOngoingCourses();
         } catch (error) {
-            console.error('Error auto-generating ongoing batches:', error);
             // Don't fail the request if ongoing batches generation fails
         }
 
@@ -256,7 +254,6 @@ router.put('/:id/toggle', async (req, res) => {
         try {
             await generateOngoingCourses();
         } catch (error) {
-            console.error('Error auto-generating ongoing batches:', error);
             // Don't fail the request if ongoing batches generation fails
         }
 
@@ -310,7 +307,6 @@ router.put('/:id/enroll', async (req, res) => {
         try {
             await generateOngoingCourses();
         } catch (error) {
-            console.error('Error auto-generating ongoing courses:', error);
             // Don't fail the request if ongoing courses generation fails
         }
 
@@ -345,7 +341,6 @@ router.delete('/:id', async (req, res) => {
         try {
             await generateOngoingCourses();
         } catch (error) {
-            console.error('Error auto-generating ongoing batches:', error);
             // Don't fail the request if ongoing batches generation fails
         }
 

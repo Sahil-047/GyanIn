@@ -156,7 +156,6 @@ router.post('/', contactValidation, async (req, res) => {
           `
         });
       } catch (emailError) {
-        console.error('Email sending error:', emailError);
         // Don't fail the request if email fails
       }
     }

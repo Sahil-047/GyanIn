@@ -49,7 +49,7 @@ const Footer = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  GyanIN-1
+                  Gyanin-1
                 </a>
               </li>
               <li>
@@ -63,7 +63,7 @@ const Footer = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  GyanIN-2
+                  Gyanin-2
                 </a>
               </li>
             </ul>
@@ -115,7 +115,7 @@ const Footer = () => {
         </div>
         <div className="mt-6 sm:mt-8 border-t border-gray-200 pt-6 sm:pt-8">
           <p className="text-xs sm:text-sm md:text-base text-gray-400 text-center">
-            © {new Date().getFullYear()} GyanIN Learning Platform. All rights reserved.
+            © {new Date().getFullYear()} Gyanin Academy. All rights reserved.
           </p>
         </div>
       </div>

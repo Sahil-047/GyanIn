@@ -17,31 +17,23 @@ const TeacherCarousel = () => {
             try {
                 // Bypass cache to get fresh data
                 const response = await cmsAPI.getCMSSection('carousel', true);
-                console.log('[TeacherCarousel] Full API response:', response);
-                
-                // Check multiple possible response structures
+// Check multiple possible response structures
                 let items = [];
                 if (response.success) {
                     if (response.data?.data?.carouselItems) {
                         items = response.data.data.carouselItems;
-                        console.log('[TeacherCarousel] Found carouselItems in response.data.data:', items.length, 'items');
-                    } else if (response.data?.carouselItems) {
+} else if (response.data?.carouselItems) {
                         items = response.data.carouselItems;
-                        console.log('[TeacherCarousel] Found carouselItems in response.data:', items.length, 'items');
-                    } else if (response.carouselItems) {
+} else if (response.carouselItems) {
                         items = response.carouselItems;
-                        console.log('[TeacherCarousel] Found carouselItems in response root:', items.length, 'items');
-                    } else {
-                        console.warn('[TeacherCarousel] Unexpected response structure:', response);
-                    }
+} else {
+}
                 }
                 
                 if (items && items.length > 0) {
-                    console.log('[TeacherCarousel] Setting carousel items:', items);
-                    setCarouselItems(items);
+setCarouselItems(items);
                 } else {
-                    console.warn('[TeacherCarousel] No carousel items found, using fallback');
-                    // Fallback to mock data if CMS is empty
+// Fallback to mock data if CMS is empty
                     setCarouselItems([
                         {
                             id: 1,
@@ -58,8 +50,7 @@ const TeacherCarousel = () => {
                     ]);
                 }
             } catch (error) {
-                console.error('[TeacherCarousel] Error fetching carousel data:', error);
-                // Fallback to mock data on error
+// Fallback to mock data on error
                 setCarouselItems([
                     {
                         id: 1,

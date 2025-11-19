@@ -27,7 +27,6 @@ const corsOptions = {
 
     // Development mode: Allow all origins for easier development
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`[DEV] CORS allowing origin: ${origin}`);
       return callback(null, true);
     }
 
@@ -39,7 +38,6 @@ const corsOptions = {
 
     // If ALLOW_ALL_ORIGINS is set to true, allow all origins (use with caution)
     if (process.env.ALLOW_ALL_ORIGINS === 'true') {
-      console.warn(`[WARNING] CORS is allowing all origins due to ALLOW_ALL_ORIGINS=true`);
       return callback(null, true);
     }
 
@@ -88,7 +86,6 @@ const corsOptions = {
     if (isAllowed) {
       callback(null, true);
     } else {
-      console.warn(`[CORS] Blocked origin: ${origin}. Allowed origins: ${allowedOrigins.join(', ')}`);
       // In production, reject unauthorized origins
       callback(new Error(`CORS policy: Origin ${origin} is not allowed`));
     }
@@ -120,9 +117,6 @@ app.use(cors(corsOptions));
 // Additional CORS logging in production for debugging
 if (process.env.NODE_ENV === 'production' && process.env.CORS_DEBUG === 'true') {
   app.use((req, res, next) => {
-    if (req.headers.origin) {
-      console.log(`[CORS DEBUG] Request from origin: ${req.headers.origin} to ${req.path}`);
-    }
     next();
   });
 }
@@ -147,14 +141,11 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gyanin', 
 
       if (Array.isArray(cmsItems) && cmsItems.length > 0) {
         await bootstrapCarouselItems();
-      } else {
-        console.warn('[bootstrapCarouselItems] Skipped — CMS has no carouselItems');
       }
     }
 
     await syncCarouselItems();
   } catch (error) {
-    console.error('[Carousel Sync] Failed to ensure carousel consistency:', error.message);
   }
 })
 .catch(err => {});
@@ -186,7 +177,6 @@ app.get('/api/health', (req, res) => {
 app.use((err, req, res, next) => {
   // Handle CORS errors specifically
   if (err.message && err.message.includes('CORS')) {
-    console.error(`[CORS Error] ${err.message}`);
     return res.status(403).json({
       error: 'CORS policy violation',
       message: process.env.NODE_ENV === 'development' ? err.message : 'Origin not allowed by CORS policy',
@@ -195,10 +185,6 @@ app.use((err, req, res, next) => {
   }
 
   // Handle other errors
-  console.error(`[Error] ${err.message}`);
-  if (process.env.NODE_ENV === 'development') {
-    console.error(`[Error Stack] ${err.stack}`);
-  }
 
   // If headers already sent, delegate to default Express error handler
   if (res.headersSent) {
@@ -218,7 +204,6 @@ app.use('*', (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
 });
 
 module.exports = app;

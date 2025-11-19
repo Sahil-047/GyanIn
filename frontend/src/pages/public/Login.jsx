@@ -62,17 +62,9 @@ const Login = () => {
                         ))}
                     </div>
 
-                    <p className="mt-8 text-center text-sm text-gray-500">
-                        Student and Teacher login is available through{' '}
-                        <a 
-                            href="https://web.classplusapp.com/" 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-700 font-medium underline"
-                        >
-                            ClassPlus
-                        </a>
-                    </p>
+                    <h2 className="mt-8 text-center">
+                        <strong> use this ORG CODE to login : GYANIN </strong>
+                    </h2>
                 </div>
             </div>
         </div>

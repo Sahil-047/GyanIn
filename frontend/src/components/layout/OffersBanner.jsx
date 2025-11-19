@@ -136,19 +136,19 @@ const OffersBanner = () => {
                 transform: isVisible ? 'translateY(0)' : 'translateY(-100%)'
             }}
         >
-            {/* Faded Offer Name text - Centered and Fully Visible (Hidden on Mobile) */}
+            {/* Faded Offer Name text - Centered Background (Hidden on Mobile) */}
             <div
                 className="hidden sm:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none w-full"
                 style={{
-                    fontSize: 'clamp(40px, 8vw, 120px)',
+                    fontSize: 'clamp(24px, 5vw, 60px)',
                     fontWeight: 'bold',
-                    color: 'rgba(255, 255, 255, 0.4)',
+                    color: 'rgba(255, 255, 255, 0.7)',
                     lineHeight: 1,
                     whiteSpace: 'normal',
                     textAlign: 'center',
                     wordBreak: 'break-word',
                     overflowWrap: 'break-word',
-                    letterSpacing: 'clamp(2px, 1vw, 8px)',
+                    letterSpacing: 'clamp(1px, 0.5vw, 4px)',
                     userSelect: 'none',
                     padding: '0 20px'
                 }}
@@ -162,12 +162,12 @@ const OffersBanner = () => {
                     <span
                         className="text-white font-extrabold uppercase"
                         style={{
-                            fontSize: 'clamp(14px, 3vw, 18px)',
+                            fontSize: 'clamp(12px, 2.5vw, 16px)',
                             fontWeight: 900,
-                            letterSpacing: '0.5px',
+                            letterSpacing: '0.3px',
                             whiteSpace: 'normal',
                             lineHeight: '1.3',
-                            textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
+                            textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)'
                         }}
                     >
                         {activeOffer.offer || activeOffer.name || 'SPECIAL OFFER'}

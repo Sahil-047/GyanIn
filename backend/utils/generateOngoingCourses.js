@@ -100,7 +100,6 @@ const generateOngoingCourses = async () => {
       data: allCourses
     };
   } catch (error) {
-    console.error('Error generating ongoing courses:', error);
     throw error;
   }
 };

@@ -32,14 +32,12 @@ const deleteImageFromEdgeStore = async (url) => {
                     await backendClient.Courses.delete({ url });
                     return true;
                 } catch (err2) {
-                    console.error('Error deleting from both buckets:', err2.message);
                     return false;
                 }
             }
         }
         return true; // Not an EdgeStore URL, return success
     } catch (error) {
-        console.error('Error deleting image from EdgeStore:', error.message);
         return false;
     }
 };
@@ -103,8 +101,6 @@ router.get('/:section', cacheMiddleware(5 * 60 * 1000), async (req, res) => {
         // ROOT CAUSE FIX: ALWAYS get ALL documents and merge ALL items
         const allDocuments = await CMS.find({ section }).lean();
         
-        console.log(`[CMS GET ${section}] Found ${allDocuments.length} document(s)`);
-        
         let cmsContent = null;
         let allItems = [];
         
@@ -138,7 +134,6 @@ router.get('/:section', cacheMiddleware(5 * 60 * 1000), async (req, res) => {
                     }
                 });
                 cmsContent.data.carouselItems = Array.from(itemMap.values());
-                console.log(`[CMS GET ${section}] Merged ${allItems.length} total items into ${cmsContent.data.carouselItems.length} unique items`);
             } else if (section === 'offers') {
                 allDocuments.forEach(doc => {
                     if (doc.data?.offers && Array.isArray(doc.data.offers)) {
@@ -188,14 +183,6 @@ router.get('/:section', cacheMiddleware(5 * 60 * 1000), async (req, res) => {
                          section === 'offers' ? cmsContent.data.offers?.length || 0 :
                          section === 'testimonials' ? cmsContent.data.testimonials?.length || 0 :
                          cmsContent.data.ongoingCourses?.length || 0;
-            console.log(`[CMS GET ${section}] RETURNING ${count} items from ${allDocuments.length} document(s)`);
-            if (section === 'carousel' && cmsContent.data.carouselItems) {
-                console.log(`[CMS GET ${section}] Carousel items:`, JSON.stringify(cmsContent.data.carouselItems.map(item => ({
-                    id: item.id,
-                    teacherName: item.teacher?.name,
-                    hasImage: !!item.teacher?.image
-                })), null, 2));
-            }
         }
 
         // Return empty structure instead of 404 to prevent caching 404 responses
@@ -808,7 +795,6 @@ router.put('/offers/:id', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error updating offer:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to update offer',
@@ -927,7 +913,6 @@ router.delete('/offers/:id', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error deleting offer:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to delete offer',
@@ -1199,7 +1184,6 @@ router.put('/ongoingCourses/:id', async (req, res) => {
             data: section.data.ongoingCourses[courseIndex] 
         });
     } catch (error) {
-        console.error('Error updating ongoing batch:', error);
         res.status(500).json({ 
             success: false, 
             message: 'Failed to update ongoing batch', 
@@ -1247,7 +1231,6 @@ router.delete('/ongoingCourses/:id', async (req, res) => {
             data: section.data.ongoingCourses[courseIndex] 
         });
     } catch (error) {
-        console.error('Error deleting ongoing batch:', error);
         res.status(500).json({ 
             success: false, 
             message: 'Failed to remove ongoing batch', 

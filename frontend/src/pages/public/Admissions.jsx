@@ -9,8 +9,8 @@ const Admissions = ({ defaultView = 'admission' }) => {
     phone: '+91 83340 06669',
     email: 'info@gyanin.com',
     emailAdmissions: 'admissions@gyanin.com',
-    address: '8, 2, Mandeville Gardens, Ekdalia, Ballygunge, Kolkata, West Bengal 700019',
-    officeHours: 'Monday - Friday: 9:00 AM - 6:00 PM',
+    address: '8/2, Mandeville Gardens, Ekdalia, Ballygunge, Kolkata, West Bengal 700019',
+    officeHours: 'Monday - Saturday: 10:00 AM - 8:00 PM',
     whatsapp: '+91 83340 06669',
     appLink: 'https://clp.page.link/w3Xw',
     mapLink: 'https://maps.app.goo.gl/rUkr5az2oH69Cty17'
@@ -68,7 +68,7 @@ const Admissions = ({ defaultView = 'admission' }) => {
                           <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white font-bold">1</span>
                         </td>
                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap font-semibold text-gray-900">App Registration <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 align-middle">Mandatory</span></td>
-                        <td className="px-4 sm:px-6 py-4 text-gray-900 font-bold">Registration in our official app GyanIn is mandatory as a Student</td>
+                        <td className="px-4 sm:px-6 py-4 text-gray-900 font-bold">Registration in our official app Gyanin is mandatory as a Student</td>
                         <td className="px-4 sm:px-6 py-4">
                           <a href={contactDetails.appLink} className="inline-flex items-center justify-center hover:opacity-80 transition-opacity" target="_blank" rel="noopener noreferrer" title="Open GyanIN App">
                             <svg className="w-10 h-10" viewBox="0 0 24 24" fill="#4285F4">

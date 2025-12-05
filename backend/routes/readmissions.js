@@ -69,7 +69,9 @@ router.get('/', async (req, res) => {
                         capacity: slot.capacity,
                         availableSlots: slot.capacity - slot.enrolledStudents,
                         isFull: slot.enrolledStudents >= slot.capacity,
-                        isActive: slot.isActive
+                        isActive: slot.isActive,
+                        type: slot.type, // 'online' or 'offline'
+                        name: slot.name // Batch name
                     };
                 }
                 return readmissionData;
@@ -152,7 +154,8 @@ router.get('/:id', async (req, res) => {
                 capacity: slot.capacity,
                 availableSlots: slot.capacity - slot.enrolledStudents,
                 isFull: slot.enrolledStudents >= slot.capacity,
-                isActive: slot.isActive
+                isActive: slot.isActive,
+                type: slot.type // 'online' or 'offline'
             };
         }
 
@@ -201,15 +204,41 @@ router.post('/', readmissionValidation, async (req, res) => {
             });
         }
 
+        // Check if phone number is already registered to another student
+        // Normalize contact: trim whitespace
+        const trimmedContact = req.body.contact.trim();
+        
+        // Check for existing readmission with this contact number
+        const existingReadmission = await Readmission.findOne({ contact: trimmedContact });
+        if (existingReadmission) {
+            return res.status(400).json({
+                success: false,
+                message: 'This phone number is already registered to another student. Each phone number can only be associated with one student.',
+                errors: [{ path: 'contact', msg: 'Phone number already exists' }]
+            });
+        }
+
         // Create the readmission with default pending status
         // Handle backward compatibility: if 'course' is sent, map it to 'subject'
         const { course, ...restBody } = req.body
         const readmissionData = {
             ...restBody,
+            contact: trimmedContact, // Ensure contact is trimmed before saving
             subject: (req.body.subject && req.body.subject.trim()) || (course && course.trim()) || 'General',
             status: 'pending' // Ensure status is pending for new readmissions
         };
         const readmission = new Readmission(readmissionData);
+        
+        // Double-check before saving (race condition protection)
+        const finalCheck = await Readmission.findOne({ contact: trimmedContact });
+        if (finalCheck) {
+            return res.status(400).json({
+                success: false,
+                message: 'This phone number is already registered to another student. Each phone number can only be associated with one student.',
+                errors: [{ path: 'contact', msg: 'Phone number already exists' }]
+            });
+        }
+        
         await readmission.save();
 
         res.status(201).json({
@@ -219,6 +248,14 @@ router.post('/', readmissionValidation, async (req, res) => {
         });
 
   } catch (error) {
+        // Handle MongoDB duplicate key error (unique constraint violation)
+        if (error.code === 11000 || error.code === 11001 || error.message?.includes('duplicate key')) {
+            return res.status(400).json({
+                success: false,
+                message: 'This phone number is already registered to another student. Each phone number can only be associated with one student.',
+                errors: [{ path: 'contact', msg: 'Phone number already exists' }]
+            });
+        }
         res.status(500).json({
             success: false,
             message: 'Failed to create readmission',
@@ -247,16 +284,29 @@ router.put('/:id', readmissionValidation, async (req, res) => {
             });
         }
 
-        // If slot is being changed, only update enrollment if readmission is approved
-        if (req.body.slotName && req.body.slotName !== oldReadmission.slotName && oldReadmission.status === 'approved') {
-            // Decrement old slot
-            const oldSlot = await Slot.findOne({ name: oldReadmission.slotName });
-            if (oldSlot && oldSlot.enrolledStudents > 0) {
-                oldSlot.enrolledStudents -= 1;
-                await oldSlot.save();
+        // Check if phone number is being changed and if the new number is already taken by another student
+        if (req.body.contact) {
+            const trimmedContact = req.body.contact.trim();
+            const oldTrimmedContact = oldReadmission.contact ? oldReadmission.contact.trim() : '';
+            
+            if (trimmedContact !== oldTrimmedContact) {
+                const existingReadmission = await Readmission.findOne({ 
+                    contact: trimmedContact,
+                    _id: { $ne: req.params.id } // Exclude the current readmission
+                });
+                if (existingReadmission) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'This phone number is already registered to another student. Each phone number can only be associated with one student.',
+                        errors: [{ path: 'contact', msg: 'Phone number already exists' }]
+                    });
+                }
             }
+        }
 
-            // Check new slot capacity and increment
+        // Handle slot change and enrollment updates
+        if (req.body.slotName && req.body.slotName !== oldReadmission.slotName) {
+            // Verify new slot exists
             const newSlot = await Slot.findOne({ name: req.body.slotName });
             if (!newSlot) {
                 return res.status(404).json({
@@ -265,21 +315,50 @@ router.put('/:id', readmissionValidation, async (req, res) => {
                 });
             }
 
-            if (newSlot.enrolledStudents >= newSlot.capacity) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Selected slot is full. Please choose another slot.'
-                });
-            }
+            // If readmission is approved, we need to update enrollment counts
+            if (oldReadmission.status === 'approved') {
+                // Decrement old slot enrollment
+                const oldSlot = await Slot.findOne({ name: oldReadmission.slotName });
+                if (oldSlot) {
+                    if (oldSlot.enrolledStudents > 0) {
+                        oldSlot.enrolledStudents -= 1;
+                        await oldSlot.save();
+                    }
+                }
 
-            newSlot.enrolledStudents += 1;
-            await newSlot.save();
+                // Check new slot capacity before incrementing
+                if (newSlot.enrolledStudents >= newSlot.capacity) {
+                    // Rollback: restore old slot enrollment if we decremented it
+                    if (oldSlot && oldSlot.enrolledStudents < oldSlot.capacity) {
+                        oldSlot.enrolledStudents += 1;
+                        await oldSlot.save();
+                    }
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Selected slot is full. Please choose another slot.'
+                    });
+                }
+
+                // Increment new slot enrollment
+                newSlot.enrolledStudents += 1;
+                await newSlot.save();
+                
+                // Sync ongoing batches in CMS to reflect updated enrollment
+                try {
+                    const { generateOngoingCourses } = require('../utils/generateOngoingCourses');
+                    await generateOngoingCourses();
+                } catch (error) {
+                    // Don't fail the request if ongoing batches generation fails
+                }
+            }
+            // If readmission is pending, just update the slotName (enrollment will be handled when approved)
         }
 
         // Handle backward compatibility: if 'course' is sent, map it to 'subject'
         const { course, ...restBody } = req.body
         const updateData = {
             ...restBody,
+            ...(req.body.contact ? { contact: req.body.contact.trim() } : {}), // Ensure contact is trimmed
             ...(course && !req.body.subject ? { subject: course } : {}),
             ...(req.body.subject ? { subject: req.body.subject } : {})
         }
@@ -296,6 +375,14 @@ router.put('/:id', readmissionValidation, async (req, res) => {
         });
 
   } catch (error) {
+        // Handle MongoDB duplicate key error (unique constraint violation)
+        if (error.code === 11000 || error.code === 11001) {
+            return res.status(400).json({
+                success: false,
+                message: 'This phone number is already registered to another student. Each phone number can only be associated with one student.',
+                errors: [{ path: 'contact', msg: 'Phone number already exists' }]
+            });
+        }
         res.status(500).json({
             success: false,
             message: 'Failed to update readmission',
@@ -369,7 +456,13 @@ router.put('/:id/status', async (req, res) => {
             slot.enrolledStudents += 1;
             await slot.save();
             
-            
+            // Sync ongoing batches in CMS to reflect updated enrollment
+            try {
+                const { generateOngoingCourses } = require('../utils/generateOngoingCourses');
+                await generateOngoingCourses();
+            } catch (error) {
+                // Don't fail the request if ongoing batches generation fails
+            }
         }
 
         // If rejecting a previously approved readmission, decrement slot enrollment
@@ -379,6 +472,14 @@ router.put('/:id/status', async (req, res) => {
             if (slot && slot.enrolledStudents > 0) {
                 slot.enrolledStudents -= 1;
                 await slot.save();
+                
+                // Sync ongoing batches in CMS to reflect updated enrollment
+                try {
+                    const { generateOngoingCourses } = require('../utils/generateOngoingCourses');
+                    await generateOngoingCourses();
+                } catch (error) {
+                    // Don't fail the request if ongoing batches generation fails
+                }
             }
         }
 

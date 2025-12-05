@@ -14,6 +14,7 @@ const edgestoreHandler = require('./routes/edgestore');
 const { syncCarouselItems, bootstrapCarouselItems } = require('./utils/syncCarouselItems');
 const { CarouselItem } = require('./models/CarouselItem');
 const CMS = require('./models/CMS');
+const Readmission = require('./models/Readmission');
 
 // Middleware
 // CORS configuration: flexible handling for development and production
@@ -145,10 +146,20 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gyanin', 
     }
 
     await syncCarouselItems();
+    
+    // Ensure unique index exists on Readmission contact field
+    try {
+      await Readmission.collection.createIndex({ contact: 1 }, { unique: true, sparse: true });
+    } catch (indexError) {
+      // Index creation failed - may be due to existing duplicates
+    }
   } catch (error) {
+    // Error during database initialization
   }
 })
-.catch(err => {});
+.catch(err => {
+  // Database connection error
+});
 
 // Routes
 app.use('/api/contact', require('./routes/contact'));

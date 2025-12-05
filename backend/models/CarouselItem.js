@@ -38,6 +38,11 @@ const carouselItemSchema = new mongoose.Schema({
     type: String,
     trim: true,
     index: true
+  },
+  order: {
+    type: Number,
+    default: 0,
+    index: true
   }
 }, {
   timestamps: true

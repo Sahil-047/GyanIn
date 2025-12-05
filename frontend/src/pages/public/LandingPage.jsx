@@ -29,9 +29,10 @@ const LandingPage = () => {
     const fetchCMSData = async () => {
       try {
         // Fetch courses from courses API instead of CMS
+        // Bypass cache for ongoingCourses to get fresh data after slot updates
         const [coursesResponse, ongoingCoursesResponse, slotsResponse] = await Promise.allSettled([
           coursesAPI.getCourses({ limit: 3 }),
-          cmsAPI.getCMSSection('ongoingCourses'),
+          cmsAPI.getCMSSection('ongoingCourses', true), // bypassCache = true to get fresh data
           slotsAPI.getSlots({ limit: 100 })
         ]);
 
@@ -722,7 +723,7 @@ const LandingPage = () => {
       <section className="w-full bg-white py-12 sm:py-16 md:py-20">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-3 sm:mb-4">
-            Why Choose GyanIN
+            Why Choose Gyanin
           </h2>
           <p className="text-gray-600 text-sm sm:text-base text-center max-w-2xl mx-auto mb-8 sm:mb-12 md:mb-16 px-4">
             Gain clarity & achieve your educational goals with expert guidance.

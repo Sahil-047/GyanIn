@@ -53,10 +53,10 @@ const Merchandise = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3 sm:mb-4">
-              GyanIN Merchandise
+              Gyanin Merchandise
             </h1>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-2 sm:px-0">
-              Show your GyanIN pride with our exclusive merchandise collection. Quality products designed for learners like you.
+              Show your Gyanin pride with our exclusive merchandise collection. Quality products designed for learners like you.
             </p>
           </div>
         </div>

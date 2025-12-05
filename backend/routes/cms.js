@@ -523,6 +523,46 @@ router.post('/courses', async (req, res) => {
     }
 });
 
+// PUT /api/admin/cms/carousel/reorder - Reorder carousel items
+router.put('/carousel/reorder', async (req, res) => {
+    try {
+        const { itemIds } = req.body; // Array of item IDs in the desired order
+
+        if (!Array.isArray(itemIds) || itemIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'itemIds must be a non-empty array'
+            });
+        }
+
+        // Update order for each item
+        const updatePromises = itemIds.map((itemId, index) => {
+            return CarouselItem.findOneAndUpdate(
+                { $or: [{ _id: itemId }, { legacyId: String(itemId) }] },
+                { $set: { order: index } },
+                { new: true }
+            );
+        });
+
+        await Promise.all(updatePromises);
+
+        // Sync to CMS
+        await syncCarouselItems();
+
+        res.json({
+            success: true,
+            message: 'Carousel items reordered successfully'
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to reorder carousel items',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
+
 // POST /api/admin/cms/carousel - Add carousel item to CMS
 router.post('/carousel', async (req, res) => {
     try {
@@ -535,13 +575,18 @@ router.post('/carousel', async (req, res) => {
             });
         }
 
+        // Get the maximum order value to set new item at the end
+        const maxOrderItem = await CarouselItem.findOne().sort({ order: -1 });
+        const newOrder = maxOrderItem ? (maxOrderItem.order + 1) : 0;
+
         const carouselItem = new CarouselItem({
             teacherName: teacherName.trim(),
             description: description.trim(),
             teacherImage: (teacherImage && teacherImage.trim()) || DEFAULT_TEACHER_IMAGE,
             scheduleImage: scheduleImage || '',
             schedule1Image: schedule1Image || '',
-            schedule2Image: schedule2Image || ''
+            schedule2Image: schedule2Image || '',
+            order: newOrder
         });
 
         await carouselItem.save();
@@ -652,6 +697,15 @@ router.delete('/carousel/:id', async (req, res) => {
         }
 
         await CarouselItem.deleteOne({ _id: carouselItem._id });
+
+        // Reorder remaining items to fill gaps
+        const remainingItems = await CarouselItem.find().sort({ order: 1 });
+        for (let i = 0; i < remainingItems.length; i++) {
+            if (remainingItems[i].order !== i) {
+                remainingItems[i].order = i;
+                await remainingItems[i].save();
+            }
+        }
 
         await syncCarouselItems();
 

@@ -155,7 +155,7 @@ const ContactUs = () => {
 
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number <span className="text-gray-500 text-xs">(Optional - for admin reference)</span>
+                Phone Number *
               </label>
               <input
                 type="tel"

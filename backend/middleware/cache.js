@@ -90,23 +90,40 @@ const clearCache = (pattern) => {
 
 // Clear cache by section (for CMS updates)
 const clearCacheBySection = (section) => {
-  
   // Get all cache keys and clear matching ones
   const keysToDelete = [];
+  const sectionLower = section.toLowerCase();
+  
   for (const key of cache.keys()) {
+    const keyLower = key.toLowerCase();
     // Match the exact cache key format: METHOD:/api/admin/cms/section:{}
-    // Also match variations with trailing slashes, query params, etc.
+    // Also match variations with trailing slashes, query params, cache busters, etc.
+    // Match both exact and case-insensitive patterns
     if (
       key.includes(`/api/admin/cms/${section}`) || 
+      key.includes(`/api/admin/cms/${sectionLower}`) ||
       key.includes(`/api/cms/${section}`) ||
-      key.includes(`cms/${section}`) ||
-      key.includes(`cms?section=${section}`)
+      key.includes(`/api/cms/${sectionLower}`) ||
+      keyLower.includes(`cms/${sectionLower}`) ||
+      keyLower.includes(`cms?section=${sectionLower}`) ||
+      keyLower.includes(`cms/${section}`) ||
+      keyLower.includes(`cms?section=${section}`)
     ) {
       keysToDelete.push(key);
     }
   }
   
+  // Clear all matching keys
   keysToDelete.forEach(key => cache.delete(key));
+  
+  // For ongoingCourses, be extra aggressive and clear all CMS-related cache
+  if (section === 'ongoingCourses' || sectionLower === 'ongoingcourses') {
+    for (const key of Array.from(cache.keys())) {
+      if (key.toLowerCase().includes('cms')) {
+        cache.delete(key);
+      }
+    }
+  }
 };
 
 // Get cache stats

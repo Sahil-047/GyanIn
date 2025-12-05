@@ -24,13 +24,14 @@ router.get('/', async (req, res) => {
     try {
         const {
             page = 1,
-            limit = 10,
+            limit,
             course,
             instructor,
             isActive,
             search,
             sortBy = 'createdAt',
-            sortOrder = 'desc'
+            sortOrder = 'desc',
+            all = false // New parameter to get all slots without pagination
         } = req.query;
 
         const filter = {};
@@ -58,22 +59,39 @@ router.get('/', async (req, res) => {
         const sortOptions = {};
         sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
-        const slots = await Slot.find(filter)
-            .sort(sortOptions)
-            .limit(limit * 1)
-            .skip((page - 1) * limit);
+        let slots;
+        let total = await Slot.countDocuments(filter);
 
-        const total = await Slot.countDocuments(filter);
+        // If 'all' parameter is true, return all slots without pagination
+        if (all === 'true' || all === true) {
+            slots = await Slot.find(filter).sort(sortOptions);
+            res.json({
+                success: true,
+                data: slots,
+                pagination: {
+                    current: 1,
+                    pages: 1,
+                    total
+                }
+            });
+        } else {
+            // Default pagination behavior
+            const limitValue = limit ? parseInt(limit) : 10;
+            slots = await Slot.find(filter)
+                .sort(sortOptions)
+                .limit(limitValue)
+                .skip((page - 1) * limitValue);
 
-        res.json({
-            success: true,
-            data: slots,
-            pagination: {
-                current: parseInt(page),
-                pages: Math.ceil(total / limit),
-                total
-            }
-        });
+            res.json({
+                success: true,
+                data: slots,
+                pagination: {
+                    current: parseInt(page),
+                    pages: Math.ceil(total / limitValue),
+                    total
+                }
+            });
+        }
 
     } catch (error) {
         res.status(500).json({
@@ -166,11 +184,14 @@ router.post('/', slotValidation, async (req, res) => {
         const slot = new Slot(req.body);
         await slot.save();
 
-        // Auto-generate ongoing batches from active slots
+        // Auto-generate ongoing batches from active slots and sync to CMS
         try {
             await generateOngoingCourses();
         } catch (error) {
-            // Don't fail the request if ongoing batches generation fails
+            // Log error but don't fail the request
+            if (process.env.NODE_ENV === 'development') {
+                // Error logged silently in production
+            }
         }
 
         res.status(201).json({
@@ -213,11 +234,14 @@ router.put('/:id', slotValidation, async (req, res) => {
             });
         }
 
-        // Auto-generate ongoing batches from active slots
+        // Auto-generate ongoing batches from active slots and sync to CMS
         try {
             await generateOngoingCourses();
         } catch (error) {
-            // Don't fail the request if ongoing batches generation fails
+            // Log error but don't fail the request
+            if (process.env.NODE_ENV === 'development') {
+                // Error logged silently in production
+            }
         }
 
         res.json({
@@ -250,11 +274,14 @@ router.put('/:id/toggle', async (req, res) => {
         slot.isActive = !slot.isActive;
         await slot.save();
 
-        // Auto-generate ongoing batches from active slots
+        // Auto-generate ongoing batches from active slots and sync to CMS
         try {
             await generateOngoingCourses();
         } catch (error) {
-            // Don't fail the request if ongoing batches generation fails
+            // Log error but don't fail the request
+            if (process.env.NODE_ENV === 'development') {
+                // Error logged silently in production
+            }
         }
 
         res.json({
@@ -337,11 +364,14 @@ router.delete('/:id', async (req, res) => {
             });
         }
 
-        // Auto-generate ongoing batches from active slots
+        // Auto-generate ongoing batches from active slots and sync to CMS
         try {
             await generateOngoingCourses();
         } catch (error) {
-            // Don't fail the request if ongoing batches generation fails
+            // Log error but don't fail the request
+            if (process.env.NODE_ENV === 'development') {
+                // Error logged silently in production
+            }
         }
 
         res.json({

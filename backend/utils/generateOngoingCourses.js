@@ -43,29 +43,30 @@ const generateOngoingCourses = async () => {
         ];
         const color = existingCourse?.color || colors[index % colors.length];
 
-        // If exists, preserve manual edits, otherwise use defaults
+        // Always sync slot data to ongoing courses (slot updates should reflect in carousel)
+        // Only preserve color customization, everything else syncs from slot
         return {
           id: existingCourse?.id || slot._id.toString(),
-          name: existingCourse?.name || slot.name || `${slot.subject} - Class ${slot.class}`,
-          title: existingCourse?.title || slot.name || `${slot.subject} - Class ${slot.class}`,
-          offer: existingCourse?.offer || slot.course || `${slot.subject} | ${slot.instructor}`,
-          description: existingCourse?.description || slot.course || `${slot.subject} | ${slot.instructor}`,
+          name: slot.name || `${slot.subject} - Class ${slot.class}`, // Always sync from slot
+          title: slot.name || `${slot.subject} - Class ${slot.class}`, // Always sync from slot
+          offer: slot.course || `${slot.subject} | ${slot.instructor}`, // Always sync from slot
+          description: slot.course || `${slot.subject} | ${slot.instructor}`, // Always sync from slot
           slotId: slot._id.toString(),
-          courseId: existingCourse?.courseId || slot.course || '',
-          color: color,
-          isActive: existingCourse?.isActive !== undefined ? existingCourse.isActive : slot.isActive,
+          courseId: slot.course || '', // Always sync from slot
+          color: color, // Preserve color customization only
+          isActive: slot.isActive, // Always sync from slot
           isHidden: false, // Reset hidden status for active slots
           availableSeats: availableSeats, // Always update from slot
-          capacity: slot.capacity,
-          enrolledStudents: slot.enrolledStudents,
-          instructor: slot.instructor,
-          class: slot.class,
-          subject: slot.subject,
-          type: slot.type,
-          location: slot.location,
-          days: slot.days || [],
-          startTime: slot.startTime || '',
-          endTime: slot.endTime || ''
+          capacity: slot.capacity, // Always sync from slot
+          enrolledStudents: slot.enrolledStudents, // Always sync from slot
+          instructor: slot.instructor, // Always sync from slot
+          class: slot.class, // Always sync from slot
+          subject: slot.subject, // Always sync from slot
+          type: slot.type, // Always sync from slot
+          location: slot.location, // Always sync from slot
+          days: slot.days || [], // Always sync from slot
+          startTime: slot.startTime || '', // Always sync from slot
+          endTime: slot.endTime || '' // Always sync from slot
         };
       });
 
@@ -80,6 +81,7 @@ const generateOngoingCourses = async () => {
       existingCmsContent.data = {
         ongoingCourses: allCourses
       };
+      existingCmsContent.updatedAt = new Date();
       await existingCmsContent.save();
     } else {
       existingCmsContent = new CMS({
@@ -91,7 +93,7 @@ const generateOngoingCourses = async () => {
       await existingCmsContent.save();
     }
 
-    // Clear cache for ongoing courses section
+    // Clear cache for ongoing courses section to ensure fresh data
     clearCacheBySection('ongoingCourses');
 
     return {

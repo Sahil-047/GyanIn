@@ -36,6 +36,7 @@ const bootstrapCarouselItems = async () => {
     return false;
   }
 
+  let orderIndex = 0;
   await Promise.all(items.map(async (cmsItem) => {
     const teacher = cmsItem.teacher || {};
     const payload = {
@@ -45,7 +46,8 @@ const bootstrapCarouselItems = async () => {
       scheduleImage: teacher.scheduleImage || '',
       schedule1Image: teacher.schedule1Image || '',
       schedule2Image: teacher.schedule2Image || '',
-      legacyId: cmsItem.id ? String(cmsItem.id) : undefined
+      legacyId: cmsItem.id ? String(cmsItem.id) : undefined,
+      order: orderIndex++
     };
 
     const filter = payload.legacyId
@@ -67,7 +69,7 @@ const bootstrapCarouselItems = async () => {
 };
 
 const syncCarouselItems = async () => {
-  const items = await CarouselItem.find().sort({ createdAt: -1 }).lean();
+  const items = await CarouselItem.find().sort({ order: 1, createdAt: -1 }).lean();
 
   if (!items || items.length === 0) {
     return [];

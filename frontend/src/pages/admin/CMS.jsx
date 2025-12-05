@@ -697,6 +697,50 @@ const CMS = () => {
     setLoading(false)
   }
 
+  // Handle reorder carousel items
+  const handleMoveUp = async (itemId) => {
+    const items = cmsData.carousel?.carouselItems || []
+    const currentIndex = items.findIndex(item => item.id === itemId)
+    
+    if (currentIndex <= 0) return
+
+    const newItems = [...items]
+    const temp = newItems[currentIndex]
+    newItems[currentIndex] = newItems[currentIndex - 1]
+    newItems[currentIndex - 1] = temp
+
+    await handleReorder(newItems.map(item => item.id))
+  }
+
+  const handleMoveDown = async (itemId) => {
+    const items = cmsData.carousel?.carouselItems || []
+    const currentIndex = items.findIndex(item => item.id === itemId)
+    
+    if (currentIndex >= items.length - 1) return
+
+    const newItems = [...items]
+    const temp = newItems[currentIndex]
+    newItems[currentIndex] = newItems[currentIndex + 1]
+    newItems[currentIndex + 1] = temp
+
+    await handleReorder(newItems.map(item => item.id))
+  }
+
+  const handleReorder = async (itemIds) => {
+    setLoading(true)
+    try {
+      const result = await cmsAPI.reorderCarouselItems(itemIds)
+      if (result && result.success) {
+        toast.success('Carousel items reordered successfully!')
+        await fetchCMSData()
+      }
+    } catch (error) {
+      toast.error('Failed to reorder items. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Render form based on active tab
   const renderForm = () => {
     switch (activeTab) {
@@ -1415,6 +1459,27 @@ const CMS = () => {
                     </div>
 
                     <div className="flex space-x-2 ml-4">
+                      {/* Reorder buttons for carousel items */}
+                      {activeTab === 'carousel' && !(item.title || item.subtitle) && (
+                        <>
+                          <button
+                            onClick={() => handleMoveUp(item.id)}
+                            disabled={items.findIndex(i => i.id === item.id) === 0}
+                            className="inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Move up"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            onClick={() => handleMoveDown(item.id)}
+                            disabled={items.findIndex(i => i.id === item.id) === items.length - 1}
+                            className="inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Move down"
+                          >
+                            ↓
+                          </button>
+                        </>
+                      )}
                       {/* Hide edit button for old carousel structure */}
                       {!(activeTab === 'carousel' && (item.title || item.subtitle)) && (
                         <button

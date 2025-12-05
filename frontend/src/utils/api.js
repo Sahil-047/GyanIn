@@ -209,6 +209,12 @@ export const cmsAPI = {
     method: 'DELETE'
   }),
 
+  // Reorder carousel items
+  reorderCarouselItems: (itemIds) => apiCall('/cms/carousel/reorder', {
+    method: 'PUT',
+    body: JSON.stringify({ itemIds })
+  }),
+
   // Testimonials
   addTestimonial: (data) => apiCall('/cms/testimonials', {
     method: 'POST',

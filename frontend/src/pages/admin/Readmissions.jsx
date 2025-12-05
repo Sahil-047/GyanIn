@@ -51,6 +51,8 @@ const Readmissions = () => {
 
   const [formErrors, setFormErrors] = useState({})
   const [editFormErrors, setEditFormErrors] = useState({})
+  const [slotSearchTerm, setSlotSearchTerm] = useState('')
+  const [editSlotSearchTerm, setEditSlotSearchTerm] = useState('')
 
   // Fetch readmissions
   const fetchReadmissions = async () => {
@@ -75,13 +77,13 @@ const Readmissions = () => {
     setLoading(false)
   }
 
-  // Fetch slots
+  // Fetch slots - fetch all slots without pagination limit
   const fetchSlots = async () => {
     try {
-      const data = await slotsAPI.getSlots()
+      const data = await slotsAPI.getSlots({ all: true })
       
       if (data.success) {
-        setSlots(data.data)
+        setSlots(data.data || [])
       }
     } catch (error) {
       
@@ -563,7 +565,10 @@ const Readmissions = () => {
                         Subject
                       </th>
                       <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        Batch
+                        Batch name
+                      </th>
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Batch Schedule
                       </th>
                       <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Status
@@ -579,7 +584,7 @@ const Readmissions = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {loading ? (
                       <tr>
-                        <td colSpan="6" className="px-6 py-4 text-center">
+                        <td colSpan="7" className="px-6 py-4 text-center">
                           <div className="flex justify-center items-center">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                             <span className="ml-2 text-gray-500">Loading...</span>
@@ -588,7 +593,7 @@ const Readmissions = () => {
                       </tr>
                     ) : readmissions.length === 0 ? (
                       <tr>
-                        <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                        <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
                           No readmissions found
                         </td>
                       </tr>
@@ -613,15 +618,18 @@ const Readmissions = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-semibold text-gray-900">{readmission.slotName}</div>
-                            {readmission.slotInfo && (
-                              <div className="text-xs text-gray-500 mt-1">
-                                <span className="font-medium">{readmission.slotInfo.enrolledStudents}/{readmission.slotInfo.capacity}</span> enrolled
-                                {readmission.slotInfo.isFull && (
-                                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">
-                                    FULL
-                                  </span>
-                                )}
-                              </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {readmission.slotInfo && readmission.slotInfo.type ? (
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                readmission.slotInfo.type === 'online' 
+                                  ? 'bg-blue-100 text-blue-800' 
+                                  : 'bg-purple-100 text-purple-800'
+                              }`}>
+                                {readmission.slotInfo.type === 'online' ? 'Online' : 'Offline'}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-500">-</span>
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -868,61 +876,159 @@ const Readmissions = () => {
       {/* Batch Selection Modal */}
       {showSlotModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-5/6 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Select a Batch</h3>
-                <button
-                  onClick={() => setShowSlotModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <div className="relative top-10 mx-auto p-6 border w-11/12 md:w-4/5 lg:w-5/6 xl:w-4/5 shadow-xl rounded-lg bg-white max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900">Select a Batch</h3>
+              <button
+                onClick={() => {
+                  setShowSlotModal(false)
+                  setSlotSearchTerm('')
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Search Bar */}
+            <div className="mb-4">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                </button>
+                </div>
+                <input
+                  type="text"
+                  value={slotSearchTerm}
+                  onChange={(e) => setSlotSearchTerm(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium"
+                  placeholder="Search batches by name, course, subject, instructor, type..."
+                />
               </div>
-              
-              <div className="overflow-x-auto max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
+            </div>
+            
+            {/* Scrollable Table - Show first 7, then scrollable */}
+            <div className="flex-1 overflow-hidden border-2 border-gray-200 rounded-lg shadow-inner flex flex-col" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+              <div className="overflow-auto" style={{ maxHeight: '500px' }}>
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50 sticky top-0">
+                  <thead className="bg-gradient-to-r from-gray-100 to-gray-50 sticky top-0 z-10 shadow-sm">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Batch Name</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Course</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Subject - Class</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Time</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Days</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Capacity</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Instructor</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Type</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Location</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Batch Name</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Course</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Subject - Class</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Time</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Days</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Capacity</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Instructor</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Type</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Location</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {slots.filter(slot => slot.isActive).map((slot) => (
-                      <tr
-                        key={slot._id}
-                        onClick={() => handleSlotSelect(slot)}
-                        className="cursor-pointer hover:bg-blue-50 transition-colors duration-150"
-                      >
-                        <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">{slot.name}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.course}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.subject} - {slot.class}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.startTime} - {slot.endTime}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.days.join(', ')}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.enrolledStudents}/{slot.capacity}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.instructor}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.type}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.location}</td>
-                      </tr>
-                    ))}
+                    {(() => {
+                      const filteredSlots = slots
+                        .filter(slot => slot.isActive)
+                        .filter(slot => {
+                          if (!slotSearchTerm) return true
+                          const search = slotSearchTerm.toLowerCase()
+                          return (
+                            slot.name?.toLowerCase().includes(search) ||
+                            slot.course?.toLowerCase().includes(search) ||
+                            slot.subject?.toLowerCase().includes(search) ||
+                            slot.instructor?.toLowerCase().includes(search) ||
+                            slot.type?.toLowerCase().includes(search) ||
+                            slot.location?.toLowerCase().includes(search) ||
+                            slot.class?.toString().includes(search)
+                          )
+                        })
+                      
+                      const first7Slots = filteredSlots.slice(0, 7)
+                      const remainingSlots = filteredSlots.slice(7)
+                      
+                      return (
+                        <>
+                          {/* First 7 rows - always visible */}
+                          {first7Slots.map((slot) => (
+                            <tr
+                              key={slot._id}
+                              onClick={() => {
+                                handleSlotSelect(slot)
+                                setSlotSearchTerm('')
+                              }}
+                              className="cursor-pointer hover:bg-blue-50 hover:shadow-sm transition-all duration-150 border-b border-gray-100"
+                            >
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r border-gray-100">{slot.name}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.course || '-'}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.subject} - {slot.class}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.startTime} - {slot.endTime}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.days?.join(', ') || '-'}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.enrolledStudents}/{slot.capacity}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.instructor}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                                  slot.type === 'online' 
+                                    ? 'bg-blue-100 text-blue-800' 
+                                    : 'bg-purple-100 text-purple-800'
+                                }`}>
+                                  {slot.type}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700">{slot.location || '-'}</td>
+                            </tr>
+                          ))}
+                          
+                          {/* Remaining rows - scrollable */}
+                          {remainingSlots.map((slot) => (
+                            <tr
+                              key={slot._id}
+                              onClick={() => {
+                                handleSlotSelect(slot)
+                                setSlotSearchTerm('')
+                              }}
+                              className="cursor-pointer hover:bg-blue-50 hover:shadow-sm transition-all duration-150 border-b border-gray-100"
+                            >
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r border-gray-100">{slot.name}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.course || '-'}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.subject} - {slot.class}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.startTime} - {slot.endTime}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.days?.join(', ') || '-'}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.enrolledStudents}/{slot.capacity}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.instructor}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                                  slot.type === 'online' 
+                                    ? 'bg-blue-100 text-blue-800' 
+                                    : 'bg-purple-100 text-purple-800'
+                                }`}>
+                                  {slot.type}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700">{slot.location || '-'}</td>
+                            </tr>
+                          ))}
+                        </>
+                      )
+                    })()}
                   </tbody>
                 </table>
               </div>
-              
-              {slots.filter(slot => slot.isActive).length === 0 && (
-                <p className="text-center text-gray-500 py-4">No active batches available</p>
-              )}
             </div>
+            
+            {slots.filter(slot => slot.isActive && (
+              !slotSearchTerm || 
+              slot.name?.toLowerCase().includes(slotSearchTerm.toLowerCase()) ||
+              slot.course?.toLowerCase().includes(slotSearchTerm.toLowerCase()) ||
+              slot.subject?.toLowerCase().includes(slotSearchTerm.toLowerCase()) ||
+              slot.instructor?.toLowerCase().includes(slotSearchTerm.toLowerCase()) ||
+              slot.type?.toLowerCase().includes(slotSearchTerm.toLowerCase()) ||
+              slot.location?.toLowerCase().includes(slotSearchTerm.toLowerCase()) ||
+              slot.class?.toString().includes(slotSearchTerm)
+            )).length === 0 && (
+              <p className="text-center text-gray-500 py-6 font-semibold">No batches found</p>
+            )}
           </div>
         </div>
       )}
@@ -1048,61 +1154,159 @@ const Readmissions = () => {
       {/* Edit Batch Selection Modal */}
       {showEditSlotModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-5/6 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Select a Batch</h3>
-                <button
-                  onClick={() => setShowEditSlotModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <div className="relative top-10 mx-auto p-6 border w-11/12 md:w-4/5 lg:w-5/6 xl:w-4/5 shadow-xl rounded-lg bg-white max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900">Select a Batch</h3>
+              <button
+                onClick={() => {
+                  setShowEditSlotModal(false)
+                  setEditSlotSearchTerm('')
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Search Bar */}
+            <div className="mb-4">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                </button>
+                </div>
+                <input
+                  type="text"
+                  value={editSlotSearchTerm}
+                  onChange={(e) => setEditSlotSearchTerm(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium"
+                  placeholder="Search batches by name, course, subject, instructor, type..."
+                />
               </div>
-              
-              <div className="overflow-x-auto max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
+            </div>
+            
+            {/* Scrollable Table - Show first 7, then scrollable */}
+            <div className="flex-1 overflow-hidden border-2 border-gray-200 rounded-lg shadow-inner flex flex-col" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+              <div className="overflow-auto" style={{ maxHeight: '500px' }}>
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50 sticky top-0">
+                  <thead className="bg-gradient-to-r from-gray-100 to-gray-50 sticky top-0 z-10 shadow-sm">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Batch Name</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Course</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Subject - Class</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Time</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Days</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Capacity</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Instructor</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Type</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Location</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Batch Name</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Course</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Subject - Class</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Time</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Days</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Capacity</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Instructor</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Type</th>
+                      <th className="px-5 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Location</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {slots.filter(slot => slot.isActive).map((slot) => (
-                      <tr
-                        key={slot._id}
-                        onClick={() => handleEditSlotSelect(slot)}
-                        className="cursor-pointer hover:bg-blue-50 transition-colors duration-150"
-                      >
-                        <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">{slot.name}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.course}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.subject} - {slot.class}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.startTime} - {slot.endTime}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.days.join(', ')}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.enrolledStudents}/{slot.capacity}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.instructor}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.type}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{slot.location}</td>
-                      </tr>
-                    ))}
+                    {(() => {
+                      const filteredSlots = slots
+                        .filter(slot => slot.isActive)
+                        .filter(slot => {
+                          if (!editSlotSearchTerm) return true
+                          const search = editSlotSearchTerm.toLowerCase()
+                          return (
+                            slot.name?.toLowerCase().includes(search) ||
+                            slot.course?.toLowerCase().includes(search) ||
+                            slot.subject?.toLowerCase().includes(search) ||
+                            slot.instructor?.toLowerCase().includes(search) ||
+                            slot.type?.toLowerCase().includes(search) ||
+                            slot.location?.toLowerCase().includes(search) ||
+                            slot.class?.toString().includes(search)
+                          )
+                        })
+                      
+                      const first7Slots = filteredSlots.slice(0, 7)
+                      const remainingSlots = filteredSlots.slice(7)
+                      
+                      return (
+                        <>
+                          {/* First 7 rows - always visible */}
+                          {first7Slots.map((slot) => (
+                            <tr
+                              key={slot._id}
+                              onClick={() => {
+                                handleEditSlotSelect(slot)
+                                setEditSlotSearchTerm('')
+                              }}
+                              className="cursor-pointer hover:bg-blue-50 hover:shadow-sm transition-all duration-150 border-b border-gray-100"
+                            >
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r border-gray-100">{slot.name}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.course || '-'}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.subject} - {slot.class}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.startTime} - {slot.endTime}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.days?.join(', ') || '-'}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.enrolledStudents}/{slot.capacity}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.instructor}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                                  slot.type === 'online' 
+                                    ? 'bg-blue-100 text-blue-800' 
+                                    : 'bg-purple-100 text-purple-800'
+                                }`}>
+                                  {slot.type}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700">{slot.location || '-'}</td>
+                            </tr>
+                          ))}
+                          
+                          {/* Remaining rows - scrollable */}
+                          {remainingSlots.map((slot) => (
+                            <tr
+                              key={slot._id}
+                              onClick={() => {
+                                handleEditSlotSelect(slot)
+                                setEditSlotSearchTerm('')
+                              }}
+                              className="cursor-pointer hover:bg-blue-50 hover:shadow-sm transition-all duration-150 border-b border-gray-100"
+                            >
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r border-gray-100">{slot.name}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.course || '-'}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.subject} - {slot.class}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.startTime} - {slot.endTime}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.days?.join(', ') || '-'}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.enrolledStudents}/{slot.capacity}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">{slot.instructor}</td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700 border-r border-gray-100">
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                                  slot.type === 'online' 
+                                    ? 'bg-blue-100 text-blue-800' 
+                                    : 'bg-purple-100 text-purple-800'
+                                }`}>
+                                  {slot.type}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-700">{slot.location || '-'}</td>
+                            </tr>
+                          ))}
+                        </>
+                      )
+                    })()}
                   </tbody>
                 </table>
               </div>
-              
-              {slots.filter(slot => slot.isActive).length === 0 && (
-                <p className="text-center text-gray-500 py-4">No active batches available</p>
-              )}
             </div>
+            
+            {slots.filter(slot => slot.isActive && (
+              !editSlotSearchTerm || 
+              slot.name?.toLowerCase().includes(editSlotSearchTerm.toLowerCase()) ||
+              slot.course?.toLowerCase().includes(editSlotSearchTerm.toLowerCase()) ||
+              slot.subject?.toLowerCase().includes(editSlotSearchTerm.toLowerCase()) ||
+              slot.instructor?.toLowerCase().includes(editSlotSearchTerm.toLowerCase()) ||
+              slot.type?.toLowerCase().includes(editSlotSearchTerm.toLowerCase()) ||
+              slot.location?.toLowerCase().includes(editSlotSearchTerm.toLowerCase()) ||
+              slot.class?.toString().includes(editSlotSearchTerm)
+            )).length === 0 && (
+              <p className="text-center text-gray-500 py-6 font-semibold">No batches found</p>
+            )}
           </div>
         </div>
       )}
